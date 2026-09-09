@@ -117,3 +117,48 @@ Studio del caso, intervista con il cliente, creazione documentazione fondante de
 ---
 
 *Ultimo aggiornamento: 2026-09-09 17:58 — Agente 3 (Index Agent)*
+
+---
+
+## Sessione 002 — 2026-09-09
+
+### Obiettivo
+Setup completo del monorepo: struttura cartelle, configurazioni, schema DB, scaffold delle tre app.
+
+### Tipo Sessione
+`CODICE` + `DOCUMENTAZIONE`
+
+### Agenti Coinvolti
+- Agente 1 (Coding Agent): ha scritto tutti i file di codice e configurazione
+- Agente 3 (Index Agent): ha aggiornato changelog, session-current, session-manager
+
+### Artefatti Prodotti
+
+| File | Area | Tipo |
+|------|------|------|
+| `package.json` (root) | Infrastruttura | CREATO |
+| `pnpm-workspace.yaml` | Infrastruttura | CREATO |
+| `turbo.json` | Infrastruttura | CREATO |
+| `tsconfig.base.json` | Infrastruttura | CREATO |
+| `.env.example` | Infrastruttura | CREATO |
+| `docker-compose.yml` | Infrastruttura | CREATO |
+| `.gitignore` | Infrastruttura | CREATO |
+| `packages/types/**` | Tipi condivisi | CREATO (7 file) |
+| `packages/db/**` | Database Drizzle | CREATO (11 file) |
+| `apps/api/**` | Backend Fastify | CREATO (7 file) |
+| `apps/web/**` | Web Next.js | CREATO (10 file) |
+| `apps/mobile/**` | Mobile Expo | CREATO (10 file) |
+
+### Decisioni Prese
+
+| ID | Decisione | Stato |
+|----|-----------|-------|
+| ADR-007 | Stack: Expo + Next.js + Fastify + Drizzle | ✅ Implementato |
+| — | SMS rimosso MVP (zero budget) | ✅ Confermato |
+| — | Better Auth per autenticazione | ✅ Scelto |
+| — | NativeWind per Tailwind su mobile | ✅ Scelto |
+
+### Decisioni Aperte al Termine della Sessione
+- Implementazione business logic slot lock (ADR-002)
+- Setup FCM/APNs per push notifications
+- Primo test di avvio in locale

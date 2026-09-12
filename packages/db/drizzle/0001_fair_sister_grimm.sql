@@ -1,0 +1,1 @@
+ALTER TABLE "slot_agenda" ADD COLUMN "lock_token" text;

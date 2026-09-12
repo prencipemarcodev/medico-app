@@ -124,3 +124,51 @@
 - `expo-router@~3.5.23` — routing file-based mobile
 - `expo-notifications@~0.28.18` — push notifications
 - `nativewind@^4.0.1` — Tailwind per React Native
+
+---
+
+## Session 2026-09-09 18:52 — Risoluzione pnpm, Installazione Dipendenze e Typecheck
+
+### Azioni Eseguite
+- Abilitato `corepack` e attivato `pnpm@9.9.0` nell'ambiente di sistema
+- Eseguito con successo `pnpm install` su tutti i 6 progetti del workspace
+- Creato file di configurazione locale `.env` da `.env.example`
+- Eseguito `pnpm db:generate` con Drizzle Kit: generata migrazione iniziale `0000_purple_sheva_callister.sql` (12 tabelle)
+- Configurato `nativewind-env.d.ts` e corrette impostazioni `tsconfig.json` in `apps/web` e `apps/mobile`
+- Eseguito `pnpm lint` globale con Turborepo: **0 errori** su `@medico/api`, `@medico/web` e `@medico/mobile`
+
+---
+
+## Session 2026-09-09 20:04 — Setup PostgreSQL 16 & Esecuzione Migrazioni Drizzle
+
+### Azioni Eseguite
+- Installato `postgresql@16` tramite Homebrew ed eseguito `brew services start postgresql@16`
+- Creato database locale `medico_app`
+- Configurato `.env` con `DATABASE_URL="postgresql://marcoprencipe@localhost:5432/medico_app"`
+- Eseguito `pnpm db:migrate`: tutte le 12 tabelle applicate con successo
+- Verificate le 12 tabelle nel database con `psql \dt`
+
+---
+
+## Session 2026-09-09 20:13 — Implementazione Transazionale Slot Lock & Prenotazioni (ADR-002)
+
+### File Modificati
+- `packages/db/src/schema/slot.ts` — [MODIFICATO] — aggiunta colonna `lock_token` e fix check constraints
+- `packages/db/src/index.ts` — [MODIFICATO] — re-export operatori `drizzle-orm` e fix estensioni `.js` ESM
+- `packages/db/src/schema/*.ts` — [MODIFICATO] — conformità estensioni `.js` NodeNext ESM
+- `packages/db/src/seed.ts` — [MODIFICATO] — seeding idempotente con studio, medico, paziente e slot
+- `apps/api/src/services/slotService.ts` — [CREATO] — logica `getAvailableSlots`, `lockSlot` (ADR-002 con `SELECT FOR UPDATE` e TTL 10 min), `cleanupExpiredLocks`
+- `apps/api/src/services/prenotazioneService.ts` — [CREATO] — `creaPrenotazione` (validazione `lockToken`, max 2 visite/die, stato slot 'prenotato'), `getPrenotazioniPaziente`, `cancellaPrenotazione`
+- `apps/api/src/routes/slot.ts` — [MODIFICATO] — integrazione con `slotService` (`GET /:medicoId`, `POST /:slotId/lock`)
+- `apps/api/src/routes/prenotazioni.ts` — [MODIFICATO] — integrazione con `prenotazioneService` (`GET /`, `POST /`, `DELETE /:id`)
+- `apps/api/src/index.ts` — [MODIFICATO] — avviato job schedulato ogni 60s per pulizia automatica lock scaduti
+
+### Verifiche Eseguite
+- Eseguito test transazionale end-to-end con esito positivo:
+  1. Recupero slot liberi
+  2. Lock 10 minuti con restituzione `lockToken`
+  3. Prevenzione collisione: secondo lock concorrente bloccato con `409 Conflict` (`CURRENTLY_LOCKED`)
+  4. Creazione e conferma prenotazione con `lockToken`
+  5. Verifica storico prenotazioni
+  6. Annullamento prenotazione e rilascio immediato dello slot a `'libero'`
+- `pnpm lint` verificato con successo su tutto il monorepo

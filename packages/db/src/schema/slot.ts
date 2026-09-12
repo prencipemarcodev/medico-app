@@ -26,9 +26,10 @@ export const slotAgenda = pgTable('slot_agenda', {
   // lock temporaneo 10 minuti — ADR-002
   lockedUntil: timestamp('locked_until', { withTimezone: true }),
   lockedBy:    uuid('locked_by').references(() => pazienti.id),
+  lockToken:   text('lock_token'),
   createdAt:   timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt:   timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-}, (table) => [
-  check('check_stato', sql`${table.stato} IN ('libero','bloccato','prenotato','chiuso')`),
-  check('check_durata', sql`${table.durataMin} IN (10, 20, 30)`),
-])
+}, (table) => ({
+  checkStato: check('check_stato', sql`${table.stato} IN ('libero','bloccato','prenotato','chiuso')`),
+  checkDurata: check('check_durata', sql`${table.durataMin} IN (10, 20, 30)`),
+}))

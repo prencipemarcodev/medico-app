@@ -36,8 +36,9 @@ Thumbs.db
 apps/mobile/.expo/
 apps/mobile/dist/
 
-# Drizzle migrations (keep schema, ignore generated)
-packages/db/drizzle/
+# TypeScript cache
+*.tsbuildinfo
 
 # Test coverage
 coverage/
+

@@ -33,3 +33,4 @@ export const db = drizzle(client, { schema })
 export type DB = typeof db
 
 export * from './schema/index'
+export * from 'drizzle-orm'

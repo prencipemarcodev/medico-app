@@ -43,16 +43,16 @@ updated: 2026-09-09
 ## 🔄 TODO — Prossima Sessione (Fase 2)
 
 ### Priority Alta
-- [ ] `pnpm install` — installare dipendenze
-- [ ] `docker compose up -d` — avviare PostgreSQL
-- [ ] `pnpm db:generate && pnpm db:migrate` — applicare schema DB
-- [ ] Implementare **lock slot** (ADR-002): logica transazionale in `routes/slot.ts`
-- [ ] Implementare **creazione prenotazione** con validazione lockToken
+- [x] `pnpm install` — dipendenze installate con successo
+- [x] Avvio PostgreSQL 16 (Homebrew service attivo) e database `medico_app` creato
+- [x] `pnpm db:generate && pnpm db:migrate` — 12 tabelle relazionali migrate con successo
+- [x] Implementare **lock slot** (ADR-002): logica transazionale in `routes/slot.ts` e `slotService.ts`
+- [x] Implementare **creazione prenotazione** con validazione transazionale `lockToken` in `routes/prenotazioni.ts`
+- [x] Job schedulato: pulizia automatica lock slot scaduti ogni 60s
 - [ ] Implementare **autenticazione** con Better Auth (login, registrazione, JWT)
 
 ### Priority Media
 - [ ] Coda richieste FIFO: query Drizzle in `routes/richieste.ts`
-- [ ] Job schedulato: pulizia lock slot scaduti ogni 60s
 - [ ] Expo Push Notifications: setup FCM/APNs, invio da API
 - [ ] Agenda reale in `apps/web/app/dashboard/agenda`
 

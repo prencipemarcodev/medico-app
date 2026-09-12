@@ -7,6 +7,7 @@
  */
 
 import { buildApp } from './app.js'
+import { cleanupExpiredLocks } from './services/slotService.js'
 
 const PORT = parseInt(process.env['API_PORT'] ?? '3001', 10)
 const HOST = process.env['API_HOST'] ?? '0.0.0.0'
@@ -19,6 +20,20 @@ async function start() {
     if (process.env['NODE_ENV'] !== 'production') {
       console.log(`📖 Swagger UI: http://localhost:${PORT}/docs`)
     }
+
+    // ADR-002: Cleanup periodico dei lock scaduti ogni 60 secondi
+    const CLEANUP_INTERVAL_MS = 60 * 1000
+    setInterval(async () => {
+      try {
+        const sbloccati = await cleanupExpiredLocks()
+        if (sbloccati > 0) {
+          app.log.info(`[Lock Cleanup] Sbloccati ${sbloccati} slot scaduti`)
+        }
+      } catch (e) {
+        app.log.error(e, '[Lock Cleanup] Errore durante pulizia lock')
+      }
+    }, CLEANUP_INTERVAL_MS)
+
   } catch (err) {
     app.log.error(err)
     process.exit(1)

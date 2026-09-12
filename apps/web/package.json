@@ -12,6 +12,8 @@
     "@medico/db": "workspace:*",
     "@medico/types": "workspace:*",
     "@tanstack/react-query": "^5.56.2",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "better-auth": "^1.0.0",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.33.0",

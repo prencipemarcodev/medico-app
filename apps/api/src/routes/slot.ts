@@ -9,7 +9,7 @@
  */
 
 import type { FastifyInstance } from 'fastify'
-import { getAvailableSlots, lockSlot } from '../services/slotService.js'
+import { getAvailableSlots, lockSlot, unlockSlot } from '../services/slotService.js'
 
 export async function slotRoutes(app: FastifyInstance) {
   /**
@@ -148,5 +148,52 @@ export async function slotRoutes(app: FastifyInstance) {
       scadeAt: result.scadeAt.toISOString(),
       durataMinuti: result.durataMinuti,
     })
+  })
+
+  /**
+   * @function    POST /api/slot/:slotId/unlock
+   * @description Sblocca uno slot precedentemente bloccato
+   * @param       slotId - UUID dello slot da sbloccare
+   */
+  app.post<{
+    Params: { slotId: string }
+    Body?: { lockToken?: string }
+  }>('/:slotId/unlock', {
+    schema: {
+      tags: ['slot'],
+      summary: 'Sblocca slot immediatamente (cambio data o annullamento)',
+      params: {
+        type: 'object',
+        required: ['slotId'],
+        properties: { slotId: { type: 'string', format: 'uuid' } },
+      },
+      body: {
+        type: 'object',
+        properties: { lockToken: { type: 'string', format: 'uuid' } },
+      },
+      response: {
+        200: {
+          type: 'object',
+          properties: {
+            success: { type: 'boolean' },
+            message: { type: 'string' },
+          },
+        },
+        400: {
+          type: 'object',
+          properties: { error: { type: 'string' } },
+        },
+      },
+    },
+  }, async (req, reply) => {
+    const { slotId } = req.params
+    const lockToken = req.body?.lockToken
+
+    const result = await unlockSlot(slotId, lockToken)
+    if (!result.success) {
+      return reply.status(400).send({ error: result.error ?? 'Errore sblocco slot' })
+    }
+
+    return reply.status(200).send({ success: true, message: 'Slot sbloccato con successo' })
   })
 }

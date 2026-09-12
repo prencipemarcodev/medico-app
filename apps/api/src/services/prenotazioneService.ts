@@ -26,7 +26,7 @@ export interface CreaPrenotazioneResultSuccess {
 
 export interface CreaPrenotazioneResultFailure {
   success: false
-  code: 'NOT_FOUND' | 'LOCK_INVALID_OR_EXPIRED' | 'PAZIENTE_NOT_FOUND' | 'MAX_PRENOTAZIONI_REACHED'
+  code: 'NOT_FOUND' | 'ALREADY_BOOKED' | 'LOCK_INVALID_OR_EXPIRED' | 'PAZIENTE_NOT_FOUND' | 'MAX_PRENOTAZIONI_REACHED'
   error: string
 }
 
@@ -53,6 +53,15 @@ export async function creaPrenotazione(
 
     if (!slot) {
       return { success: false, code: 'NOT_FOUND', error: 'Slot non trovato' }
+    }
+
+    // Se lo slot è già stato prenotato definitivamente
+    if (slot.stato === 'prenotato') {
+      return {
+        success: false,
+        code: 'ALREADY_BOOKED',
+        error: 'Lo slot risulta già prenotato da un altro paziente.',
+      }
     }
 
     // 2. Verifica che lo slot sia effettivamente bloccato con il lockToken corretto e non scaduto

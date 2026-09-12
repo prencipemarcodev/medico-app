@@ -148,3 +148,49 @@ export async function lockSlot(slotId: string, pazienteId?: string): Promise<Loc
     }
   })
 }
+
+/**
+ * @function    unlockSlot
+ * @description Sblocca immediatamente uno slot bloccato (es. al cambio data o annullamento)
+ * @param       slotId - ID dello slot da sbloccare
+ * @param       lockToken - Token opzionale per verificare la proprietà del lock
+ */
+export async function unlockSlot(
+  slotId: string,
+  lockToken?: string
+): Promise<{ success: boolean; error?: string }> {
+  return await db.transaction(async (tx) => {
+    const [slot] = await tx
+      .select()
+      .from(slotAgenda)
+      .where(eq(slotAgenda.id, slotId))
+      .for('update')
+
+    if (!slot) {
+      return { success: false, error: 'Slot non trovato' }
+    }
+
+    if (slot.stato === 'prenotato') {
+      return { success: false, error: 'Impossibile sbloccare uno slot già confermato' }
+    }
+
+    // Se lockToken è fornito, verifica che corrisponda
+    if (lockToken && slot.lockToken && slot.lockToken !== lockToken) {
+      return { success: false, error: 'Lock token non valido per questo slot' }
+    }
+
+    await tx
+      .update(slotAgenda)
+      .set({
+        stato: 'libero',
+        lockedUntil: null,
+        lockToken: null,
+        lockedBy: null,
+        updatedAt: new Date(),
+      })
+      .where(eq(slotAgenda.id, slotId))
+
+    return { success: true }
+  })
+}
+

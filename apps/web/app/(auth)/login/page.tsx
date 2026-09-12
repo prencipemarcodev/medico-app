@@ -10,6 +10,7 @@
 
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import {
   Stethoscope,
   ShieldCheck,
@@ -18,6 +19,7 @@ import {
   Loader2,
   Lock,
   User,
+  Users,
 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -143,6 +145,30 @@ export default function LoginPage() {
               </>
             )}
           </button>
+
+          {/* Registrazioni Nuovi Utenti */}
+          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
+            <Link
+              href="/registrazione-paziente"
+              className="w-full py-3 px-4 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-between transition-all border border-blue-200/80 group"
+            >
+              <span className="flex items-center gap-2">
+                <Users className="h-4 w-4 text-blue-600" />
+                <span>Sei un nuovo Paziente? Registrati online</span>
+              </span>
+              <ArrowRight className="h-3.5 w-3.5 text-blue-600 group-hover:translate-x-0.5 transition-transform" />
+            </Link>
+
+            <div className="text-center">
+              <Link
+                href="/registrazione-medico"
+                className="text-[11px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1"
+              >
+                <span>Sei un Medico o Collaboratore? Registrati con Codice Studio</span>
+                <ArrowRight className="h-3 w-3" />
+              </Link>
+            </div>
+          </div>
         </form>
 
         {/* Footer info */}

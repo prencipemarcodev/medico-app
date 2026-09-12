@@ -88,3 +88,70 @@ export async function DELETE(
     )
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
+  const { id: medicoId } = await params
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
+  try {
+    const [medicoEsistente] = await db
+      .select()
+      .from(medici)
+      .where(eq(medici.id, medicoId))
+      .limit(1)
+
+    if (!medicoEsistente) {
+      return NextResponse.json({ error: 'Medico non trovato' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { nome, cognome, email, telefono, studioId } = body
+
+    const [aggiornato] = await db
+      .update(medici)
+      .set({
+        nome: nome ? nome.trim() : medicoEsistente.nome,
+        cognome: cognome ? cognome.trim() : medicoEsistente.cognome,
+        email: email ? email.trim().toLowerCase() : medicoEsistente.email,
+        telefonoPrimario: telefono !== undefined ? (telefono ? telefono.trim() : medicoEsistente.telefonoPrimario) : medicoEsistente.telefonoPrimario,
+        studioId: studioId || medicoEsistente.studioId,
+        updatedAt: new Date(),
+      })
+      .where(eq(medici.id, medicoId))
+      .returning()
+
+    if (!aggiornato) {
+      return NextResponse.json({ error: 'Errore aggiornamento medico' }, { status: 500 })
+    }
+
+    await recordAuditLog({
+      attoreId: auth.session.id,
+      attoreEmail: auth.session.email,
+      ruolo: 'admin',
+      azione: 'MEDICO_MODIFICATO',
+      entita: 'medico',
+      entitaId: medicoId,
+      dettagli: { nome: `${aggiornato.nome} ${aggiornato.cognome}`, email: aggiornato.email },
+      ip,
+    })
+
+    return NextResponse.json({
+      success: true,
+      medico: aggiornato,
+      message: 'Medico modificato con successo',
+    })
+  } catch (err: any) {
+    console.error('Errore aggiornamento medico:', err)
+    return NextResponse.json(
+      { error: err?.message || 'Errore durante la modifica del medico' },
+      { status: 500 }
+    )
+  }
+}
+

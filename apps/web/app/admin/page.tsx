@@ -36,11 +36,15 @@ import {
   UserCheck,
   Layers,
   Trash2,
+  Settings,
+  Copy,
+  ExternalLink,
 } from 'lucide-react'
 
 interface Studio {
   id: string
   nome: string
+  codiceStudio: string | null
   indirizzo: string | null
   telefono: string | null
   email: string | null
@@ -107,13 +111,57 @@ export default function AdminPage() {
   const [auditQuery, setAuditQuery] = useState('')
   const [loadingAudit, setLoadingAudit] = useState(false)
 
-  // Modali
+  // Modali Creazione
   const [modalStudioOpen, setModalStudioOpen] = useState(false)
   const [modalMedicoOpen, setModalMedicoOpen] = useState(false)
   const [modalStaffOpen, setModalStaffOpen] = useState(false)
   const [modalCsvOpen, setModalCsvOpen] = useState(false)
 
-  // Form Nuovo Studio
+  // Modali Modifica
+  const [modalEditStudioOpen, setModalEditStudioOpen] = useState(false)
+  const [studioInModifica, setStudioInModifica] = useState<Studio | null>(null)
+  const [formEditStudio, setFormEditStudio] = useState({
+    nome: '',
+    citta: '',
+    indirizzo: '',
+    telefono: '',
+    email: '',
+    durataVisita: 20,
+    lockupMinutes: 10,
+    anticipoMax: 30,
+  })
+
+  const [modalEditMedicoOpen, setModalEditMedicoOpen] = useState(false)
+  const [medicoInModifica, setMedicoInModifica] = useState<Medico | null>(null)
+  const [formEditMedico, setFormEditMedico] = useState({
+    nome: '',
+    cognome: '',
+    email: '',
+    telefono: '',
+    studioId: '',
+  })
+
+  const [modalEditStaffOpen, setModalEditStaffOpen] = useState(false)
+  const [staffInModifica, setStaffInModifica] = useState<StaffItem | null>(null)
+  const [formEditStaff, setFormEditStaff] = useState({
+    nome: '',
+    cognome: '',
+    email: '',
+    studioId: '',
+    mediciIds: [] as string[],
+  })
+
+  // Clipboard
+  const [copiatoId, setCopiatoId] = useState<string | null>(null)
+  const copiaTesto = (testo: string, id: string) => {
+    if (typeof navigator !== 'undefined' && navigator.clipboard) {
+      navigator.clipboard.writeText(testo)
+      setCopiatoId(id)
+      setTimeout(() => setCopiatoId(null), 2500)
+    }
+  }
+
+  // Form Nuovo Studio con opzione Medico contestuale
   const [formStudio, setFormStudio] = useState({
     nome: '',
     citta: '',
@@ -123,6 +171,14 @@ export default function AdminPage() {
     durataVisita: 20,
     lockupMinutes: 10,
     anticipoMax: 30,
+    // Medico contestuale
+    opzioneMedico: 'nessuno' as 'nessuno' | 'nuovo' | 'esistente',
+    nomeMedico: '',
+    cognomeMedico: '',
+    emailMedico: '',
+    telefonoMedico: '',
+    passwordMedico: '',
+    assegnaMedicoId: '',
   })
 
   // Form Nuovo Medico
@@ -276,6 +332,136 @@ export default function AdminPage() {
     }
   }
 
+  // Modifica Studio
+  const handleApriModificaStudio = (studio: Studio) => {
+    setStudioInModifica(studio)
+    setFormEditStudio({
+      nome: studio.nome,
+      citta: studio.config?.citta || '',
+      indirizzo: studio.config?.indirizzoCompleto || studio.indirizzo || '',
+      telefono: studio.telefono || '',
+      email: studio.email || '',
+      durataVisita: studio.config?.durataVisitaStandardMinuti || 20,
+      lockupMinutes: studio.config?.lockupMinutes || 10,
+      anticipoMax: studio.config?.anticipoMaxPrenotazioneGiorni || 30,
+    })
+    setModalEditStudioOpen(true)
+  }
+
+  const handleSalvaModificaStudio = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!studioInModifica) return
+    try {
+      const res = await fetch(`/api/admin/studi/${studioInModifica.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nome: formEditStudio.nome,
+          indirizzo: formEditStudio.indirizzo
+            ? `${formEditStudio.indirizzo.trim()}, ${formEditStudio.citta.trim()}`
+            : formEditStudio.citta.trim(),
+          telefono: formEditStudio.telefono,
+          email: formEditStudio.email,
+          config: {
+            citta: formEditStudio.citta.trim(),
+            indirizzoCompleto: formEditStudio.indirizzo.trim(),
+            durataVisitaStandardMinuti: Number(formEditStudio.durataVisita),
+            lockupMinutes: Number(formEditStudio.lockupMinutes),
+            anticipoMaxPrenotazioneGiorni: Number(formEditStudio.anticipoMax),
+          },
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore modifica studio')
+      setModalEditStudioOpen(false)
+      setStudioInModifica(null)
+      caricaDati()
+      caricaAuditLogs()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  // Modifica Medico
+  const handleApriModificaMedico = (medico: Medico) => {
+    setMedicoInModifica(medico)
+    setFormEditMedico({
+      nome: medico.nome,
+      cognome: medico.cognome,
+      email: medico.email,
+      telefono: medico.telefonoPrimario || '',
+      studioId: medico.studioId,
+    })
+    setModalEditMedicoOpen(true)
+  }
+
+  const handleSalvaModificaMedico = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!medicoInModifica) return
+    try {
+      const res = await fetch(`/api/admin/medici/${medicoInModifica.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formEditMedico),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore modifica medico')
+      setModalEditMedicoOpen(false)
+      setMedicoInModifica(null)
+      caricaDati()
+      caricaAuditLogs()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  // Modifica Staff
+  const handleApriModificaStaff = (st: StaffItem) => {
+    setStaffInModifica(st)
+    setFormEditStaff({
+      nome: st.nome,
+      cognome: st.cognome,
+      email: st.email,
+      studioId: st.studioId,
+      mediciIds: st.mediciAssegnati.map((m) => m.id),
+    })
+    setModalEditStaffOpen(true)
+  }
+
+  const toggleMedicoEditStaff = (medicoId: string) => {
+    if (formEditStaff.mediciIds.includes(medicoId)) {
+      setFormEditStaff({
+        ...formEditStaff,
+        mediciIds: formEditStaff.mediciIds.filter((id) => id !== medicoId),
+      })
+    } else {
+      setFormEditStaff({
+        ...formEditStaff,
+        mediciIds: [...formEditStaff.mediciIds, medicoId],
+      })
+    }
+  }
+
+  const handleSalvaModificaStaff = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!staffInModifica) return
+    try {
+      const res = await fetch(`/api/admin/staff/${staffInModifica.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formEditStaff),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore modifica operatore staff')
+      setModalEditStaffOpen(false)
+      setStaffInModifica(null)
+      caricaDati()
+      caricaAuditLogs()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
   // Azione Crea Studio
   const handleCreaStudio = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -298,8 +484,16 @@ export default function AdminPage() {
         durataVisita: 20,
         lockupMinutes: 10,
         anticipoMax: 30,
+        opzioneMedico: 'nessuno',
+        nomeMedico: '',
+        cognomeMedico: '',
+        emailMedico: '',
+        telefonoMedico: '',
+        passwordMedico: '',
+        assegnaMedicoId: '',
       })
       caricaDati()
+      caricaAuditLogs()
     } catch (err: any) {
       alert(err.message)
     }
@@ -687,21 +881,62 @@ export default function AdminPage() {
                         </p>
                       )}
                     </div>
+
+                    {/* Codice Studio per Onboarding */}
+                    {studio.codiceStudio && (
+                      <div className="p-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-center justify-between gap-2">
+                        <div className="min-w-0">
+                          <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                            Codice Studio Invito
+                          </span>
+                          <span className="font-mono text-xs font-black text-white truncate block">
+                            {studio.codiceStudio}
+                          </span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => copiaTesto(studio.codiceStudio!, studio.id)}
+                          className="px-2.5 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 text-[11px] font-semibold flex items-center gap-1.5 transition-all flex-shrink-0"
+                          title="Copia codice invito per auto-registrazione"
+                        >
+                          {copiatoId === studio.id ? (
+                            <>
+                              <Check className="h-3.5 w-3.5 text-emerald-400" />
+                              <span className="text-emerald-300">Copiato</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3.5 w-3.5" />
+                              <span>Copia</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    )}
                   </div>
 
                   <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
                     <span className="text-[10px] text-slate-500 font-mono truncate">
                       ID: {studio.id.slice(0, 8)}...
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleEliminaStudio(studio)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/60 transition-all flex items-center gap-1.5"
-                      title="Elimina studio e tutti i dati correlati a cascata"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      <span>Elimina Studio</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleApriModificaStudio(studio)}
+                        className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition-all"
+                        title="Modifica impostazioni studio"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEliminaStudio(studio)}
+                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 border border-rose-900/60 transition-all"
+                        title="Elimina studio e tutti i dati correlati a cascata"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -811,14 +1046,24 @@ export default function AdminPage() {
                       <FileSpreadsheet className="h-4 w-4 text-emerald-400 flex-shrink-0" />
                       <span className="truncate">Importa Pazienti CSV</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => handleEliminaMedico(medico)}
-                      className="p-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/60 text-rose-400 transition-all flex-shrink-0"
-                      title="Elimina medico e la sua agenda"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleApriModificaMedico(medico)}
+                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all flex-shrink-0"
+                        title="Modifica dati medico"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEliminaMedico(medico)}
+                        className="p-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/60 text-rose-400 transition-all flex-shrink-0"
+                        title="Elimina medico e la sua agenda"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -917,15 +1162,24 @@ export default function AdminPage() {
                     <span className="text-[10px] text-slate-500 font-mono truncate">
                       ID: {st.id.slice(0, 8)}...
                     </span>
-                    <button
-                      type="button"
-                      onClick={() => handleEliminaStaff(st)}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/60 transition-all flex items-center gap-1.5"
-                      title="Elimina operatore segreteria"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                      <span>Elimina Staff</span>
-                    </button>
+                    <div className="flex items-center gap-1.5 flex-shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => handleApriModificaStaff(st)}
+                        className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition-all"
+                        title="Modifica operatore segreteria"
+                      >
+                        <Settings className="h-4 w-4" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleEliminaStaff(st)}
+                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 border border-rose-900/60 transition-all"
+                        title="Elimina operatore segreteria"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1178,6 +1432,201 @@ export default function AdminPage() {
                     className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Durata Visita (min)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="120"
+                    value={formStudio.durataVisita}
+                    onChange={(e) => setFormStudio({ ...formStudio, durataVisita: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Lockup (min)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={formStudio.lockupMinutes}
+                    onChange={(e) => setFormStudio({ ...formStudio, lockupMinutes: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Anticipo Max (gg)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={formStudio.anticipoMax}
+                    onChange={(e) => setFormStudio({ ...formStudio, anticipoMax: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              {/* SEZIONE: MEDICO DI RIFERIMENTO CONTESTUALE */}
+              <div className="pt-3 border-t border-slate-800 space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block font-bold text-indigo-400 uppercase tracking-wider">
+                    Medico di Riferimento dello Studio
+                  </label>
+                  <span className="text-[11px] text-slate-400">Opzionale o contestuale</span>
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormStudio({ ...formStudio, opzioneMedico: 'nessuno' })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      formStudio.opzioneMedico === 'nessuno'
+                        ? 'border-indigo-500 bg-indigo-950/40 text-white'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-bold block text-xs">Invito / Codice</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Iscrizione autonoma</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormStudio({ ...formStudio, opzioneMedico: 'nuovo' })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      formStudio.opzioneMedico === 'nuovo'
+                        ? 'border-indigo-500 bg-indigo-950/40 text-white'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-bold block text-xs">Crea Medico</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Nuovo profilo + agenda</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setFormStudio({ ...formStudio, opzioneMedico: 'esistente' })}
+                    className={`p-2.5 rounded-xl border text-left transition-all ${
+                      formStudio.opzioneMedico === 'esistente'
+                        ? 'border-indigo-500 bg-indigo-950/40 text-white'
+                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                    }`}
+                  >
+                    <span className="font-bold block text-xs">Assegna Esistente</span>
+                    <span className="text-[10px] text-slate-400 block mt-0.5">Da medici registrati</span>
+                  </button>
+                </div>
+
+                {/* Info auto-registrazione con Codice Studio */}
+                {formStudio.opzioneMedico === 'nessuno' && (
+                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400">
+                    💡 Lo studio riceverà un <b>Codice Studio univoco</b>. Medici e collaboratori potranno registrarsi in totale autonomia inserendo il codice nella pagina di registrazione.
+                  </div>
+                )}
+
+                {/* Form creazione nuovo medico contestuale */}
+                {formStudio.opzioneMedico === 'nuovo' && (
+                  <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-900/40 space-y-3">
+                    <p className="text-[11px] text-indigo-300 font-medium">
+                      Inserisci i dettagli del medico: verrà creato l'account e generata l'agenda di disponibilità per i prossimi 30 giorni.
+                    </p>
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Nome Medico *</label>
+                        <input
+                          type="text"
+                          required={formStudio.opzioneMedico === 'nuovo'}
+                          placeholder="Es. Mario"
+                          value={formStudio.nomeMedico}
+                          onChange={(e) => setFormStudio({ ...formStudio, nomeMedico: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Cognome Medico *</label>
+                        <input
+                          type="text"
+                          required={formStudio.opzioneMedico === 'nuovo'}
+                          placeholder="Es. Rossi"
+                          value={formStudio.cognomeMedico}
+                          onChange={(e) => setFormStudio({ ...formStudio, cognomeMedico: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Email Medico *</label>
+                        <input
+                          type="email"
+                          required={formStudio.opzioneMedico === 'nuovo'}
+                          placeholder="Es. dott.rossi@studio.it"
+                          value={formStudio.emailMedico}
+                          onChange={(e) => setFormStudio({ ...formStudio, emailMedico: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Telefono Primario</label>
+                        <input
+                          type="text"
+                          placeholder="Es. +39 333 1234567"
+                          value={formStudio.telefonoMedico}
+                          onChange={(e) => setFormStudio({ ...formStudio, telefonoMedico: e.target.value })}
+                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                        Password Iniziale Medico (opzionale, default: Medico2026!)
+                      </label>
+                      <input
+                        type="text"
+                        placeholder="Lascia vuoto per default: Medico2026!"
+                        value={formStudio.passwordMedico}
+                        onChange={(e) => setFormStudio({ ...formStudio, passwordMedico: e.target.value })}
+                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Selezione medico esistente */}
+                {formStudio.opzioneMedico === 'esistente' && (
+                  <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-300">
+                      Seleziona Medico da associare allo studio:
+                    </label>
+                    {mediciList.length === 0 ? (
+                      <p className="text-[11px] text-amber-400">Nessun medico esistente disponibile nel sistema.</p>
+                    ) : (
+                      <select
+                        value={formStudio.assegnaMedicoId}
+                        onChange={(e) => setFormStudio({ ...formStudio, assegnaMedicoId: e.target.value })}
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      >
+                        <option value="">-- Seleziona un medico --</option>
+                        {mediciList.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            Dott. {m.nome} {m.cognome} ({m.email})
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
@@ -1689,6 +2138,440 @@ export default function AdminPage() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: MODIFICA STUDIO MEDICO */}
+      {modalEditStudioOpen && studioInModifica && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Settings className="h-5 w-5 text-indigo-400" />
+                Modifica Studio Medico
+              </h3>
+              <button
+                onClick={() => {
+                  setModalEditStudioOpen(false)
+                  setStudioInModifica(null)
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvaModificaStudio} className="space-y-4 text-xs">
+              {/* Badge Codice Studio */}
+              {studioInModifica.codiceStudio && (
+                <div className="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-center justify-between gap-3">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                      Codice Invito Studio
+                    </span>
+                    <span className="font-mono text-xs font-black text-white">
+                      {studioInModifica.codiceStudio}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copiaTesto(studioInModifica.codiceStudio!, 'edit-studio-code')}
+                    className="px-2.5 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 text-[11px] font-semibold flex items-center gap-1.5 transition-all"
+                  >
+                    {copiatoId === 'edit-studio-code' ? (
+                      <>
+                        <Check className="h-3.5 w-3.5 text-emerald-400" />
+                        <span className="text-emerald-300">Copiato</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="h-3.5 w-3.5" />
+                        <span>Copia</span>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+
+              <div>
+                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Nome Studio Medico *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formEditStudio.nome}
+                  onChange={(e) => setFormEditStudio({ ...formEditStudio, nome: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Città *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formEditStudio.citta}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, citta: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Indirizzo
+                  </label>
+                  <input
+                    type="text"
+                    value={formEditStudio.indirizzo}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, indirizzo: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Telefono
+                  </label>
+                  <input
+                    type="text"
+                    value={formEditStudio.telefono}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, telefono: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Email Studio
+                  </label>
+                  <input
+                    type="email"
+                    value={formEditStudio.email}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Durata Visita (min)
+                  </label>
+                  <input
+                    type="number"
+                    min="5"
+                    max="120"
+                    value={formEditStudio.durataVisita}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, durataVisita: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Lockup (min)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="120"
+                    value={formEditStudio.lockupMinutes}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, lockupMinutes: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Anticipo Max (gg)
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="180"
+                    value={formEditStudio.anticipoMax}
+                    onChange={(e) => setFormEditStudio({ ...formEditStudio, anticipoMax: Number(e.target.value) })}
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalEditStudioOpen(false)
+                    setStudioInModifica(null)
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                >
+                  Salva Modifiche
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: MODIFICA MEDICO */}
+      {modalEditMedicoOpen && medicoInModifica && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Settings className="h-5 w-5 text-indigo-400" />
+                Modifica Dati Medico
+              </h3>
+              <button
+                onClick={() => {
+                  setModalEditMedicoOpen(false)
+                  setMedicoInModifica(null)
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvaModificaMedico} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Studio Medico di Appartenenza *
+                </label>
+                <select
+                  required
+                  value={formEditMedico.studioId}
+                  onChange={(e) => setFormEditMedico({ ...formEditMedico, studioId: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {studiList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nome} ({s.indirizzo || 'N/D'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Nome *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formEditMedico.nome}
+                    onChange={(e) => setFormEditMedico({ ...formEditMedico, nome: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Cognome *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formEditMedico.cognome}
+                    onChange={(e) => setFormEditMedico({ ...formEditMedico, cognome: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Email Professionale *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={formEditMedico.email}
+                    onChange={(e) => setFormEditMedico({ ...formEditMedico, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Telefono Primario
+                  </label>
+                  <input
+                    type="text"
+                    value={formEditMedico.telefono}
+                    onChange={(e) => setFormEditMedico({ ...formEditMedico, telefono: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalEditMedicoOpen(false)
+                    setMedicoInModifica(null)
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                >
+                  Salva Modifiche
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: MODIFICA OPERATORE STAFF */}
+      {modalEditStaffOpen && staffInModifica && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <Settings className="h-5 w-5 text-amber-400" />
+                Modifica Operatore Segreteria
+              </h3>
+              <button
+                onClick={() => {
+                  setModalEditStaffOpen(false)
+                  setStaffInModifica(null)
+                }}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSalvaModificaStaff} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Studio Medico *
+                </label>
+                <select
+                  required
+                  value={formEditStaff.studioId}
+                  onChange={(e) => setFormEditStaff({ ...formEditStaff, studioId: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {studiList.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.nome} ({s.indirizzo || 'N/D'})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Nome *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formEditStaff.nome}
+                    onChange={(e) => setFormEditStaff({ ...formEditStaff, nome: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                    Cognome *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={formEditStaff.cognome}
+                    onChange={(e) => setFormEditStaff({ ...formEditStaff, cognome: e.target.value })}
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  Email Operatore *
+                </label>
+                <input
+                  type="email"
+                  required
+                  value={formEditStaff.email}
+                  onChange={(e) => setFormEditStaff({ ...formEditStaff, email: e.target.value })}
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              {/* Selezione Multi-medico per lo staff */}
+              <div className="space-y-2 pt-2 border-t border-slate-800">
+                <label className="block font-bold text-slate-300 uppercase tracking-wider">
+                  Medici Assegnati a questo operatore:
+                </label>
+                <p className="text-[11px] text-slate-400">
+                  L'operatore potrà accedere alla sala d'attesa, messaggi e ricette solo dei medici selezionati.
+                </p>
+
+                <div className="space-y-1.5 max-h-36 overflow-y-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                  {mediciList
+                    .filter((m) => !formEditStaff.studioId || m.studioId === formEditStaff.studioId)
+                    .map((m) => {
+                      const isChecked = formEditStaff.mediciIds.includes(m.id)
+                      return (
+                        <label
+                          key={m.id}
+                          className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all ${
+                            isChecked ? 'bg-indigo-950/60 border border-indigo-700/60 text-white' : 'hover:bg-slate-800/60 text-slate-300'
+                          }`}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleMedicoEditStaff(m.id)}
+                            className="h-4 w-4 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-950"
+                          />
+                          <span className="font-semibold text-xs truncate">
+                            Dott. {m.nome} {m.cognome} ({m.email})
+                          </span>
+                        </label>
+                      )
+                    })}
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setModalEditStaffOpen(false)
+                    setStaffInModifica(null)
+                  }}
+                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20"
+                >
+                  Salva Modifiche
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

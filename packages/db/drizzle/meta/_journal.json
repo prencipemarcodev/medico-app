@@ -36,6 +36,13 @@
       "when": 1789201236896,
       "tag": "0004_demonic_tyrannus",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1789225486359,
+      "tag": "0005_violet_paladin",
+      "breakpoints": true
     }
   ]
 }

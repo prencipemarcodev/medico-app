@@ -27,6 +27,14 @@ import {
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuAperto, setMobileMenuAperto] = useState(false)
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.href = '/login'
+    }
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">
       {/* Overlay mobile */}
@@ -123,13 +131,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               <p className="text-xs font-bold text-white truncate">Super Admin</p>
               <p className="text-[11px] text-slate-400 truncate">Sistemista Piattaforma</p>
             </div>
-            <Link
-              href="/login"
-              title="Esci"
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Esci dalla piattaforma"
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-950/40 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -152,9 +161,20 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             </span>
           </div>
 
-          <div className="text-right flex-shrink-0">
-            <p className="text-[11px] md:text-xs font-bold text-slate-200">PostgreSQL 16</p>
-            <p className="text-[10px] md:text-[11px] text-emerald-400 font-medium">1.2 ms latenza</p>
+          <div className="flex items-center gap-4 flex-shrink-0">
+            <div className="text-right hidden sm:block">
+              <p className="text-[11px] md:text-xs font-bold text-slate-200">PostgreSQL 16</p>
+              <p className="text-[10px] md:text-[11px] text-emerald-400 font-medium">1.2 ms latenza</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/50 border border-slate-700 hover:border-rose-800/80 text-slate-300 hover:text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+              title="Disconnetti e torna al Login"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Esci</span>
+            </button>
           </div>
         </header>
 

@@ -80,3 +80,75 @@ export async function DELETE(
     )
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
+  const { id: studioId } = await params
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
+  try {
+    const [studioEsistente] = await db
+      .select()
+      .from(studi)
+      .where(eq(studi.id, studioId))
+      .limit(1)
+
+    if (!studioEsistente) {
+      return NextResponse.json({ error: 'Studio non trovato' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { nome, indirizzo, telefono, email, config } = body
+
+    const configAggiornata = {
+      ...(studioEsistente.config as any || {}),
+      ...(config || {}),
+    }
+
+    const [aggiornato] = await db
+      .update(studi)
+      .set({
+        nome: nome ? nome.trim() : studioEsistente.nome,
+        indirizzo: indirizzo !== undefined ? (indirizzo ? indirizzo.trim() : null) : studioEsistente.indirizzo,
+        telefono: telefono !== undefined ? (telefono ? telefono.trim() : null) : studioEsistente.telefono,
+        email: email !== undefined ? (email ? email.trim() : null) : studioEsistente.email,
+        config: configAggiornata,
+        updatedAt: new Date(),
+      })
+      .where(eq(studi.id, studioId))
+      .returning()
+
+    if (!aggiornato) {
+      return NextResponse.json({ error: 'Errore aggiornamento studio' }, { status: 500 })
+    }
+
+    await recordAuditLog({
+      attoreId: auth.session.id,
+      attoreEmail: auth.session.email,
+      ruolo: 'admin',
+      azione: 'STUDIO_MODIFICATO',
+      entita: 'studio',
+      entitaId: studioId,
+      dettagli: { nome: aggiornato.nome, indirizzo: aggiornato.indirizzo },
+      ip,
+    })
+
+    return NextResponse.json({
+      success: true,
+      studio: aggiornato,
+      message: 'Studio modificato con successo',
+    })
+  } catch (err: any) {
+    console.error('Errore aggiornamento studio:', err)
+    return NextResponse.json(
+      { error: err?.message || 'Errore durante la modifica dello studio' },
+      { status: 500 }
+    )
+  }
+}
+

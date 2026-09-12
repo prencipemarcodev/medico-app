@@ -80,15 +80,6 @@ export async function middleware(request: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // 2. Utente autenticato che visita /login
-  if (user && isLoginPage) {
-    let target = '/dashboard'
-    if (user.ruolo === 'admin') target = '/admin'
-    else if (user.ruolo === 'segreteria') target = '/segreteria'
-    else if (user.ruolo === 'paziente') target = '/paziente'
-    return NextResponse.redirect(new URL(target, request.url))
-  }
-
   // 3. Controllo RBAC: verifica che l'utente non acceda a portali di altri ruoli
   if (user) {
     if (pathname.startsWith('/admin') && user.ruolo !== 'admin') {

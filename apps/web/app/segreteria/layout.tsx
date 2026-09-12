@@ -32,6 +32,14 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
   const pathname = usePathname()
   const [mobileMenuAperto, setMobileMenuAperto] = useState(false)
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.href = '/login'
+    }
+  }
+
   const navItems = [
     {
       href: '/segreteria',
@@ -160,13 +168,14 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
               <p className="text-xs font-bold text-slate-900 truncate">Operatore Studio</p>
               <p className="text-[11px] text-slate-500 truncate">Postazione Segreteria</p>
             </div>
-            <Link
-              href="/login"
-              title="Esci"
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Esci dalla piattaforma"
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -189,9 +198,20 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
             </span>
           </div>
 
-          <div className="text-right flex-shrink-0">
-            <p className="text-[11px] md:text-xs font-bold text-slate-800">08:30 - 13:00</p>
-            <p className="text-[10px] md:text-[11px] text-slate-500">Sportello</p>
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <div className="text-right hidden sm:block">
+              <p className="text-[11px] md:text-xs font-bold text-slate-800">08:30 - 13:00</p>
+              <p className="text-[10px] md:text-[11px] text-slate-500">Sportello</p>
+            </div>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-all"
+              title="Disconnetti e torna al Login"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Esci</span>
+            </button>
           </div>
         </header>
 

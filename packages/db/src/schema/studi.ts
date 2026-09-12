@@ -10,16 +10,31 @@
 import { pgTable, uuid, text, boolean, timestamp, jsonb } from 'drizzle-orm/pg-core'
 
 export const studi = pgTable('studi', {
-  id:         uuid('id').primaryKey().defaultRandom(),
-  nome:       text('nome').notNull(),
-  indirizzo:  text('indirizzo'),
-  telefono:   text('telefono'),
-  email:      text('email'),
-  config:     jsonb('config'),
-  attivo:     boolean('attivo').notNull().default(true),
-  createdAt:  timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-  updatedAt:  timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  id:           uuid('id').primaryKey().defaultRandom(),
+  nome:         text('nome').notNull(),
+  codiceStudio: text('codice_studio').unique(),
+  indirizzo:    text('indirizzo'),
+  telefono:     text('telefono'),
+  email:        text('email'),
+  config:       jsonb('config'),
+  attivo:       boolean('attivo').notNull().default(true),
+  createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt:    timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+/**
+ * Genera un codice studio univoco e leggibile per gli inviti ai medici e collaboratori
+ * Esempio: STU-MILANO-8492
+ */
+export function generateStudioCode(nomeStudio: string): string {
+  const clean = nomeStudio
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, '')
+    .slice(0, 6) || 'STUDIO'
+  const randomSuffix = Math.floor(1000 + Math.random() * 9000)
+  return `STU-${clean}-${randomSuffix}`
+}
 
 export const medici = pgTable('medici', {
   id:                  uuid('id').primaryKey().defaultRandom(),

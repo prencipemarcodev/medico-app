@@ -60,3 +60,80 @@ export async function DELETE(
     )
   }
 }
+
+export async function PATCH(
+  request: Request,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
+  const { id: staffId } = await params
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
+  try {
+    const [staffEsistente] = await db
+      .select()
+      .from(staff)
+      .where(eq(staff.id, staffId))
+      .limit(1)
+
+    if (!staffEsistente) {
+      return NextResponse.json({ error: 'Membro dello staff non trovato' }, { status: 404 })
+    }
+
+    const body = await request.json()
+    const { nome, cognome, email, studioId, mediciIds } = body
+
+    const [aggiornato] = await db
+      .update(staff)
+      .set({
+        nome: nome ? nome.trim() : staffEsistente.nome,
+        cognome: cognome ? cognome.trim() : staffEsistente.cognome,
+        email: email ? email.trim().toLowerCase() : staffEsistente.email,
+        studioId: studioId || staffEsistente.studioId,
+      })
+      .where(eq(staff.id, staffId))
+      .returning()
+
+    if (!aggiornato) {
+      return NextResponse.json({ error: 'Errore aggiornamento membro dello staff' }, { status: 500 })
+    }
+
+    // Aggiorna medici assegnati se forniti
+    if (Array.isArray(mediciIds)) {
+      await db.delete(staffMedici).where(eq(staffMedici.staffId, staffId))
+      if (mediciIds.length > 0) {
+        const relazioni = mediciIds.map((mId: string) => ({
+          staffId,
+          medicoId: mId,
+        }))
+        await db.insert(staffMedici).values(relazioni)
+      }
+    }
+
+    await recordAuditLog({
+      attoreId: auth.session.id,
+      attoreEmail: auth.session.email,
+      ruolo: 'admin',
+      azione: 'STAFF_MODIFICATO',
+      entita: 'staff',
+      entitaId: staffId,
+      dettagli: { nome: `${aggiornato.nome} ${aggiornato.cognome}`, email: aggiornato.email },
+      ip,
+    })
+
+    return NextResponse.json({
+      success: true,
+      staff: aggiornato,
+      message: 'Membro dello staff modificato con successo',
+    })
+  } catch (err: any) {
+    console.error('Errore aggiornamento staff:', err)
+    return NextResponse.json(
+      { error: err?.message || 'Errore durante la modifica dello staff' },
+      { status: 500 }
+    )
+  }
+}
+

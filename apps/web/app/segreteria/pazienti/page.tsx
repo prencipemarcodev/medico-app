@@ -3,9 +3,9 @@
 /**
  * @file        page.tsx
  * @module      @medico/web/segreteria/pazienti
- * @description Ricerca pazienti e scheda operativa per operatori di segreteria
+ * @description Ricerca pazienti, inserimento assistito, importazione CSV e gestione per segreteria
  * @author      Agent-1 | Session: 2026-09-12
- * @version     1.0.0
+ * @version     1.1.0
  */
 
 import { useState, useEffect } from 'react'
@@ -28,6 +28,11 @@ import {
   Loader2,
   Send,
   AlertCircle,
+  Upload,
+  QrCode,
+  Copy,
+  Download,
+  FileSpreadsheet,
 } from 'lucide-react'
 
 interface PazienteItem {
@@ -46,13 +51,37 @@ interface PazienteItem {
   primoAccesso: boolean
 }
 
+interface MedicoOpzione {
+  id: string
+  nome: string
+  cognome: string
+  email: string
+}
+
+interface AnteprimaPaziente {
+  nome: string
+  cognome: string
+  codiceFiscale: string
+  dataNascita: string
+  email?: string
+  telefono?: string
+  valido: boolean
+  motivoErrore?: string
+}
+
 export default function SegreteriaPazientiPage() {
   const [query, setQuery] = useState('')
   const [pazienti, setPazienti] = useState<PazienteItem[]>([])
   const [loading, setLoading] = useState(false)
   const [selezionato, setSelezionato] = useState<PazienteItem | null>(null)
 
-  // Operazioni
+  // Studio e Medici
+  const [studioId, setStudioId] = useState<string>('')
+  const [codiceStudio, setCodiceStudio] = useState<string>('')
+  const [nomeStudio, setNomeStudio] = useState<string>('')
+  const [mediciStudio, setMediciStudio] = useState<MedicoOpzione[]>([])
+
+  // Operazioni esistenti
   const [modalRichiestaOpen, setModalRichiestaOpen] = useState(false)
   const [modalContattiOpen, setModalContattiOpen] = useState(false)
   const [farmacoNome, setFarmacoNome] = useState('')
@@ -61,24 +90,86 @@ export default function SegreteriaPazientiPage() {
   const [editEmail, setEditEmail] = useState('')
   const [feedbackSuccess, setFeedbackSuccess] = useState<string | null>(null)
 
-  // Ricerca live
+  // 1. MODALE NUOVO PAZIENTE
+  const [modalNuovoOpen, setModalNuovoOpen] = useState(false)
+  const [nuovoMedicoId, setNuovoMedicoId] = useState('')
+  const [nuovoNome, setNuovoNome] = useState('')
+  const [nuovoCognome, setNuovoCognome] = useState('')
+  const [nuovoCf, setNuovoCf] = useState('')
+  const [nuovaDataNascita, setNuovaDataNascita] = useState('')
+  const [nuovaEmail, setNuovaEmail] = useState('')
+  const [nuovoTelefono, setNuovoTelefono] = useState('')
+  const [nuovaPassword, setNuovaPassword] = useState('')
+  const [creazioneInCorso, setCreazioneInCorso] = useState(false)
+  const [erroreNuovo, setErroreNuovo] = useState<string | null>(null)
+  const [credenzialeCreata, setCredenzialeCreata] = useState<{
+    nome: string
+    cognome: string
+    codiceFiscale: string
+    passwordTemporanea: string
+    email?: string | null
+    telefono?: string | null
+  } | null>(null)
+
+  // 2. MODALE IMPORTA CSV
+  const [modalCsvOpen, setModalCsvOpen] = useState(false)
+  const [csvMedicoId, setCsvMedicoId] = useState('')
+  const [anteprimaPazienti, setAnteprimaPazienti] = useState<AnteprimaPaziente[]>([])
+  const [importInCorso, setImportInCorso] = useState(false)
+  const [importCompletato, setImportCompletato] = useState(false)
+  const [credenzialiGenerateCsv, setCredenzialiGenerateCsv] = useState<any[]>([])
+
+  // 3. MODALE QR & LINK
+  const [modalQrOpen, setModalQrOpen] = useState(false)
+  const [linkCopiato, setLinkCopiato] = useState(false)
+
+  // Carica sessione e medici dello studio
   useEffect(() => {
-    const timer = setTimeout(async () => {
-      setLoading(true)
+    async function loadStudioData() {
       try {
-        const res = await fetch(`/api/pazienti/search?q=${encodeURIComponent(query)}`)
+        const res = await fetch('/api/auth/me')
         const data = await res.json()
-        if (data.success) {
-          setPazienti(data.pazienti || [])
-          if (data.pazienti?.length > 0 && !selezionato) {
-            setSelezionato(data.pazienti[0])
+        if (data.authenticated && data.user) {
+          setStudioId(data.user.studioId || '')
+          setCodiceStudio(data.user.codiceStudio || '')
+          setNomeStudio(data.user.nomeStudio || '')
+          const mediciList = data.medici || []
+          setMediciStudio(mediciList)
+          if (mediciList.length > 0) {
+            setNuovoMedicoId(mediciList[0].id)
+            setCsvMedicoId(mediciList[0].id)
           }
         }
       } catch (err) {
-        console.error('Errore ricerca:', err)
-      } finally {
-        setLoading(false)
+        console.error('Errore recupero sessione segreteria:', err)
       }
+    }
+    loadStudioData()
+  }, [])
+
+  // Carica lista pazienti
+  const ricaricaPazienti = async (searchQ = query) => {
+    setLoading(true)
+    try {
+      const res = await fetch(`/api/pazienti/search?q=${encodeURIComponent(searchQ)}`)
+      const data = await res.json()
+      if (data.success) {
+        setPazienti(data.pazienti || [])
+        if (data.pazienti?.length > 0 && !selezionato) {
+          setSelezionato(data.pazienti[0])
+        }
+      }
+    } catch (err) {
+      console.error('Errore ricerca:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Ricerca live
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      ricaricaPazienti(query)
     }, 250)
 
     return () => clearTimeout(timer)
@@ -158,35 +249,260 @@ export default function SegreteriaPazientiPage() {
     }
   }
 
+  // AZIONE CREA NUOVO PAZIENTE (SPORTELLO)
+  const handleCreaNuovoPaziente = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErroreNuovo(null)
+    setCreazioneInCorso(true)
+
+    try {
+      const res = await fetch('/api/pazienti/crea', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicoId: nuovoMedicoId,
+          nome: nuovoNome,
+          cognome: nuovoCognome,
+          codiceFiscale: nuovoCf.trim().toUpperCase(),
+          dataNascita: nuovaDataNascita,
+          email: nuovaEmail || undefined,
+          telefono: nuovoTelefono || undefined,
+          passwordPersonalizzata: nuovaPassword || undefined,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore creazione paziente')
+
+      setCredenzialeCreata({
+        nome: data.paziente.nome,
+        cognome: data.paziente.cognome,
+        codiceFiscale: data.paziente.codiceFiscale,
+        passwordTemporanea: data.paziente.passwordTemporanea,
+        email: data.paziente.email,
+        telefono: data.paziente.telefono,
+      })
+
+      setNuovoNome('')
+      setNuovoCognome('')
+      setNuovoCf('')
+      setNuovaDataNascita('')
+      setNuovaEmail('')
+      setNuovoTelefono('')
+      setNuovaPassword('')
+
+      ricaricaPazienti()
+    } catch (err: any) {
+      setErroreNuovo(err.message || 'Errore durante la creazione del paziente')
+    } finally {
+      setCreazioneInCorso(false)
+    }
+  }
+
+  // CSV: PARSING
+  const parseCsvContent = (content: string) => {
+    const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0)
+    if (lines.length <= 1) {
+      alert('Il file CSV sembra vuoto o contiene solo intestazioni')
+      return
+    }
+
+    const parsed: AnteprimaPaziente[] = []
+
+    for (let i = 1; i < lines.length; i++) {
+      const line = lines[i] || ''
+      const cols = (line.includes(';') ? line.split(';') : line.split(',')).map((c) =>
+        c.trim().replace(/^"|"$/g, '')
+      )
+
+      const pNome = cols[0] || ''
+      const pCognome = cols[1] || ''
+      const pCf = (cols[2] || '').toUpperCase()
+      const pDataNascita = cols[3] || '1980-01-01'
+      const pEmail = cols[4] || ''
+      const pTelefono = cols[5] || ''
+
+      let valido = true
+      let motivoErrore = ''
+
+      if (!pNome || !pCognome) {
+        valido = false
+        motivoErrore = 'Nome o cognome mancante'
+      } else if (pCf.length !== 16) {
+        valido = false
+        motivoErrore = `CF non valido (${pCf.length} car., attesi 16)`
+      }
+
+      parsed.push({
+        nome: pNome,
+        cognome: pCognome,
+        codiceFiscale: pCf,
+        dataNascita: pDataNascita,
+        email: pEmail || undefined,
+        telefono: pTelefono || undefined,
+        valido,
+        motivoErrore,
+      })
+    }
+
+    setAnteprimaPazienti(parsed)
+  }
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = (event) => {
+      const text = event.target?.result as string
+      if (text) parseCsvContent(text)
+    }
+    reader.readAsText(file)
+  }
+
+  const downloadTemplateCsv = () => {
+    const headers = 'nome,cognome,codice_fiscale,data_nascita,email,telefono\n'
+    const sampleRows =
+      'Mario,Rossi,RSSMRA85M01H501Z,1985-08-01,mario.rossi@email.it,3401234567\n' +
+      'Laura,Bianchi,BNCLRA90A41F205W,1990-01-01,laura.bianchi@email.it,3487654321\n' +
+      'Giuseppe,Verdi,VRDGPP75C15F205K,1975-03-15,,3339876543\n'
+    const blob = new Blob([headers + sampleRows], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'template_pazienti_studio.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const handleImportCsv = async () => {
+    const validi = anteprimaPazienti.filter((p) => p.valido)
+    if (validi.length === 0) {
+      alert('Nessun paziente valido da importare')
+      return
+    }
+
+    if (!csvMedicoId) {
+      alert('Seleziona il Medico Curante a cui assegnare i pazienti')
+      return
+    }
+
+    setImportInCorso(true)
+    try {
+      const res = await fetch('/api/pazienti/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          medicoId: csvMedicoId,
+          pazienti: validi,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante l\'importazione')
+
+      setCredenzialiGenerateCsv(data.credenziali || [])
+      setImportCompletato(true)
+      ricaricaPazienti()
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setImportInCorso(false)
+    }
+  }
+
+  const downloadCredenzialiCsv = () => {
+    const headers = 'Nome,Cognome,CodiceFiscale_Username,Password_Temporanea,DataNascita,Email,Telefono\n'
+    const rows = credenzialiGenerateCsv
+      .map(
+        (c) =>
+          `"${c.nome}","${c.cognome}","${c.codiceFiscale}","${c.passwordTemporanea}","${c.dataNascita}","${c.email}","${c.telefono}"`
+      )
+      .join('\n')
+
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'credenziali_pazienti_importati.csv')
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+  }
+
+  const registrationUrl =
+    typeof window !== 'undefined' && codiceStudio
+      ? `${window.location.origin}/registrazione-paziente?codiceStudio=${encodeURIComponent(codiceStudio)}`
+      : ''
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-sans">
-      {/* Top Banner */}
-      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      {/* Top Banner & Quick Actions */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm flex flex-col xl:flex-row xl:items-center xl:justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">
             <Users className="h-4 w-4" />
-            Anagrafica Assistiti
+            Accettazione & Segreteria {nomeStudio ? `• ${nomeStudio}` : ''}
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             Ricerca Pazienti & Scheda Operativa
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Cerca in tempo reale tra tutti i pazienti registrati o importati per visualizzarne i dati e operare direttamente.
+            Cerca tra tutti i pazienti dello studio, registrali allo sportello o importa archivi CSV con password temporanee.
           </p>
         </div>
 
-        {/* Live Search Bar */}
-        <div className="relative w-full md:w-80">
-          <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
-            {loading ? <Loader2 className="h-4 w-4 animate-spin text-amber-600" /> : <Search className="h-4 w-4" />}
+        {/* Search Bar & Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+          <div className="relative w-full sm:w-64">
+            <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              {loading ? <Loader2 className="h-4 w-4 animate-spin text-amber-600" /> : <Search className="h-4 w-4" />}
+            </div>
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cerca CF, cognome..."
+              className="w-full pl-9 pr-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50/50"
+            />
           </div>
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cerca per Cognome, Nome, CF..."
-            className="w-full pl-10 pr-4 py-3 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50/50 shadow-xs"
-          />
+
+          <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={() => {
+                setCredenzialeCreata(null)
+                setErroreNuovo(null)
+                setModalNuovoOpen(true)
+              }}
+              className="px-3.5 py-2.5 rounded-2xl bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm shadow-amber-500/20 transition-all"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nuovo Paziente</span>
+            </button>
+
+            <button
+              onClick={() => {
+                setAnteprimaPazienti([])
+                setImportCompletato(false)
+                setCredenzialiGenerateCsv([])
+                setModalCsvOpen(true)
+              }}
+              className="px-3.5 py-2.5 rounded-2xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs flex items-center gap-1.5 border border-slate-200 transition-all"
+            >
+              <Upload className="h-4 w-4 text-slate-600" />
+              <span>Importa CSV</span>
+            </button>
+
+            {codiceStudio && (
+              <button
+                onClick={() => setModalQrOpen(true)}
+                className="px-3.5 py-2.5 rounded-2xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-1.5 border border-indigo-200/80 transition-all"
+              >
+                <QrCode className="h-4 w-4 text-indigo-600" />
+                <span>Link & QR Studio</span>
+              </button>
+            )}
+          </div>
         </div>
       </div>
 
@@ -213,7 +529,9 @@ export default function SegreteriaPazientiPage() {
                 <Users className="h-8 w-8 text-slate-300 mx-auto" />
                 <p className="text-xs font-bold text-slate-600">Nessun paziente trovato</p>
                 <p className="text-[11px] text-slate-400">
-                  {query ? 'Prova a modificare i termini di ricerca' : 'Carica i pazienti da file CSV nella dashboard Admin'}
+                  {query
+                    ? 'Prova a modificare i termini di ricerca'
+                    : 'Aggiungi un paziente col tasto "+ Nuovo Paziente" o importa un file CSV'}
                 </p>
               </div>
             ) : (
@@ -383,6 +701,448 @@ export default function SegreteriaPazientiPage() {
           )}
         </div>
       </div>
+
+      {/* 1. MODALE: REGISTRA NUOVO PAZIENTE AL BANCO */}
+      {modalNuovoOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Plus className="h-5 w-5 text-amber-600" />
+                Registra Nuovo Paziente allo Sportello
+              </h3>
+              <button onClick={() => setModalNuovoOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {credenzialeCreata ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
+                  <h4 className="text-sm font-black text-emerald-950">Paziente Inserito con Successo!</h4>
+                  <p className="text-xs text-emerald-800">
+                    Consegna queste credenziali all'assistito per il primo accesso al portale.
+                  </p>
+                </div>
+
+                <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 font-mono text-xs">
+                  <div>
+                    <span className="text-slate-400 block font-sans text-[10px] uppercase font-bold">Paziente</span>
+                    <span className="font-bold text-slate-900 text-sm">
+                      {credenzialeCreata.cognome} {credenzialeCreata.nome}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-sans text-[10px] uppercase font-bold">Username (Codice Fiscale)</span>
+                    <span className="font-bold text-indigo-700 text-sm">{credenzialeCreata.codiceFiscale}</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block font-sans text-[10px] uppercase font-bold">Password Temporanea</span>
+                    <span className="font-black text-rose-600 text-base tracking-wider bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
+                      {credenzialeCreata.passwordTemporanea}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(
+                        `PORTALE STUDIO MEDICO\nPaziente: ${credenzialeCreata.nome} ${credenzialeCreata.cognome}\nUsername (CF): ${credenzialeCreata.codiceFiscale}\nPassword provvisoria: ${credenzialeCreata.passwordTemporanea}`
+                      )
+                      alert('Credenziali copiate negli appunti!')
+                    }}
+                    className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Copy className="h-4 w-4" />
+                    <span>Copia Ricevuta</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      setCredenzialeCreata(null)
+                      setModalNuovoOpen(false)
+                    }}
+                    className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-600 font-bold text-xs hover:bg-slate-50"
+                  >
+                    Chiudi
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <form onSubmit={handleCreaNuovoPaziente} className="space-y-4 text-xs">
+                {erroreNuovo && (
+                  <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-rose-600 shrink-0" />
+                    <span>{erroreNuovo}</span>
+                  </div>
+                )}
+
+                {/* Scelta Medico Curante */}
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Medico Curante Assegnato *
+                  </label>
+                  <select
+                    value={nuovoMedicoId}
+                    onChange={(e) => setNuovoMedicoId(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500 bg-white"
+                  >
+                    {mediciStudio.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        Dott. {m.nome} {m.cognome} ({m.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Nome *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Mario"
+                      value={nuovoNome}
+                      onChange={(e) => setNuovoNome(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Cognome *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Rossi"
+                      value={nuovoCognome}
+                      onChange={(e) => setNuovoCognome(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-slate-700 uppercase tracking-wider">Codice Fiscale *</label>
+                      <span className="text-[10px] text-slate-400">{nuovoCf.length}/16</span>
+                    </div>
+                    <input
+                      type="text"
+                      required
+                      maxLength={16}
+                      placeholder="RSSMRA85M01H501Z"
+                      value={nuovoCf}
+                      onChange={(e) => setNuovoCf(e.target.value.toUpperCase())}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold uppercase focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Data di Nascita *</label>
+                    <input
+                      type="date"
+                      required
+                      value={nuovaDataNascita}
+                      onChange={(e) => setNuovaDataNascita(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Telefono</label>
+                    <input
+                      type="tel"
+                      placeholder="340 1234567"
+                      value={nuovoTelefono}
+                      onChange={(e) => setNuovoTelefono(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Email</label>
+                    <input
+                      type="email"
+                      placeholder="paziente@email.it"
+                      value={nuovaEmail}
+                      onChange={(e) => setNuovaEmail(e.target.value)}
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Password Personalizzata (Opzionale)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="Lascia vuoto per generare password provvisoria a 6 caratteri"
+                    value={nuovaPassword}
+                    onChange={(e) => setNuovaPassword(e.target.value)}
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setModalNuovoOpen(false)}
+                    className="px-4 py-2 rounded-xl text-slate-500 font-bold"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={creazioneInCorso}
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                  >
+                    {creazioneInCorso ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
+                    <span>Crea Paziente ed Emetti Password</span>
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 2. MODALE: IMPORTA CSV */}
+      {modalCsvOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <FileSpreadsheet className="h-5 w-5 text-amber-600" />
+                Importazione CSV Assistiti di Studio
+              </h3>
+              <button onClick={() => setModalCsvOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            {importCompletato ? (
+              <div className="space-y-4">
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-center space-y-2">
+                  <CheckCircle2 className="h-8 w-8 text-emerald-600 mx-auto" />
+                  <h4 className="text-sm font-black text-emerald-950">Dataset Importato con Successo!</h4>
+                  <p className="text-xs text-emerald-800">
+                    Inseriti <b>{credenzialiGenerateCsv.length}</b> assistiti con credenziali temporanee.
+                  </p>
+                </div>
+
+                <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                  <span className="font-bold text-slate-700">Scarica file credenziali per la consegna:</span>
+                  <button
+                    onClick={downloadCredenzialiCsv}
+                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-bold flex items-center gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Download CSV Credenziali</span>
+                  </button>
+                </div>
+
+                <div className="max-h-60 overflow-y-auto border border-slate-200 rounded-xl">
+                  <table className="w-full text-[11px] text-left">
+                    <thead className="bg-slate-100 text-slate-600 font-bold">
+                      <tr>
+                        <th className="p-2">Paziente</th>
+                        <th className="p-2">Codice Fiscale</th>
+                        <th className="p-2">Password Provvisoria</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 font-mono">
+                      {credenzialiGenerateCsv.map((c, i) => (
+                        <tr key={i} className="hover:bg-slate-50">
+                          <td className="p-2 font-sans font-bold text-slate-900">{c.cognome} {c.nome}</td>
+                          <td className="p-2 text-indigo-700">{c.codiceFiscale}</td>
+                          <td className="p-2 font-bold text-rose-600">{c.passwordTemporanea}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+
+                <div className="flex justify-end pt-2">
+                  <button
+                    onClick={() => setModalCsvOpen(false)}
+                    className="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs"
+                  >
+                    Fatto
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-4 text-xs">
+                {/* Selezione Medico per il CSV */}
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Assegna i pazienti del CSV al Medico: *
+                  </label>
+                  <select
+                    value={csvMedicoId}
+                    onChange={(e) => setCsvMedicoId(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500 bg-white"
+                  >
+                    {mediciStudio.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        Dott. {m.nome} {m.cognome} ({m.email})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="flex items-center justify-between p-3.5 bg-amber-50/70 border border-amber-200 rounded-2xl">
+                  <div>
+                    <p className="font-bold text-amber-900">Struttura file CSV</p>
+                    <p className="text-[11px] text-amber-700">Colonne: nome, cognome, codice_fiscale, data_nascita, email, telefono</p>
+                  </div>
+                  <button
+                    onClick={downloadTemplateCsv}
+                    className="px-3 py-1.5 rounded-xl border border-amber-300 bg-white hover:bg-amber-100 text-amber-800 font-bold flex items-center gap-1.5"
+                  >
+                    <Download className="h-3.5 w-3.5" />
+                    <span>Scarica Template</span>
+                  </button>
+                </div>
+
+                <div className="border-2 border-dashed border-slate-300 hover:border-amber-500 rounded-2xl p-6 text-center space-y-2 cursor-pointer transition-colors bg-slate-50/50">
+                  <Upload className="h-8 w-8 text-slate-400 mx-auto" />
+                  <p className="font-bold text-slate-700">Trascina o carica il file CSV assistiti</p>
+                  <input
+                    type="file"
+                    accept=".csv,text/csv"
+                    onChange={handleFileUpload}
+                    className="block w-full text-xs text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-amber-50 file:text-amber-800 hover:file:bg-amber-100 cursor-pointer"
+                  />
+                </div>
+
+                {anteprimaPazienti.length > 0 && (
+                  <div className="space-y-3">
+                    <span className="font-bold text-slate-700">
+                      Anteprima ({anteprimaPazienti.filter((p) => p.valido).length} validi su {anteprimaPazienti.length})
+                    </span>
+
+                    <div className="max-h-48 overflow-y-auto border border-slate-200 rounded-xl">
+                      <table className="w-full text-[11px] text-left">
+                        <thead className="bg-slate-100 text-slate-600 font-bold sticky top-0">
+                          <tr>
+                            <th className="p-2">Paziente</th>
+                            <th className="p-2">Codice Fiscale</th>
+                            <th className="p-2">Stato</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {anteprimaPazienti.map((p, i) => (
+                            <tr key={i} className={p.valido ? 'hover:bg-slate-50' : 'bg-rose-50/50'}>
+                              <td className="p-2 font-semibold text-slate-900">{p.cognome} {p.nome}</td>
+                              <td className="p-2 font-mono text-indigo-700">{p.codiceFiscale}</td>
+                              <td className="p-2">
+                                {p.valido ? (
+                                  <span className="text-emerald-600 font-bold">Valido</span>
+                                ) : (
+                                  <span className="text-rose-600 font-bold">{p.motivoErrore}</span>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
+                      <button
+                        type="button"
+                        onClick={() => setModalCsvOpen(false)}
+                        className="px-4 py-2 rounded-xl text-slate-500 font-bold"
+                      >
+                        Annulla
+                      </button>
+                      <button
+                        onClick={handleImportCsv}
+                        disabled={importInCorso || anteprimaPazienti.filter((p) => p.valido).length === 0}
+                        className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                      >
+                        {importInCorso ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                            <span>Importazione...</span>
+                          </>
+                        ) : (
+                          <>
+                            <Upload className="h-4 w-4" />
+                            <span>Importa e Genera Credenziali</span>
+                          </>
+                        )}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. MODALE: QR & LINK REGISTRAZIONE STUDIO */}
+      {modalQrOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl border border-slate-200 text-center">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <QrCode className="h-5 w-5 text-indigo-600" />
+                Registrazione Desk Pazienti
+              </h3>
+              <button onClick={() => setModalQrOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-600">
+              Mostra o stampa questo QR code al bancone della segreteria per consentire ai nuovi pazienti di registrarsi con lo smartphone.
+            </p>
+
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-3xl inline-block shadow-inner mx-auto">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(
+                  registrationUrl
+                )}`}
+                alt="QR Code Desk Segreteria"
+                className="w-48 h-48 mx-auto rounded-xl"
+              />
+            </div>
+
+            <div className="p-3 bg-indigo-50/70 border border-indigo-200 rounded-2xl text-left space-y-1">
+              <span className="text-[10px] font-bold uppercase text-indigo-500 tracking-wider">Codice Univoco Studio</span>
+              <p className="font-mono font-black text-indigo-950 text-sm">{codiceStudio}</p>
+            </div>
+
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(registrationUrl)
+                setLinkCopiato(true)
+                setTimeout(() => setLinkCopiato(false), 3000)
+              }}
+              className="w-full py-3 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 transition-all"
+            >
+              {linkCopiato ? (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Link Copiato negli Appunti!</span>
+                </>
+              ) : (
+                <>
+                  <Copy className="h-4 w-4" />
+                  <span>Copia Link di Registrazione</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* MODALE: REGISTRA RICHIESTA FARMACO/CERTIFICATO */}
       {modalRichiestaOpen && selezionato && (

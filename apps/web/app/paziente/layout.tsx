@@ -25,6 +25,14 @@ import {
 export default function PazienteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.href = '/login'
+    }
+  }
+
   const nav = [
     { href: '/paziente', label: 'La Mia Salute' },
     { href: '/paziente/prenota', label: 'Prenota Visita' },
@@ -73,13 +81,14 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
               <p className="text-xs font-bold text-slate-900">Marco Prencipe</p>
               <p className="text-[11px] text-slate-500">Curato: Dott. Mario Verdi</p>
             </div>
-            <Link
-              href="/login"
-              title="Esci"
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Esci dalla piattaforma"
               className="p-2 rounded-xl border border-slate-200 text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </header>

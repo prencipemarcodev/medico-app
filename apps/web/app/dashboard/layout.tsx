@@ -41,6 +41,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const pathname = usePathname()
   const [mobileMenuAperto, setMobileMenuAperto] = useState(false)
 
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/auth/logout', { method: 'POST' })
+    } finally {
+      window.location.href = '/login'
+    }
+  }
+
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
       {/* Overlay mobile */}
@@ -135,13 +143,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <p className="text-xs font-bold text-slate-900 truncate">Dott. Mario Verdi</p>
               <p className="text-[11px] text-slate-500 truncate">MMG Curante</p>
             </div>
-            <Link
-              href="/login"
-              title="Disconnetti"
+            <button
+              type="button"
+              onClick={handleLogout}
+              title="Disconnetti dalla piattaforma"
               className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
             >
               <LogOut className="h-4 w-4" />
-            </Link>
+            </button>
           </div>
         </div>
       </aside>
@@ -164,16 +173,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               Studio Operativo • MMG
             </span>
           </div>
-          <div className="flex items-center gap-4">
-            <button className="relative p-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition-colors shadow-sm">
-              <Bell className="h-4 w-4" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-600 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-all"
+              title="Disconnetti e torna al Login"
+            >
+              <LogOut className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Esci</span>
             </button>
-            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
-            <div className="text-right hidden sm:block">
-              <p className="text-xs font-semibold text-slate-800">Mercoledì, 9 Settembre</p>
-              <p className="text-[11px] text-slate-500">Orario visite: 09:00 - 13:00</p>
-            </div>
           </div>
         </header>
 

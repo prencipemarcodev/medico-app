@@ -23,6 +23,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuAperto, setMobileMenuAperto] = useState(false)
@@ -36,7 +37,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-900 text-slate-100 font-sans">
+    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-[#090d16] text-slate-100 font-sans">
       {/* Overlay mobile */}
       {mobileMenuAperto && (
         <div
@@ -47,16 +48,14 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* Sidebar Admin Responsive */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-800 bg-slate-950 shadow-2xl transition-transform duration-300 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-800 bg-slate-950 shadow-2xl transition-transform duration-300 md:static md:translate-x-0 pt-safe pb-safe ${
           mobileMenuAperto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Header */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900/60">
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-indigo-600/30 flex items-center justify-center border border-indigo-500/40 text-indigo-400">
-              <Shield className="h-6 w-6" />
-            </div>
+            <AppLogo size={36} />
             <div>
               <h1 className="font-extrabold text-base leading-tight tracking-tight text-white">
                 Supervisione
@@ -144,8 +143,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       </aside>
 
       {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-slate-900 min-w-0">
-        <header className="h-16 md:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-800 bg-slate-950/80 backdrop-blur-md px-4 md:px-8 gap-3">
+      <div className="flex flex-1 flex-col overflow-hidden bg-[#090d16] min-w-0">
+        <header className="h-16 md:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-800/80 bg-[#090d16]/95 backdrop-blur-md px-4 md:px-8 gap-3 pt-safe">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -178,7 +177,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">{children}</main>
       </div>
     </div>
   )

@@ -21,6 +21,7 @@ import {
   Phone,
   MapPin,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 export default function PazienteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -39,19 +40,17 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
   ]
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-sans">
+    <div className="min-h-[100dvh] bg-slate-50 flex flex-col font-sans">
       {/* Top Navbar */}
-      <header className="sticky top-0 z-20 bg-white/90 backdrop-blur-md border-b border-slate-200 shadow-xs">
+      <header className="sticky top-0 z-20 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs pt-safe">
         <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           <Link href="/paziente" className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-emerald-600 to-teal-600 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
-              <HeartPulse className="h-6 w-6" />
-            </div>
+            <AppLogo size={42} />
             <div>
               <span className="font-black text-slate-900 text-lg tracking-tight block">
                 Portale Sanitario Paziente
               </span>
-              <span className="text-xs text-slate-400 font-medium">Studio Medico San Marco</span>
+              <span className="text-xs text-slate-400 font-medium">Studio Medico Curante</span>
             </div>
           </Link>
 
@@ -96,8 +95,8 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
       {/* Main Container */}
       <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-24 sm:pb-8">{children}</main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around py-3 shadow-lg">
+      {/* Bottom Nav Mobile */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom,0px))] shadow-lg">
         {nav.map((item) => {
           const isActive = pathname === item.href
           return (
@@ -115,8 +114,8 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
       </nav>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400 mb-16 sm:mb-0">
-        <p>Studio Medico San Marco • Via Roma 123, Milano • Telefono: +39 02 1234567</p>
+      <footer className="border-t border-slate-200 bg-white py-6 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))] text-center text-xs text-slate-400 mb-16 sm:mb-0">
+        <p>Studio Medico • Piattaforma Sanitaria Integrata</p>
         <p className="mt-1 text-[11px] text-slate-400">Dati protetti conformemente al GDPR Regolamento UE 2016/679</p>
       </footer>
     </div>

@@ -27,6 +27,7 @@ import {
   PhoneCall,
   ShieldCheck,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 interface StudioVerificato {
   id: string
@@ -168,8 +169,8 @@ function RegistrazioneMedicoForm() {
     <div className="w-full max-w-xl bg-white rounded-3xl p-8 shadow-xl border border-slate-200/80 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-14 w-14 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white items-center justify-center shadow-lg shadow-blue-500/25">
-          <Stethoscope className="h-7 w-7 text-white" />
+        <div className="flex justify-center mb-1">
+          <AppLogo size={68} />
         </div>
         <h1 className="text-2xl font-black text-slate-900 tracking-tight">
           Iscrizione Medico & Collaboratore
@@ -415,7 +416,7 @@ function RegistrazioneMedicoForm() {
 
 export default function RegistrazioneMedicoPage() {
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-900/5 p-4 sm:p-6 font-sans">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-[#090d16] p-4 sm:p-6 font-sans pt-safe pb-safe">
       <Suspense fallback={<div className="p-8 text-center text-slate-500 text-xs">Caricamento modulo...</div>}>
         <RegistrazioneMedicoForm />
       </Suspense>

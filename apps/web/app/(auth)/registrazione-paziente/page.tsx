@@ -28,6 +28,7 @@ import {
   Calendar,
   ShieldCheck,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 interface MedicoInfo {
   id: string
@@ -192,11 +193,11 @@ function RegistrazionePazienteForm() {
   }
 
   return (
-    <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-10 shadow-xl border border-slate-200/80 space-y-8 font-sans">
+    <div className="w-full max-w-2xl bg-white rounded-3xl p-6 sm:p-10 shadow-2xl border border-slate-200/80 space-y-8 font-sans">
       {/* Header */}
       <div className="text-center space-y-2">
-        <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-cyan-600 text-white items-center justify-center shadow-lg shadow-blue-500/25 mb-1">
-          <Users className="h-8 w-8 text-white" />
+        <div className="flex justify-center mb-1">
+          <AppLogo size={68} />
         </div>
         <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
           Registrazione Paziente
@@ -552,11 +553,11 @@ function RegistrazionePazienteForm() {
 
 export default function RegistrazionePazientePage() {
   return (
-    <main className="min-h-screen bg-slate-900/5 flex items-center justify-center p-4 sm:p-6">
+    <main className="min-h-[100dvh] bg-[#090d16] flex items-center justify-center p-4 sm:p-6 pt-safe pb-safe">
       <Suspense
         fallback={
-          <div className="p-12 text-center text-slate-500 flex flex-col items-center gap-3">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+          <div className="p-12 text-center text-slate-400 flex flex-col items-center gap-3">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
             <span className="text-xs font-bold">Caricamento modulo registrazione...</span>
           </div>
         }

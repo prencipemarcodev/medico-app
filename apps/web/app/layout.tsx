@@ -1,9 +1,9 @@
 /**
  * @file        layout.tsx
  * @module      @medico/web
- * @description Root layout Next.js — font, metadata, providers globali
- * @author      Agent-1 | Session: 2026-09-09
- * @version     0.1.0
+ * @description Root layout Next.js — PWA meta, icone, tema mobile e analytics
+ * @author      Agent-1 | Session: 2026-09-12
+ * @version     1.2.0
  */
 
 import type { Metadata, Viewport } from 'next'
@@ -15,17 +15,47 @@ export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 1,
+  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#090d16',
 }
 
 export const metadata: Metadata = {
-  title: 'Studio Medico — Dashboard',
-  description: 'Gestione prenotazioni e richieste dello studio medico',
+  title: 'Studio Medico — Piattaforma Sanitaria',
+  description: 'Portale sanitario integrato per Pazienti, Medici e Segreteria',
+  applicationName: 'Studio Medico',
+  manifest: '/manifest.webmanifest',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'black-translucent',
+    title: 'Studio Medico',
+  },
+  formatDetection: {
+    telephone: false,
+  },
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icons/icon-192.png', type: 'image/png', sizes: '192x192' },
+      { url: '/icons/icon-512.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [
+      { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+    ],
+  },
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it">
-      <body className="min-h-screen bg-gray-50 antialiased">
+    <html lang="it" className="dark bg-[#090d16]">
+      <head>
+        <meta name="mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+      </head>
+      <body className="min-h-[100dvh] bg-[#090d16] text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
         {children}
         <Analytics />
         <SpeedInsights />

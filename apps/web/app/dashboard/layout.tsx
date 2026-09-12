@@ -27,6 +27,7 @@ import {
   Menu,
   X,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 const navItems = [
   { href: '/dashboard', label: 'Panoramica', icon: LayoutDashboard },
@@ -50,7 +51,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
+    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-slate-50 font-sans">
       {/* Overlay mobile */}
       {mobileMenuAperto && (
         <div
@@ -61,18 +62,16 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
       {/* Sidebar Responsive */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 md:static md:translate-x-0 pt-safe pb-safe ${
           mobileMenuAperto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Studio Branding */}
-        <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
-          <div className="h-11 w-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
-            <Stethoscope className="h-6 w-6 text-white" />
-          </div>
+        <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100 bg-slate-900 text-white">
+          <AppLogo size={36} />
           <div>
             <h1 className="font-bold text-base leading-tight tracking-tight">Studio Medico</h1>
-            <p className="text-xs text-blue-100 font-medium">San Marco • Milano</p>
+            <p className="text-xs text-blue-400 font-medium">Portale Medico Curante</p>
           </div>
         </div>
 
@@ -158,7 +157,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="h-16 sm:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-4 sm:px-8">
+        <header className="h-16 sm:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 sm:px-8 pt-safe">
           <div className="flex items-center gap-3">
             <button
               type="button"
@@ -187,7 +186,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Scrollable Page Body */}
-        <main className="flex-1 overflow-y-auto p-4 sm:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">{children}</main>
       </div>
     </div>
   )

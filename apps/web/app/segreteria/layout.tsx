@@ -12,21 +12,18 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
-  Building2,
-  Users,
+  Search,
   CalendarDays,
   FileCheck,
   Radio,
-  LogOut,
-  Bell,
-  CheckCircle2,
-  Clock,
+  Building2,
   PhoneCall,
   UserCheck,
-  Search,
+  LogOut,
   Menu,
   X,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 export default function SegreteriaLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
@@ -43,8 +40,8 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
   const navItems = [
     {
       href: '/segreteria',
-      label: "Sala d'Attesa & Sportello",
-      icon: Users,
+      label: 'Panoramica Studio',
+      icon: Building2,
     },
     {
       href: '/segreteria/pazienti',
@@ -70,7 +67,7 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
   ]
 
   return (
-    <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
+    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-slate-50 font-sans">
       {/* Overlay mobile */}
       {mobileMenuAperto && (
         <div
@@ -81,19 +78,17 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
 
       {/* Sidebar Segreteria Responsive */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 md:static md:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 md:static md:translate-x-0 pt-safe pb-safe ${
           mobileMenuAperto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
         {/* Studio Branding */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100 bg-gradient-to-r from-amber-600 to-orange-600 text-white">
+        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-100 bg-slate-900 text-white">
           <div className="flex items-center gap-3">
-            <div className="h-11 w-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
-              <Building2 className="h-6 w-6 text-white" />
-            </div>
+            <AppLogo size={36} />
             <div>
               <h1 className="font-bold text-base leading-tight tracking-tight">Sportello</h1>
-              <p className="text-xs text-amber-100 font-medium">Segreteria San Marco</p>
+              <p className="text-xs text-amber-400 font-medium">Segreteria Studio</p>
             </div>
           </div>
 
@@ -182,7 +177,7 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
 
       {/* Main Container */}
       <div className="flex flex-1 flex-col overflow-hidden min-w-0">
-        <header className="h-16 md:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-4 md:px-8 gap-3">
+        <header className="h-16 md:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 md:px-8 gap-3 pt-safe">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
@@ -215,7 +210,7 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-6 md:p-8 pb-[calc(1.5rem+env(safe-area-inset-bottom,0px))]">{children}</main>
       </div>
     </div>
   )

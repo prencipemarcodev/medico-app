@@ -21,6 +21,7 @@ import {
   User,
   Users,
 } from 'lucide-react'
+import { AppLogo } from '@/components/AppLogo'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -57,12 +58,12 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-slate-900/5 p-6 font-sans">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl border border-slate-200/80 space-y-7">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-[#090d16] p-4 sm:p-6 font-sans pt-safe pb-safe">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 space-y-7">
         {/* Brand header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex h-16 w-16 rounded-2xl bg-gradient-to-tr from-blue-600 to-indigo-600 text-white items-center justify-center shadow-lg shadow-blue-500/25 mb-1">
-            <Stethoscope className="h-8 w-8 text-white" />
+          <div className="flex justify-center mb-1">
+            <AppLogo size={68} />
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Portale Studio Medico</h1>
           <p className="text-xs text-slate-500 font-medium">

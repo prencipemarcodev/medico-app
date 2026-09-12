@@ -1,0 +1,1 @@
+ALTER TABLE "studi" ADD COLUMN "config" jsonb;

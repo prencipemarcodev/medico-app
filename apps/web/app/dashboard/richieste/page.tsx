@@ -1,49 +1,236 @@
+'use client'
+
 /**
  * @file        page.tsx
  * @module      @medico/web/dashboard/richieste
- * @description Coda FIFO richieste speciali (malattia, certificati, medicinali)
- * @author      Agent-1 | Session: 2026-09-09
- * @version     0.1.0
- * @see         [[docs/areas/interfaccia/ux-flows#View-2]]
- * @see         [[docs/areas/architettura/decisioni-architetturali#ADR-004]]
+ * @description Gestione coda FIFO richieste speciali (malattia, certificati, medicinali)
+ * @author      Agent-1 | Session: 2026-09-12
+ * @version     0.2.0
  */
 
-const TIPO_LABEL: Record<string, string> = {
-  malattia:    '🤒 Malattia',
-  certificato: '📋 Certificato',
-  medicinale:  '💊 Medicinale',
-}
+import { useState } from 'react'
+import {
+  ClipboardList,
+  AlertCircle,
+  Pill,
+  FileText,
+  CheckCircle2,
+  XCircle,
+  Download,
+  Calendar,
+  Filter,
+  Check,
+} from 'lucide-react'
 
 export default function RichiestePage() {
+  const [categoria, setCategoria] = useState<'tutte' | 'malattia' | 'medicinale' | 'certificato'>('tutte')
+  const [richieste, setRichieste] = useState([
+    {
+      id: 'req-001',
+      paziente: 'Giovanni Ferri',
+      cf: 'FRRGVN88A01F205Z',
+      telefono: '+39 349 1234567',
+      tipo: 'malattia',
+      dataArrivo: '09/09/2026 08:30 (FIFO #1)',
+      dettaglio: 'Richiesta certificato di malattia INPS',
+      sintomi: ['Febbre a 38.5°C', 'Forte tosse secca', 'Cefalea intensa'],
+      periodo: 'Dal 09/09/2026 al 12/09/2026 (4 giorni)',
+      modalitaRitiro: 'digitale',
+      stato: 'in_attesa',
+    },
+    {
+      id: 'req-002',
+      paziente: 'Sara Neri',
+      cf: 'NRISRA74E45H501K',
+      telefono: '+39 340 7654321',
+      tipo: 'medicinale',
+      dataArrivo: '09/09/2026 07:45 (FIFO #2)',
+      dettaglio: 'Prescrizione farmaco continuativo per ipertensione',
+      farmaco: 'Cardicor 2.5 mg (Bisoprololo) — 1 confezione',
+      terapiaCronica: true,
+      modalitaRitiro: 'digitale',
+      stato: 'in_attesa',
+    },
+    {
+      id: 'req-003',
+      paziente: 'Paolo Rossi',
+      cf: 'RSSPLA60M12H501U',
+      telefono: '+39 320 1199887',
+      tipo: 'medicinale',
+      dataArrivo: '08/09/2026 19:10 (FIFO #3)',
+      dettaglio: 'Richiesta prescrizione ansiolitico',
+      farmaco: 'Xanax 0.50 mg compresse (Alprazolam) — Ritiro obbligatorio in studio (Ricetta bianca)',
+      terapiaCronica: false,
+      modalitaRitiro: 'studio',
+      stato: 'in_attesa',
+    },
+    {
+      id: 'req-004',
+      paziente: 'Roberto De Luca',
+      cf: 'DLCRBT92B10F205W',
+      telefono: '+39 338 5544332',
+      tipo: 'certificato',
+      dataArrivo: '08/09/2026 18:20 (FIFO #4)',
+      dettaglio: 'Certificato di idoneità all\'attività sportiva non agonistica con ECG recente allegato',
+      modalitaRitiro: 'digitale',
+      stato: 'in_attesa',
+    },
+  ])
+
+  const handleEvadi = (id: string) => {
+    setRichieste(richieste.map((r) => (r.id === id ? { ...r, stato: 'completata' } : r)))
+  }
+
+  const handleRifiuta = (id: string) => {
+    setRichieste(richieste.map((r) => (r.id === id ? { ...r, stato: 'rifiutata' } : r)))
+  }
+
+  const richiesteFiltrate = richieste.filter((r) => {
+    if (categoria === 'tutte') return true
+    return r.tipo === categoria
+  })
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">Richieste Speciali</h1>
-        <span className="rounded-full bg-amber-100 px-3 py-1 text-sm font-medium text-amber-700">
-          0 in attesa
-        </span>
+    <div className="space-y-8 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-amber-600 mb-1">
+            <ClipboardList className="h-4 w-4" />
+            Coda Ordinata per Arrivo (ADR-004)
+          </div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">
+            Gestione Richieste Speciali
+          </h1>
+        </div>
+
+        <div className="flex items-center gap-3">
+          <span className="px-3.5 py-1.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
+            {richieste.filter((r) => r.stato === 'in_attesa').length} Richieste in Attesa
+          </span>
+        </div>
       </div>
 
-      {/* Filtri */}
-      <div className="flex gap-2">
-        {['Tutte', 'In attesa', 'In lavorazione', 'Completate', 'Rifiutate'].map((f) => (
+      {/* Category Tabs */}
+      <div className="flex items-center gap-2 bg-white p-2 rounded-2xl border border-slate-200/80 shadow-sm w-fit">
+        {[
+          { id: 'tutte', label: 'Tutte le Richieste' },
+          { id: 'malattia', label: '🤒 Malattia' },
+          { id: 'medicinale', label: '💊 Prescrizioni' },
+          { id: 'certificato', label: '📋 Certificati' },
+        ].map((tab) => (
           <button
-            key={f}
-            className="rounded-full border border-gray-200 px-3 py-1 text-sm hover:bg-blue-50 hover:border-blue-300 hover:text-blue-700"
+            key={tab.id}
+            onClick={() => setCategoria(tab.id as any)}
+            className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+              categoria === tab.id
+                ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                : 'text-slate-600 hover:bg-slate-100'
+            }`}
           >
-            {f}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Coda FIFO — TODO: collegare API */}
-      <div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
-        <div className="border-b border-gray-100 px-5 py-3 text-sm font-medium text-gray-500">
-          Coda richieste (ordine di arrivo)
-        </div>
-        <div className="flex items-center justify-center py-16 text-sm text-gray-400">
-          Nessuna richiesta in attesa — TODO: collegare API
-        </div>
+      {/* Requests List */}
+      <div className="space-y-4">
+        {richiesteFiltrate.map((req) => (
+          <div
+            key={req.id}
+            className={`p-6 rounded-3xl border transition-all space-y-4 ${
+              req.stato === 'completata'
+                ? 'bg-slate-50 border-slate-200 opacity-70'
+                : req.stato === 'rifiutata'
+                ? 'bg-rose-50/40 border-rose-200'
+                : 'bg-white border-slate-200 shadow-sm hover:border-slate-300'
+            }`}
+          >
+            {/* Top row */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-3">
+                <span className="text-xs font-mono font-bold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-md">
+                  {req.id}
+                </span>
+                <span className="font-extrabold text-base text-slate-900">{req.paziente}</span>
+                <span className="text-xs text-slate-500 font-mono">CF: {req.cf}</span>
+                <span className="text-xs text-slate-400 font-medium">Tel: {req.telefono}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold text-slate-400">{req.dataArrivo}</span>
+                {req.modalitaRitiro === 'studio' ? (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    Ritiro in Studio
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                    PDF in App
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {/* Content row */}
+            <div className="space-y-2">
+              <p className="text-sm font-semibold text-slate-800">{req.dettaglio}</p>
+              {req.sintomi && (
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-bold text-slate-400">Sintomi dichiarati:</span>
+                  {req.sintomi.map((s, i) => (
+                    <span key={i} className="px-2.5 py-0.5 rounded-lg text-xs font-medium bg-rose-50 text-rose-700 border border-rose-100">
+                      {s}
+                    </span>
+                  ))}
+                </div>
+              )}
+              {req.periodo && (
+                <p className="text-xs font-medium text-slate-600 bg-slate-50 p-2.5 rounded-xl border border-slate-100">
+                  📅 {req.periodo}
+                </p>
+              )}
+              {req.farmaco && (
+                <p className="text-xs font-medium text-slate-700 bg-blue-50/60 p-2.5 rounded-xl border border-blue-100 flex items-center gap-2">
+                  <Pill className="h-4 w-4 text-blue-600" />
+                  <span>{req.farmaco}</span>
+                </p>
+              )}
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div>
+                {req.stato === 'completata' && (
+                  <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                    <CheckCircle2 className="h-4 w-4" /> Evaso • Notifica inviata al paziente
+                  </span>
+                )}
+                {req.stato === 'rifiutata' && (
+                  <span className="text-xs font-bold text-rose-600 flex items-center gap-1">
+                    <XCircle className="h-4 w-4" /> Rifiutata con motivazione inviata
+                  </span>
+                )}
+              </div>
+
+              {req.stato === 'in_attesa' && (
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => handleRifiuta(req.id)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors"
+                  >
+                    Rifiuta con Motivo
+                  </button>
+                  <button
+                    onClick={() => handleEvadi(req.id)}
+                    className="inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all shadow-md shadow-emerald-600/20"
+                  >
+                    <Check className="h-3.5 w-3.5" />
+                    Approva ed Emetti
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
     </div>
   )

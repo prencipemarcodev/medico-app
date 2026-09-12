@@ -7,12 +7,13 @@
  */
 
 import { db } from './index.js'
-import { studi, medici, pazienti, slotAgenda } from './schema/index.js'
+import { studi, medici, pazienti, slotAgenda, prenotazioni } from './schema/index'
 
 async function seed() {
   console.log('🌱 Inizio seeding database di sviluppo...')
 
   // Pulizia dati precedenti per idempotenza
+  await db.delete(prenotazioni)
   await db.delete(slotAgenda)
   await db.delete(pazienti)
   await db.delete(medici)
@@ -24,6 +25,37 @@ async function seed() {
     indirizzo: 'Via Roma 123, Milano',
     telefono: '+39 02 1234567',
     email: 'info@studiomedicosanmarco.it',
+    config: {
+      citta: 'Milano',
+      indirizzoCompleto: 'Via Roma 123, 20121 Milano (MI)',
+      recapitoUrgente: '+39 02 1234569',
+      orariVisite: [
+        { giorno: 'lunedi', attivo: true, oraInizioMattina: '09:00', oraFineMattina: '13:00', oraInizioPomeriggio: '15:00', oraFinePomeriggio: '18:00' },
+        { giorno: 'martedi', attivo: true, oraInizioMattina: '09:00', oraFineMattina: '13:00' },
+        { giorno: 'mercoledi', attivo: true, oraInizioMattina: '09:00', oraFineMattina: '13:00', oraInizioPomeriggio: '15:00', oraFinePomeriggio: '18:00' },
+        { giorno: 'giovedi', attivo: true, oraInizioMattina: '09:00', oraFineMattina: '13:00' },
+        { giorno: 'venerdi', attivo: true, oraInizioMattina: '09:00', oraFineMattina: '13:00' },
+        { giorno: 'sabato', attivo: false, oraInizioMattina: '09:00', oraFineMattina: '12:00' },
+      ],
+      durataVisitaStandardMinuti: 20,
+      lockupMinutes: 10,
+      anticipoMaxPrenotazioneGiorni: 30,
+      anticipoMinDisdettaOre: 2,
+      fasciaRiservataUrgenze: true,
+      broadcastTemplates: [
+        { id: 'bt-1', titolo: 'Ritardo 30 minuti', testo: 'Gentile paziente, a causa di un\'urgenza le visite odierne subiranno circa 30 minuti di ritardo. Ci scusiamo per il disagio.' },
+        { id: 'bt-2', titolo: 'Chiusura Improvvisa Pomeriggio', testo: 'AVVISO STUDIO: Per improvvisa indisposizione del medico, lo studio oggi pomeriggio resterà chiuso. Sarete ricontattati per riprogrammare.' },
+        { id: 'bt-3', titolo: 'Promemoria Esami', testo: 'Promemoria: Per la visita di oggi si ricorda di portare il tesserino sanitario e gli ultimi esami del sangue.' },
+      ],
+      permessiSegreteria: {
+        evasioneRicetteContinuative: true,
+        accettazioneAppuntamenti: true,
+        invioBroadcastUrgenze: true,
+        visualizzazioneCartellaClinica: false,
+      },
+      messaggioPazientiApp: 'In caso di emergenza grave o pericolo di vita contattare il 112 o recarsi al Pronto Soccorso.',
+      onboardingCompleted: true,
+    },
   }).returning()
 
   if (!studio) throw new Error('Errore creazione studio')

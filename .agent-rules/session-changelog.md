@@ -172,3 +172,24 @@
   5. Verifica storico prenotazioni
   6. Annullamento prenotazione e rilascio immediato dello slot a `'libero'`
 - `pnpm lint` verificato con successo su tutto il monorepo
+
+---
+
+## Session 2026-09-12 07:43 — Implementazione 4 Dashboard, Login Unificato, Onboarding & Impostazioni Personalizzabili
+
+### File Modificati / Creati
+- `packages/types/src/models/studio.ts` — [MODIFICATO] — aggiunte interfacce `StudioConfig`, `OrarioGiorno`, `BroadcastTemplateConfig`, `PermessiSegreteriaConfig`
+- `packages/db/src/schema/studi.ts` — [MODIFICATO] — aggiunta colonna `config: jsonb('config')`
+- `packages/db/src/seed.ts` — [MODIFICATO] — seed con configurazione studio completa e fix ordine cancellazione foreign keys
+- `apps/web/app/(auth)/login/page.tsx` — [MODIFICATO] — login unificato con redirect RBAC e selettore rapido 4 profili demo
+- `apps/web/app/dashboard/layout.tsx` — [MODIFICATO] — aggiunta voce Impostazioni Studio nella sidebar
+- `apps/web/app/dashboard/onboarding/page.tsx` — [CREATO] — wizard 3 step per prima configurazione studio medico
+- `apps/web/app/dashboard/impostazioni/page.tsx` — [CREATO] — pannello 5 tab con configurazione orari, lockup, template broadcast e deleghe
+- `apps/web/app/segreteria/layout.tsx` & `page.tsx` — [CREATO] — dashboard segreteria con sala d'attesa live, accettazione rapida e sportello ritiro ricette
+- `apps/web/app/admin/layout.tsx` & `page.tsx` — [CREATO] — dashboard admin di sistema con audit log GDPR e generatore Emergency Code (ADR-006)
+- `apps/web/app/paziente/layout.tsx`, `page.tsx`, `prenota/page.tsx` — [CREATO] — portale paziente web con prenotazione guidata e countdown lock 10m
+
+### Verifiche Eseguite
+- Eseguito `pnpm db:generate && pnpm db:migrate` (migrazione `0002_steep_dexter_bennett.sql` applicata con successo)
+- Eseguito `pnpm lint`: **0 errori** su tutti i pacchetti
+- Eseguito `pnpm --filter=@medico/web build`: **15 route statiche/dinamiche compilate con successo**

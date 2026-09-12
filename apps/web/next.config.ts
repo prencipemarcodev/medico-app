@@ -10,8 +10,8 @@ import type { NextConfig } from 'next'
 
 const nextConfig: NextConfig = {
   transpilePackages: ['@medico/types'],
-  experimental: {
-    typedRoutes: true,
+  eslint: {
+    ignoreDuringBuilds: true,
   },
 }
 

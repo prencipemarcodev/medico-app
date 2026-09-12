@@ -7,7 +7,7 @@
  * @see         [[docs/areas/archiviazione/database-schema#studi]]
  */
 
-import { pgTable, uuid, text, boolean, timestamp } from 'drizzle-orm/pg-core'
+import { pgTable, uuid, text, boolean, timestamp, jsonb } from 'drizzle-orm/pg-core'
 
 export const studi = pgTable('studi', {
   id:         uuid('id').primaryKey().defaultRandom(),
@@ -15,6 +15,7 @@ export const studi = pgTable('studi', {
   indirizzo:  text('indirizzo'),
   telefono:   text('telefono'),
   email:      text('email'),
+  config:     jsonb('config'),
   attivo:     boolean('attivo').notNull().default(true),
   createdAt:  timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt:  timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

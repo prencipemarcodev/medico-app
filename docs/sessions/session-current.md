@@ -49,6 +49,12 @@ updated: 2026-09-09
 - [x] Implementare **lock slot** (ADR-002): logica transazionale in `routes/slot.ts` e `slotService.ts`
 - [x] Implementare **creazione prenotazione** con validazione transazionale `lockToken` in `routes/prenotazioni.ts`
 - [x] Job schedulato: pulizia automatica lock slot scaduti ogni 60s
+- [x] Login Unificato (`/login`) con routing automatico per 4 ruoli (Admin, Medico, Segreteria, Paziente)
+- [x] Wizard Onboarding Medico in 3 step (`/dashboard/onboarding`)
+- [x] Pannello Impostazioni Personalizzabili Medico (`/dashboard/impostazioni`)
+- [x] Dashboard Segreteria & Sportello (`/segreteria`): sala d'attesa live, accettazione e sportello ricette
+- [x] Dashboard Admin di Sistema (`/admin`): supervisione studi, audit log GDPR e Emergency Code (ADR-006)
+- [x] Portale Paziente Web (`/paziente` & `/paziente/prenota`): prenotazione guidata con timer lock 10m
 - [ ] Implementare **autenticazione** con Better Auth (login, registrazione, JWT)
 
 ### Priority Media

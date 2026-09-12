@@ -1,13 +1,25 @@
 import { NextResponse } from 'next/server'
 import { db, eq, or, ilike, desc, and } from '@medico/db'
 import { pazienti, medici, studi } from '@medico/db/schema'
+import { checkAuth } from '@/lib/server-auth'
 
 export async function GET(request: Request) {
+  const auth = await checkAuth(['admin', 'medico', 'segreteria'])
+  if ('response' in auth) return auth.response
+
   try {
     const { searchParams } = new URL(request.url)
     const q = searchParams.get('q')?.trim()
-    const studioId = searchParams.get('studioId')
-    const medicoId = searchParams.get('medicoId')
+    let studioId = searchParams.get('studioId')
+    let medicoId = searchParams.get('medicoId')
+
+    // Isolamento dati per ruolo
+    if (auth.session.ruolo === 'medico') {
+      medicoId = auth.session.id
+      if (auth.session.studioId) studioId = auth.session.studioId
+    } else if (auth.session.ruolo === 'segreteria') {
+      if (auth.session.studioId) studioId = auth.session.studioId
+    }
 
     let conditions = [eq(pazienti.attivo, true)]
 

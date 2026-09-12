@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
-import { db, hashPassword, generateTemporaryPassword, eq, sql } from '@medico/db'
+import { db, hashPassword, generateTemporaryPassword, eq, sql, recordAuditLog } from '@medico/db'
 import { pazienti } from '@medico/db/schema'
+import { checkAuth } from '@/lib/server-auth'
 
 interface PazienteCSVRow {
   nome: string
@@ -12,6 +13,11 @@ interface PazienteCSVRow {
 }
 
 export async function POST(request: Request) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
   try {
     const body = await request.json()
     const { studioId, medicoId, pazienti: righe } = body
@@ -130,6 +136,24 @@ export async function POST(request: Request) {
           telefono: inserito.telefono || '—',
         })
       }
+    }
+
+    if (credenzialiGenerate.length > 0) {
+      await recordAuditLog({
+        attoreId: auth.session.id,
+        attoreEmail: auth.session.email,
+        ruolo: 'admin',
+        azione: 'IMPORT_CSV_PAZIENTI',
+        entita: 'pazienti',
+        entitaId: studioId,
+        dettagli: {
+          studioId,
+          medicoId,
+          totaleImportati: credenzialiGenerate.length,
+          totaleErrori: errori.length,
+        },
+        ip,
+      })
     }
 
     return NextResponse.json({

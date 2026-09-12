@@ -1,8 +1,21 @@
 import { NextResponse } from 'next/server'
-import { db, verifyPassword, eq, or, sql } from '@medico/db'
-import { amministratori, medici, staff, pazienti, studi } from '@medico/db/schema'
+import {
+  db,
+  verifyPassword,
+  createSessionToken,
+  recordAuditLog,
+  eq,
+  or,
+  sql,
+} from '@medico/db'
+import { amministratori, medici, staff, pazienti } from '@medico/db/schema'
 
 export async function POST(request: Request) {
+  const ip =
+    request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    request.headers.get('x-real-ip') ||
+    '127.0.0.1'
+
   try {
     const body = await request.json()
     const { identifier, password } = body
@@ -33,18 +46,36 @@ export async function POST(request: Request) {
             nome: admin.nome,
             cognome: admin.cognome,
             email: admin.email,
-            ruolo: 'admin',
+            ruolo: 'admin' as const,
           }
+
+          const token = createSessionToken(userPayload)
+
+          await recordAuditLog({
+            attoreId: admin.id,
+            attoreEmail: admin.email,
+            ruolo: 'admin',
+            azione: 'LOGIN_SUCCESS',
+            entita: 'auth',
+            entitaId: admin.id,
+            dettagli: { metodo: 'email_password' },
+            ip,
+          })
+
           const response = NextResponse.json({
             success: true,
             user: userPayload,
             redirectUrl: '/admin',
           })
-          response.cookies.set('auth_session', JSON.stringify(userPayload), {
+
+          response.cookies.set('auth_session', token, {
             path: '/',
-            httpOnly: false, // Accessibile lato client per visualizzare nome e ruolo
+            httpOnly: true, // Inaccessibile da JS per prevenire manomissioni e XSS
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
           })
+
           return response
         }
       }
@@ -67,18 +98,35 @@ export async function POST(request: Request) {
             cognome: medico.cognome,
             email: medico.email,
             studioId: medico.studioId,
-            ruolo: 'medico',
+            ruolo: 'medico' as const,
           }
+
+          const token = createSessionToken(userPayload)
+
+          await recordAuditLog({
+            attoreId: medico.id,
+            attoreEmail: medico.email,
+            ruolo: 'medico',
+            azione: 'LOGIN_SUCCESS',
+            entita: 'auth',
+            entitaId: medico.id,
+            ip,
+          })
+
           const response = NextResponse.json({
             success: true,
             user: userPayload,
             redirectUrl: '/dashboard',
           })
-          response.cookies.set('auth_session', JSON.stringify(userPayload), {
+
+          response.cookies.set('auth_session', token, {
             path: '/',
-            httpOnly: false,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
           })
+
           return response
         }
       }
@@ -101,18 +149,35 @@ export async function POST(request: Request) {
             cognome: operatore.cognome,
             email: operatore.email,
             studioId: operatore.studioId,
-            ruolo: 'segreteria',
+            ruolo: 'segreteria' as const,
           }
+
+          const token = createSessionToken(userPayload)
+
+          await recordAuditLog({
+            attoreId: operatore.id,
+            attoreEmail: operatore.email,
+            ruolo: 'segreteria',
+            azione: 'LOGIN_SUCCESS',
+            entita: 'auth',
+            entitaId: operatore.id,
+            ip,
+          })
+
           const response = NextResponse.json({
             success: true,
             user: userPayload,
             redirectUrl: '/segreteria',
           })
-          response.cookies.set('auth_session', JSON.stringify(userPayload), {
+
+          response.cookies.set('auth_session', token, {
             path: '/',
-            httpOnly: false,
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
             maxAge: 60 * 60 * 24 * 7,
           })
+
           return response
         }
       }
@@ -143,21 +208,47 @@ export async function POST(request: Request) {
           studioId: paziente.studioId,
           medicoId: paziente.medicoId,
           primoAccesso: paziente.primoAccesso,
-          ruolo: 'paziente',
+          ruolo: 'paziente' as const,
         }
+
+        const token = createSessionToken(userPayload)
+
+        await recordAuditLog({
+          attoreId: paziente.id,
+          attoreEmail: paziente.codiceFiscale,
+          ruolo: 'paziente',
+          azione: 'LOGIN_SUCCESS',
+          entita: 'auth',
+          entitaId: paziente.id,
+          ip,
+        })
+
         const response = NextResponse.json({
           success: true,
           user: userPayload,
           redirectUrl: '/paziente',
         })
-        response.cookies.set('auth_session', JSON.stringify(userPayload), {
+
+        response.cookies.set('auth_session', token, {
           path: '/',
-          httpOnly: false,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
           maxAge: 60 * 60 * 24 * 7,
         })
+
         return response
       }
     }
+
+    // Registra tentativo di accesso fallito in audit log
+    await recordAuditLog({
+      attoreEmail: cleanIdentifier,
+      azione: 'LOGIN_FAILED',
+      entita: 'auth',
+      dettagli: { motivo: 'Credenziali non valide o inesistenti' },
+      ip,
+    })
 
     return NextResponse.json(
       { error: 'Credenziali non valide. Verifica Codice Fiscale/Email e Password.' },

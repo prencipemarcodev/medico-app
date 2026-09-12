@@ -14,13 +14,10 @@ import {
   Stethoscope,
   ShieldCheck,
   ArrowRight,
-  Shield,
-  Key,
   AlertCircle,
   Loader2,
   Lock,
   User,
-  Sparkles,
 } from 'lucide-react'
 
 export default function LoginPage() {
@@ -57,12 +54,6 @@ export default function LoginPage() {
     }
   }
 
-  const fillAdminCredentials = () => {
-    setIdentifier('admin@studiomedico.it')
-    setPassword('Admin2026!')
-    setError(null)
-  }
-
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-900/5 p-6 font-sans">
       <div className="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl border border-slate-200/80 space-y-7">
@@ -74,31 +65,6 @@ export default function LoginPage() {
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">Portale Studio Medico</h1>
           <p className="text-xs text-slate-500 font-medium">
             Accesso sicuro per Pazienti, Medici, Segreteria e Amministrazione
-          </p>
-        </div>
-
-        {/* Quick Super Admin Helper Box */}
-        <div className="p-4 rounded-2xl bg-indigo-50/80 border border-indigo-200/70 text-xs space-y-2">
-          <div className="flex items-center justify-between">
-            <span className="font-bold text-indigo-950 flex items-center gap-1.5">
-              <Shield className="h-4 w-4 text-indigo-600" />
-              Credenziali Amministratore di Sistema:
-            </span>
-            <button
-              type="button"
-              onClick={fillAdminCredentials}
-              className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 underline flex items-center gap-1"
-            >
-              <Sparkles className="h-3.5 w-3.5" /> Compila
-            </button>
-          </div>
-          <div className="flex items-center justify-between text-[11px] text-indigo-900 font-mono bg-white/70 px-3 py-1.5 rounded-lg border border-indigo-100">
-            <span>admin@studiomedico.it</span>
-            <span className="text-indigo-400">|</span>
-            <span>Admin2026!</span>
-          </div>
-          <p className="text-[10px] text-indigo-700">
-            Dalla dashboard Admin puoi creare nuovi studi medici, aggiungere medici, importare pazienti da file CSV e configurare segretari multi-medico.
           </p>
         </div>
 

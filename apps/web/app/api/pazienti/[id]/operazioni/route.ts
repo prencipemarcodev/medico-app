@@ -1,16 +1,19 @@
 import { NextResponse } from 'next/server'
-import { db, eq, and } from '@medico/db'
+import { db, eq, and, recordAuditLog } from '@medico/db'
 import { pazienti, prenotazioni, slotAgenda, richiesteSpeciali } from '@medico/db/schema'
+import { checkAuth } from '@/lib/server-auth'
 
 export async function POST(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  try {
-    const { id: pazienteId } = await params
-    const body = await request.json()
-    const { azione } = body
+  const auth = await checkAuth(['admin', 'medico', 'segreteria', 'paziente'])
+  if ('response' in auth) return auth.response
 
+  const { id: pazienteId } = await params
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
+  try {
     const [paziente] = await db
       .select()
       .from(pazienti)
@@ -20,6 +23,20 @@ export async function POST(
     if (!paziente) {
       return NextResponse.json({ error: 'Paziente non trovato' }, { status: 404 })
     }
+
+    // Verifica permessi sull'entità paziente (Ownership e Tenant isolation)
+    if (auth.session.ruolo === 'paziente' && auth.session.id !== paziente.id) {
+      return NextResponse.json({ error: 'Accesso non autorizzato ai dati di questo paziente' }, { status: 403 })
+    }
+    if (auth.session.ruolo === 'medico' && auth.session.id !== paziente.medicoId) {
+      return NextResponse.json({ error: 'Paziente non assegnato a questo medico curante' }, { status: 403 })
+    }
+    if (auth.session.ruolo === 'segreteria' && auth.session.studioId && auth.session.studioId !== paziente.studioId) {
+      return NextResponse.json({ error: 'Paziente non appartenente allo studio di competenza' }, { status: 403 })
+    }
+
+    const body = await request.json()
+    const { azione } = body
 
     if (azione === 'aggiorna_contatti') {
       const { email, telefono } = body
@@ -97,6 +114,17 @@ export async function POST(
         prenotazione,
       })
     }
+
+    await recordAuditLog({
+      attoreId: auth.session.id,
+      attoreEmail: auth.session.email,
+      ruolo: auth.session.ruolo,
+      azione: `OPERAZIONE_PAZIENTE_${azione.toUpperCase()}`,
+      entita: 'paziente',
+      entitaId: paziente.id,
+      dettagli: { azione, pazienteNome: `${paziente.nome} ${paziente.cognome}` },
+      ip,
+    })
 
     return NextResponse.json({
       success: true,

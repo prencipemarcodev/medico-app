@@ -22,6 +22,7 @@ import {
   broadcast,
   logNotifiche,
   amministratori,
+  auditLogs,
 } from './schema/index.js'
 import { sql } from 'drizzle-orm'
 
@@ -29,6 +30,7 @@ async function clean() {
   console.log('🧹 [WIPE DATABASE] Eliminazione completa di TUTTI i dati da tutte le tabelle...')
 
   // Ordine corretto di cancellazione rispettando le foreign key
+  await db.delete(auditLogs)
   await db.delete(prenotazioni)
   await db.delete(slotAgenda)
   await db.delete(richiesteSpeciali)

@@ -1,18 +1,16 @@
 import { NextResponse } from 'next/server'
-import { db, hashPassword, eq } from '@medico/db'
+import { db, hashPassword, eq, createSessionToken, recordAuditLog } from '@medico/db'
 import { pazienti, medici, staff, amministratori } from '@medico/db/schema'
-import { cookies } from 'next/headers'
+import { getSession } from '@/lib/server-auth'
 
 export async function POST(request: Request) {
   try {
-    const cookieStore = await cookies()
-    const sessionCookie = cookieStore.get('auth_session')
-
-    if (!sessionCookie?.value) {
-      return NextResponse.json({ error: 'Sessione non autenticata' }, { status: 401 })
+    const session = await getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Sessione non autenticata o scaduta' }, { status: 401 })
     }
 
-    const session = JSON.parse(sessionCookie.value)
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
     const body = await request.json()
     const { nuovaPassword } = body
 
@@ -49,12 +47,27 @@ export async function POST(request: Request) {
         .where(eq(amministratori.id, session.id))
     }
 
+    await recordAuditLog({
+      attoreId: session.id,
+      attoreEmail: session.email,
+      ruolo: session.ruolo,
+      azione: 'CAMBIO_PASSWORD',
+      entita: session.ruolo,
+      entitaId: session.id,
+      ip,
+    })
+
+    const newSignedToken = createSessionToken(session)
     const response = NextResponse.json({ success: true, message: 'Password aggiornata con successo' })
-    response.cookies.set('auth_session', JSON.stringify(session), {
+
+    response.cookies.set('auth_session', newSignedToken, {
       path: '/',
-      httpOnly: false,
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
       maxAge: 60 * 60 * 24 * 7,
     })
+
     return response
   } catch (err: any) {
     console.error('Errore cambio password:', err)

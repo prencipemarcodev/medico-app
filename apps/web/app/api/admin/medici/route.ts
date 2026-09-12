@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import { db, hashPassword, eq, sql, desc } from '@medico/db'
+import { db, hashPassword, eq, sql, desc, recordAuditLog } from '@medico/db'
 import { medici, studi, pazienti, slotAgenda } from '@medico/db/schema'
+import { checkAuth } from '@/lib/server-auth'
 
 export async function GET(request: Request) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
   try {
     const { searchParams } = new URL(request.url)
     const studioId = searchParams.get('studioId')
@@ -51,6 +55,11 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
   try {
     const body = await request.json()
     const {
@@ -133,6 +142,22 @@ export async function POST(request: Request) {
     if (slotValues.length > 0) {
       await db.insert(slotAgenda).values(slotValues)
     }
+
+    await recordAuditLog({
+      attoreId: auth.session.id,
+      attoreEmail: auth.session.email,
+      ruolo: 'admin',
+      azione: 'MEDICO_CREATO',
+      entita: 'medico',
+      entitaId: medico.id,
+      dettagli: {
+        nome: `${medico.nome} ${medico.cognome}`,
+        email: medico.email,
+        studioId,
+        slotsGenerati: slotValues.length,
+      },
+      ip,
+    })
 
     return NextResponse.json({
       success: true,

@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server'
-import { db, sql, desc } from '@medico/db'
+import { db, sql, desc, recordAuditLog } from '@medico/db'
 import { studi, medici, pazienti } from '@medico/db/schema'
+import { checkAuth } from '@/lib/server-auth'
 
 export async function GET() {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
   try {
     const list = await db
       .select({
@@ -53,6 +57,11 @@ export async function GET() {
 }
 
 export async function POST(request: Request) {
+  const auth = await checkAuth(['admin'])
+  if ('response' in auth) return auth.response
+
+  const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
+
   try {
     const body = await request.json()
     const {
@@ -93,6 +102,21 @@ export async function POST(request: Request) {
         attivo: true,
       })
       .returning()
+
+    if (!nuovo) {
+      return NextResponse.json({ error: 'Errore inserimento studio' }, { status: 500 })
+    }
+
+    await recordAuditLog({
+      attoreId: auth.session.id,
+      attoreEmail: auth.session.email,
+      ruolo: 'admin',
+      azione: 'STUDIO_CREATO',
+      entita: 'studio',
+      entitaId: nuovo.id,
+      dettagli: { nome: nuovo.nome, indirizzo: nuovo.indirizzo },
+      ip,
+    })
 
     return NextResponse.json({ success: true, studio: nuovo })
   } catch (err: any) {

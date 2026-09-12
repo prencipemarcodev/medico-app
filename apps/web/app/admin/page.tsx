@@ -35,6 +35,7 @@ import {
   FileText,
   UserCheck,
   Layers,
+  Trash2,
 } from 'lucide-react'
 
 interface Studio {
@@ -80,6 +81,18 @@ interface CredenzialeGenerata {
   telefono: string
 }
 
+export interface AuditLogItem {
+  id: string
+  attoreEmail: string
+  ruolo: string
+  azione: string
+  entita: string
+  entitaId: string | null
+  dettagli: any
+  ip: string | null
+  createdAt: string
+}
+
 export default function AdminPage() {
   const [tabAttiva, setTabAttiva] = useState<'studi' | 'medici' | 'staff' | 'audit'>('studi')
 
@@ -88,6 +101,11 @@ export default function AdminPage() {
   const [mediciList, setMediciList] = useState<Medico[]>([])
   const [staffList, setStaffList] = useState<StaffItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Audit Logs
+  const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
+  const [auditQuery, setAuditQuery] = useState('')
+  const [loadingAudit, setLoadingAudit] = useState(false)
 
   // Modali
   const [modalStudioOpen, setModalStudioOpen] = useState(false)
@@ -170,9 +188,93 @@ export default function AdminPage() {
     }
   }
 
+  // Caricamento Audit Logs dal Database
+  const caricaAuditLogs = async (query = auditQuery) => {
+    setLoadingAudit(true)
+    try {
+      const url = query ? `/api/admin/audit?q=${encodeURIComponent(query)}` : '/api/admin/audit'
+      const res = await fetch(url)
+      const data = await res.json()
+      if (data.success) {
+        setAuditLogs(data.logs || [])
+      }
+    } catch (err) {
+      console.error('Errore caricamento audit logs:', err)
+    } finally {
+      setLoadingAudit(false)
+    }
+  }
+
   useEffect(() => {
     caricaDati()
+    caricaAuditLogs()
   }, [])
+
+  useEffect(() => {
+    if (tabAttiva === 'audit') {
+      caricaAuditLogs()
+    }
+  }, [tabAttiva])
+
+  // Eliminazione Studio Medico
+  const handleEliminaStudio = async (studio: Studio) => {
+    const conferma = window.confirm(
+      `ATTENZIONE: Sei sicuro di voler eliminare definitivamente lo studio "${studio.nome}"?\n\nVerranno eliminati a cascata tutti i medici, i pazienti, le prenotazioni e gli slot associati!`
+    )
+    if (!conferma) return
+
+    try {
+      const res = await fetch(`/api/admin/studi/${studio.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione dello studio')
+
+      alert(data.message || 'Studio eliminato con successo')
+      caricaDati()
+      caricaAuditLogs()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  // Eliminazione Medico
+  const handleEliminaMedico = async (medico: Medico) => {
+    const conferma = window.confirm(
+      `Sei sicuro di voler eliminare il Dott. ${medico.nome} ${medico.cognome}?\n\nVerranno cancellati la sua agenda, le prenotazioni e i pazienti associati!`
+    )
+    if (!conferma) return
+
+    try {
+      const res = await fetch(`/api/admin/medici/${medico.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione del medico')
+
+      alert(data.message || 'Medico eliminato con successo')
+      caricaDati()
+      caricaAuditLogs()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
+
+  // Eliminazione Staff
+  const handleEliminaStaff = async (st: StaffItem) => {
+    const conferma = window.confirm(
+      `Sei sicuro di voler eliminare l'operatore ${st.nome} ${st.cognome}?`
+    )
+    if (!conferma) return
+
+    try {
+      const res = await fetch(`/api/admin/staff/${st.id}`, { method: 'DELETE' })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione dello staff')
+
+      alert(data.message || 'Operatore eliminato con successo')
+      caricaDati()
+      caricaAuditLogs()
+    } catch (err: any) {
+      alert(err.message)
+    }
+  }
 
   // Azione Crea Studio
   const handleCreaStudio = async (e: React.FormEvent) => {
@@ -488,12 +590,12 @@ export default function AdminPage() {
       </div>
 
       {/* Navigation Tabs */}
-      <div className="flex items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 shadow-sm w-fit">
+      <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 shadow-sm w-full sm:w-fit">
         {[
           { id: 'studi', label: 'Studi Medici', icon: Building2 },
           { id: 'medici', label: 'Medici & Assistiti (CSV)', icon: Stethoscope },
           { id: 'staff', label: 'Segreteria Multi-Medico', icon: UserCheck },
-          { id: 'audit', label: 'Sicurezza & Emergenza (ADR-006)', icon: Key },
+          { id: 'audit', label: 'Sicurezza & Audit Log DB', icon: FileSpreadsheet },
         ].map((tab) => {
           const Icon = tab.icon
           const isActive = tabAttiva === tab.id
@@ -501,14 +603,14 @@ export default function AdminPage() {
             <button
               key={tab.id}
               onClick={() => setTabAttiva(tab.id as any)}
-              className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all ${
+              className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex-1 sm:flex-initial text-center ${
                 isActive
                   ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
                   : 'text-slate-400 hover:text-white hover:bg-slate-900'
               }`}
             >
-              <Icon className="h-4 w-4" />
-              <span>{tab.label}</span>
+              <Icon className="h-4 w-4 flex-shrink-0" />
+              <span className="whitespace-nowrap">{tab.label}</span>
             </button>
           )
         })}
@@ -517,14 +619,14 @@ export default function AdminPage() {
       {/* TAB 1: STUDI MEDICI */}
       {tabAttiva === 'studi' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-white">Istanze Studi Medici Accreditati</h2>
-              <p className="text-xs text-slate-400">Strutture sanitarie configurate sulla piattaforma</p>
+              <p className="text-xs text-slate-400">Strutture sanitarie configurate sulla piattaforma con isolamento dati</p>
             </div>
             <button
               onClick={() => setModalStudioOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
               <span>Nuovo Studio Medico</span>
@@ -544,43 +646,62 @@ export default function AdminPage() {
               {studiList.map((studio) => (
                 <div
                   key={studio.id}
-                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm"
+                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="font-extrabold text-white text-base">{studio.nome}</h3>
-                      <p className="text-xs text-slate-400 flex items-center gap-1 mt-1">
-                        <MapPin className="h-3.5 w-3.5 text-slate-500" />
-                        <span>{studio.indirizzo || 'Indirizzo non specificato'}</span>
-                      </p>
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="min-w-0 flex-1 pr-2">
+                        <h3 className="font-extrabold text-white text-base truncate">{studio.nome}</h3>
+                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-1 break-words">
+                          <MapPin className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                          <span className="truncate">{studio.indirizzo || 'Indirizzo non specificato'}</span>
+                        </p>
+                      </div>
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex-shrink-0">
+                        Attivo
+                      </span>
                     </div>
-                    <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                      Attivo
+
+                    <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-800 text-xs">
+                      <div>
+                        <span className="text-slate-500 block">Medici assegnati:</span>
+                        <span className="text-white font-bold text-sm">{studio.totaleMedici} MMG</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block">Pazienti assistiti:</span>
+                        <span className="text-white font-bold text-sm">{studio.totalePazienti}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-1 text-xs text-slate-400 break-words">
+                      {studio.telefono && (
+                        <p className="flex items-center gap-1.5 truncate">
+                          <PhoneCall className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                          <span className="truncate">{studio.telefono}</span>
+                        </p>
+                      )}
+                      {studio.email && (
+                        <p className="flex items-center gap-1.5 truncate">
+                          <Mail className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                          <span className="truncate">{studio.email}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-500 font-mono truncate">
+                      ID: {studio.id.slice(0, 8)}...
                     </span>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-800 text-xs">
-                    <div>
-                      <span className="text-slate-500 block">Medici assegnati:</span>
-                      <span className="text-white font-bold text-sm">{studio.totaleMedici} MMG</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-500 block">Pazienti assistiti:</span>
-                      <span className="text-white font-bold text-sm">{studio.totalePazienti}</span>
-                    </div>
-                  </div>
-
-                  <div className="space-y-1 text-xs text-slate-400">
-                    {studio.telefono && (
-                      <p className="flex items-center gap-1.5">
-                        <PhoneCall className="h-3.5 w-3.5 text-slate-500" /> {studio.telefono}
-                      </p>
-                    )}
-                    {studio.email && (
-                      <p className="flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 text-slate-500" /> {studio.email}
-                      </p>
-                    )}
+                    <button
+                      type="button"
+                      onClick={() => handleEliminaStudio(studio)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/60 transition-all flex items-center gap-1.5"
+                      title="Elimina studio e tutti i dati correlati a cascata"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Elimina Studio</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -599,7 +720,7 @@ export default function AdminPage() {
                 Aggiungi medici ai rispettivi studi e carica il dataset pazienti tramite file CSV con generazione automatica credenziali.
               </p>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={downloadTemplateCsv}
                 className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs transition-all flex items-center gap-2"
@@ -642,28 +763,28 @@ export default function AdminPage() {
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-3">
-                        <div className="h-11 w-11 rounded-2xl bg-blue-950 border border-blue-800 text-blue-400 font-bold flex items-center justify-center">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-11 w-11 rounded-2xl bg-blue-950 border border-blue-800 text-blue-400 font-bold flex items-center justify-center flex-shrink-0">
                           {medico.nome[0]}
                           {medico.cognome[0]}
                         </div>
-                        <div>
-                          <h3 className="font-extrabold text-white text-base">
+                        <div className="min-w-0">
+                          <h3 className="font-extrabold text-white text-base truncate">
                             Dott. {medico.nome} {medico.cognome}
                           </h3>
-                          <p className="text-xs text-indigo-400">{medico.nomeStudio || 'Studio Medico'}</p>
+                          <p className="text-xs text-indigo-400 truncate">{medico.nomeStudio || 'Studio Medico'}</p>
                         </div>
                       </div>
                     </div>
 
                     <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs space-y-1.5">
-                      <p className="text-slate-400 flex items-center gap-1.5">
-                        <Mail className="h-3.5 w-3.5 text-slate-500" />
-                        <span className="font-mono text-slate-300">{medico.email}</span>
+                      <p className="text-slate-400 flex items-center gap-1.5 truncate">
+                        <Mail className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                        <span className="font-mono text-slate-300 truncate">{medico.email}</span>
                       </p>
-                      <p className="text-slate-400 flex items-center gap-1.5">
-                        <PhoneCall className="h-3.5 w-3.5 text-slate-500" />
-                        <span className="text-slate-300">{medico.telefonoPrimario}</span>
+                      <p className="text-slate-400 flex items-center gap-1.5 truncate">
+                        <PhoneCall className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                        <span className="text-slate-300 truncate">{medico.telefonoPrimario}</span>
                       </p>
                     </div>
 
@@ -675,7 +796,7 @@ export default function AdminPage() {
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800/80">
+                  <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2">
                     <button
                       onClick={() => {
                         setMedicoTargetCsv(medico)
@@ -685,10 +806,18 @@ export default function AdminPage() {
                         setImportCompletato(false)
                         setModalCsvOpen(true)
                       }}
-                      className="w-full py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all flex items-center justify-center gap-2"
+                      className="flex-1 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all flex items-center justify-center gap-2 min-w-0"
                     >
-                      <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
-                      <span>Importa Pazienti CSV</span>
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                      <span className="truncate">Importa Pazienti CSV</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleEliminaMedico(medico)}
+                      className="p-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/60 text-rose-400 transition-all flex-shrink-0"
+                      title="Elimina medico e la sua agenda"
+                    >
+                      <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -721,7 +850,7 @@ export default function AdminPage() {
                 })
                 setModalStaffOpen(true)
               }}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
               <span>Nuovo Operatore Segreteria</span>
@@ -741,45 +870,62 @@ export default function AdminPage() {
               {staffList.map((st) => (
                 <div
                   key={st.id}
-                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm"
+                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
                 >
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="h-11 w-11 rounded-2xl bg-amber-950 border border-amber-800 text-amber-400 font-bold flex items-center justify-center">
-                        {st.nome[0]}
-                        {st.cognome[0]}
+                  <div className="space-y-3">
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="h-11 w-11 rounded-2xl bg-amber-950 border border-amber-800 text-amber-400 font-bold flex items-center justify-center flex-shrink-0">
+                          {st.nome[0]}
+                          {st.cognome[0]}
+                        </div>
+                        <div className="min-w-0">
+                          <h3 className="font-extrabold text-white text-base truncate">
+                            {st.nome} {st.cognome}
+                          </h3>
+                          <p className="text-xs text-amber-400 truncate">{st.nomeStudio || 'Studio Medico'}</p>
+                        </div>
                       </div>
-                      <div>
-                        <h3 className="font-extrabold text-white text-base">
-                          {st.nome} {st.cognome}
-                        </h3>
-                        <p className="text-xs text-amber-400">{st.nomeStudio || 'Studio Medico'}</p>
+                    </div>
+
+                    <p className="text-xs text-slate-400 font-mono bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 truncate">
+                      Email: {st.email}
+                    </p>
+
+                    <div className="space-y-1.5">
+                      <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">
+                        Medici Gestiti ({st.mediciAssegnati.length}):
+                      </span>
+                      <div className="flex flex-wrap gap-1.5">
+                        {st.mediciAssegnati.length === 0 ? (
+                          <span className="text-[11px] text-slate-500 italic">Nessun medico assegnato</span>
+                        ) : (
+                          st.mediciAssegnati.map((m) => (
+                            <span
+                              key={m.id}
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-950/80 text-blue-300 border border-blue-800 truncate"
+                            >
+                              Dott. {m.nome} {m.cognome}
+                            </span>
+                          ))
+                        )}
                       </div>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-400 font-mono bg-slate-900/80 p-2.5 rounded-xl border border-slate-800">
-                    Email: {st.email}
-                  </p>
-
-                  <div className="space-y-1.5">
-                    <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">
-                      Medici Gestiti ({st.mediciAssegnati.length}):
+                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-500 font-mono truncate">
+                      ID: {st.id.slice(0, 8)}...
                     </span>
-                    <div className="flex flex-wrap gap-1.5">
-                      {st.mediciAssegnati.length === 0 ? (
-                        <span className="text-[11px] text-slate-500 italic">Nessun medico assegnato</span>
-                      ) : (
-                        st.mediciAssegnati.map((m) => (
-                          <span
-                            key={m.id}
-                            className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-950/80 text-blue-300 border border-blue-800"
-                          >
-                            Dott. {m.nome} {m.cognome}
-                          </span>
-                        ))
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleEliminaStaff(st)}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-400 hover:text-rose-300 hover:bg-rose-950/40 border border-rose-900/60 transition-all flex items-center gap-1.5"
+                      title="Elimina operatore segreteria"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                      <span>Elimina Staff</span>
+                    </button>
                   </div>
                 </div>
               ))}
@@ -788,45 +934,133 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB 4: AUDIT LOG & SICUREZZA */}
+      {/* TAB 4: AUDIT LOG & SICUREZZA DB */}
       {tabAttiva === 'audit' && (
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           <div className="lg:col-span-8 bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4">
-            <h2 className="text-base font-bold text-white flex items-center gap-2">
-              <FileSpreadsheet className="h-5 w-5 text-emerald-400" />
-              Registro delle Attività e Tracciamento Accessi (GDPR)
-            </h2>
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+              <div>
+                <h2 className="text-base font-bold text-white flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-emerald-400" />
+                  Registro Audit di Sistema (PostgreSQL audit_logs)
+                </h2>
+                <p className="text-xs text-slate-400">
+                  Tracciamento immutabile di accessi, creazioni, eliminazioni e modifiche (GDPR Art. 30)
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => caricaAuditLogs()}
+                  className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white"
+                  title="Ricarica registri"
+                >
+                  <RefreshCw className={`h-4 w-4 ${loadingAudit ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
+
+            {/* Barra di ricerca audit */}
+            <div className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
+                <input
+                  type="text"
+                  value={auditQuery}
+                  onChange={(e) => setAuditQuery(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') caricaAuditLogs(auditQuery)
+                  }}
+                  placeholder="Filtra per email attore, azione (es. LOGIN, STUDIO_CREATO, ELIMINATO)..."
+                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => caricaAuditLogs(auditQuery)}
+                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+              >
+                Cerca
+              </button>
+            </div>
+
+            <div className="overflow-x-auto -mx-6 px-6">
+              <table className="w-full text-left text-xs min-w-[650px]">
                 <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider">
+                  <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
+                    <th className="pb-3">Data / Ora</th>
                     <th className="pb-3">Attore</th>
-                    <th className="pb-3">Evento</th>
+                    <th className="pb-3">Azione</th>
+                    <th className="pb-3">Entità & IP</th>
                     <th className="pb-3">Dettagli</th>
-                    <th className="pb-3 text-right">Esito</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-800/60 font-medium">
-                  <tr className="hover:bg-slate-900/50">
-                    <td className="py-3 text-white font-bold">Admin di Sistema</td>
-                    <td className="py-3 text-indigo-300">Seed & Configurazione Iniziale</td>
-                    <td className="py-3 text-slate-300">Inizializzazione super-admin e gestione multi-medico</td>
-                    <td className="py-3 text-right">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                        OK
-                      </span>
-                    </td>
-                  </tr>
-                  <tr className="hover:bg-slate-900/50">
-                    <td className="py-3 text-white font-bold">System Daemon</td>
-                    <td className="py-3 text-indigo-300">Lock Cleanup Service</td>
-                    <td className="py-3 text-slate-300">Demone 60s pulizia slot temporaneamente bloccati</td>
-                    <td className="py-3 text-right">
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800">
-                        ATTIVO
-                      </span>
-                    </td>
-                  </tr>
+                  {auditLogs.length === 0 ? (
+                    <tr>
+                      <td colSpan={5} className="py-8 text-center text-slate-500">
+                        {loadingAudit ? 'Caricamento registri audit...' : 'Nessun evento registrato nei log di audit.'}
+                      </td>
+                    </tr>
+                  ) : (
+                    auditLogs.map((log) => {
+                      const isDanger = log.azione.includes('ELIMINAT') || log.azione.includes('FAILED')
+                      const isSuccess = log.azione.includes('SUCCESS') || log.azione.includes('CREAT')
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-900/50 transition-colors">
+                          <td className="py-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
+                            {new Date(log.createdAt).toLocaleString('it-IT', {
+                              day: '2-digit',
+                              month: '2-digit',
+                              year: '2-digit',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                              second: '2-digit',
+                            })}
+                          </td>
+                          <td className="py-3 text-white font-bold whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-slate-800 text-indigo-300">
+                                {log.ruolo}
+                              </span>
+                              <span className="text-xs">{log.attoreEmail}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 whitespace-nowrap">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
+                                isDanger
+                                  ? 'bg-rose-950 text-rose-400 border-rose-800'
+                                  : isSuccess
+                                  ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
+                                  : 'bg-indigo-950 text-indigo-400 border-indigo-800'
+                              }`}
+                            >
+                              {log.azione}
+                            </span>
+                          </td>
+                          <td className="py-3 text-slate-300 text-[11px] whitespace-nowrap">
+                            <div>
+                              <span className="font-semibold text-slate-200">{log.entita}</span>
+                              {log.ip && <span className="text-slate-500 block text-[10px]">{log.ip}</span>}
+                            </div>
+                          </td>
+                          <td className="py-3 text-slate-400 text-[11px] max-w-[200px] truncate">
+                            {log.dettagli ? (
+                              <span className="font-mono text-[10px] text-slate-400 truncate block">
+                                {typeof log.dettagli === 'object'
+                                  ? JSON.stringify(log.dettagli)
+                                  : String(log.dettagli)}
+                              </span>
+                            ) : (
+                              '—'
+                            )}
+                          </td>
+                        </tr>
+                      )
+                    })
+                  )}
                 </tbody>
               </table>
             </div>
@@ -839,7 +1073,7 @@ export default function AdminPage() {
                 <span>Accesso di Emergenza (ADR-006)</span>
               </div>
               <p className="text-xs text-slate-400 leading-relaxed">
-                Genera un codice monouso valido per 1 ora per ripristinare l'accesso in caso di guasto hardware del medico.
+                Genera un codice monouso valido per 1 ora per ripristinare l'accesso in caso di emergenza o guasto operatore.
               </p>
               {emergencyCode && (
                 <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800 text-center space-y-1">

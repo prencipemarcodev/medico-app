@@ -19,6 +19,20 @@ import {
   UserPlus,
 } from 'lucide-react'
 
+interface SegreteriaSlotItem {
+  id: string
+  oraInizio: string
+  oraFine: string
+  durata: string
+  stato: 'libero' | 'prenotato' | 'bloccato'
+  paziente: string
+  telefono: string
+  motivo: string
+  tipoVisita: string
+  origine: string
+  lockedUntil?: string
+}
+
 export default function SegreteriaAgendaPage() {
   const [filtro, setFiltro] = useState<'tutti' | 'libero' | 'prenotato' | 'bloccato'>('tutti')
   const [giornoSelezionato, setGiornoSelezionato] = useState(2) // Mercoledì 9 Settembre
@@ -37,54 +51,53 @@ export default function SegreteriaAgendaPage() {
     { nome: 'Sab', num: 12, mese: 'Set' },
   ]
 
-  const [slots, setSlots] = useState([
+  const [slots, setSlots] = useState<SegreteriaSlotItem[]>([
     {
       id: 'slot-1',
       oraInizio: '09:00',
       oraFine: '09:20',
       durata: '20 min',
-      stato: 'prenotato',
-      paziente: 'Marco Prencipe',
-      telefono: '+39 333 9988776',
-      motivo: 'Visita di controllo pressione arteriosa',
+      stato: 'libero' as const,
+      paziente: '—',
+      telefono: '—',
+      motivo: 'Disponibile per prenotazione',
       tipoVisita: 'Standard',
-      origine: 'App Paziente',
+      origine: '—',
     },
     {
       id: 'slot-2',
       oraInizio: '09:20',
       oraFine: '09:40',
       durata: '20 min',
-      stato: 'prenotato',
-      paziente: 'Anna Bianchi',
-      telefono: '+39 347 1122334',
-      motivo: 'Controllo esami sangue e terapia ipertensiva',
+      stato: 'libero' as const,
+      paziente: '—',
+      telefono: '—',
+      motivo: 'Disponibile per prenotazione',
       tipoVisita: 'Standard',
-      origine: 'Sportello',
+      origine: '—',
     },
     {
       id: 'slot-3',
       oraInizio: '09:40',
       oraFine: '10:00',
       durata: '20 min',
-      stato: 'bloccato',
-      paziente: 'Paziente in app (Lock ADR-002)',
+      stato: 'libero' as const,
+      paziente: '—',
       telefono: '—',
-      motivo: 'Compilazione modulo di prenotazione in corso su smartphone',
-      tipoVisita: 'Lock attivo',
-      lockedUntil: 'Scade tra 6 min',
-      origine: 'Lock Online',
+      motivo: 'Disponibile per prenotazione',
+      tipoVisita: 'Standard',
+      origine: '—',
     },
     {
       id: 'slot-4',
       oraInizio: '10:00',
       oraFine: '10:20',
       durata: '20 min',
-      stato: 'libero',
+      stato: 'libero' as const,
       paziente: '—',
       telefono: '—',
-      motivo: 'Slot disponibile per prenotazione online o allo sportello',
-      tipoVisita: 'Libero',
+      motivo: 'Disponibile per prenotazione',
+      tipoVisita: 'Standard',
       origine: '—',
     },
     {
@@ -92,23 +105,23 @@ export default function SegreteriaAgendaPage() {
       oraInizio: '10:20',
       oraFine: '10:40',
       durata: '20 min',
-      stato: 'prenotato',
-      paziente: 'Chiara Romano',
-      telefono: '+39 328 4455667',
-      motivo: 'Certificato medico sportivo non agonistico',
-      tipoVisita: 'Breve (10m)',
-      origine: 'App Paziente',
+      stato: 'libero' as const,
+      paziente: '—',
+      telefono: '—',
+      motivo: 'Disponibile per prenotazione',
+      tipoVisita: 'Standard',
+      origine: '—',
     },
     {
       id: 'slot-6',
       oraInizio: '10:40',
       oraFine: '11:00',
       durata: '20 min',
-      stato: 'libero',
+      stato: 'libero' as const,
       paziente: '—',
       telefono: '—',
-      motivo: 'Slot disponibile',
-      tipoVisita: 'Libero',
+      motivo: 'Disponibile per prenotazione',
+      tipoVisita: 'Standard',
       origine: '—',
     },
     {
@@ -116,10 +129,10 @@ export default function SegreteriaAgendaPage() {
       oraInizio: '11:00',
       oraFine: '11:30',
       durata: '30 min',
-      stato: 'libero',
+      stato: 'libero' as const,
       paziente: '—',
       telefono: '—',
-      motivo: 'Slot visita estesa disponibile',
+      motivo: 'Disponibile per prenotazione estesa',
       tipoVisita: 'Lunga (30m)',
       origine: '—',
     },

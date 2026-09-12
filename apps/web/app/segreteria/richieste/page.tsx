@@ -28,73 +28,21 @@ export default function SegreteriaRichiestePage() {
   const [filtro, setFiltro] = useState<'tutte' | 'da_ritirare' | 'consegnate' | 'digitali'>('tutte')
   const [searchQuery, setSearchQuery] = useState('')
 
-  const [richieste, setRichieste] = useState([
-    {
-      id: 'req-rit-001',
-      paziente: 'Paolo Rossi',
-      cf: 'RSSPLA60M12H501U',
-      telefono: '+39 320 1199887',
-      tipo: 'ricetta_bianca',
-      titolo: 'Xanax 0.50mg (Ricetta bianca non ripetibile)',
-      dettagli: '1 scatola — Trattamento ansia. Richiesta copia cartacea con firma autografa per farmacia estera.',
-      emessaIl: 'Oggi 08:30',
-      stato: 'da_ritirare',
-      modalita: 'Sportello San Marco (Cartaceo)',
-      noteDesk: 'Busta già sigillata nel cassetto A1',
-    },
-    {
-      id: 'req-rit-002',
-      paziente: 'Elena Morandi',
-      cf: 'MRNLNE85T50F205R',
-      telefono: '+39 338 5544332',
-      tipo: 'certificato',
-      titolo: 'Certificato Medico di Buona Salute per Assunzione',
-      dettagli: 'Certificato in originale per nuovo impiego aziendale, con bollo studio.',
-      emessaIl: 'Ieri 18:00',
-      stato: 'da_ritirare',
-      modalita: 'Sportello San Marco (Cartaceo)',
-      noteDesk: 'Pronto sul bancone principale',
-    },
-    {
-      id: 'req-rit-003',
-      paziente: 'Giovanni Ferri',
-      cf: 'FRRGVN88A01F205Z',
-      telefono: '+39 349 1234567',
-      tipo: 'malattia',
-      titolo: 'Certificato Telematico Malattia INPS',
-      dettagli: 'Periodo 09/09 - 12/09 (4gg). N. Protocollo telematico rilasciato.',
-      emessaIl: 'Oggi 08:45',
-      stato: 'digitale',
-      modalita: 'Digitale (SMS & Notifica App)',
-      noteDesk: 'Ricevuta NRE inviata al paziente',
-    },
-    {
-      id: 'req-rit-004',
-      paziente: 'Sara Neri',
-      cf: 'NRISRA74E45H501K',
-      telefono: '+39 340 7654321',
-      tipo: 'ricetta_dematerializzata',
-      titolo: 'Cardicor 2.5 mg (Bisoprololo) — Ricetta Dematerializzata',
-      dettagli: 'Terapia ipertensiva cronica. NRE generato dal medico.',
-      emessaIl: 'Oggi 07:50',
-      stato: 'digitale',
-      modalita: 'Digitale (Fascicolo Sanitario & App)',
-      noteDesk: 'Visibile in farmacia con TS',
-    },
-    {
-      id: 'req-rit-005',
-      paziente: 'Matteo Gatti',
-      cf: 'GTTMTT92C15F205V',
-      telefono: '+39 345 8899001',
-      tipo: 'fisioterapia',
-      titolo: 'Prescrizione Ciclo Fisioterapia e Rieducazione',
-      dettagli: '10 sedute rieducazione posturale per rachialgia.',
-      emessaIl: 'Ieri 16:30',
-      stato: 'consegnata',
-      modalita: 'Sportello San Marco (Cartaceo)',
-      noteDesk: 'Ritirato dal paziente ieri alle 18:15 (Firmato registro)',
-    },
-  ])
+  const [richieste, setRichieste] = useState<
+    Array<{
+      id: string
+      paziente: string
+      cf: string
+      telefono: string
+      tipo: string
+      titolo: string
+      dettagli: string
+      emessaIl: string
+      stato: 'da_ritirare' | 'digitale' | 'consegnata'
+      modalita: string
+      noteDesk: string
+    }>
+  >([])
 
   const handleConsegna = (id: string) => {
     setRichieste((prev) =>
@@ -222,7 +170,16 @@ export default function SegreteriaRichiestePage() {
 
       {/* List */}
       <div className="space-y-3">
-        {richiesteFiltrate.map((r) => {
+        {richiesteFiltrate.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+            <PackageCheck className="h-10 w-10 text-slate-300 mx-auto" />
+            <p className="text-base font-bold text-slate-800">Nessuna richiesta presente in questa vista</p>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Le richieste di ricette, esami o certificati inviate dai pazienti compariranno automaticamente qui per essere evase dallo sportello.
+            </p>
+          </div>
+        ) : (
+          richiesteFiltrate.map((r) => {
           const isDaRitirare = r.stato === 'da_ritirare'
           const isConsegnata = r.stato === 'consegnata'
           const isDigitale = r.stato === 'digitale'
@@ -303,15 +260,7 @@ export default function SegreteriaRichiestePage() {
               </div>
             </div>
           )
-        })}
-
-        {richiesteFiltrate.length === 0 && (
-          <div className="text-center py-12 bg-white rounded-3xl border border-slate-200/80">
-            <FileCheck className="h-10 w-10 text-slate-300 mx-auto mb-2" />
-            <p className="text-sm font-bold text-slate-700">Nessuna prescrizione trovata</p>
-            <p className="text-xs text-slate-400 mt-0.5">Modifica i filtri o la query di ricerca</p>
-          </div>
-        )}
+        }))}
       </div>
     </div>
   )

@@ -39,6 +39,7 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
   let paziente1Id: string
   let paziente2Id: string
   let testDate: string
+  const createdSlotIds: string[] = []
 
   before(async () => {
     app = await buildApp()
@@ -103,6 +104,19 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
   })
 
   after(async () => {
+    // Pulizia rigorosa di tutti i dati di test creati
+    for (const sId of createdSlotIds) {
+      await db.delete(prenotazioni).where(eq(prenotazioni.slotId, sId))
+      await db.delete(slotAgenda).where(eq(slotAgenda.id, sId))
+    }
+    if (paziente1Id) {
+      await db.delete(prenotazioni).where(eq(prenotazioni.pazienteId, paziente1Id))
+      await db.delete(pazienti).where(eq(pazienti.id, paziente1Id))
+    }
+    if (paziente2Id) {
+      await db.delete(prenotazioni).where(eq(prenotazioni.pazienteId, paziente2Id))
+      await db.delete(pazienti).where(eq(pazienti.id, paziente2Id))
+    }
     await app.close()
   })
 
@@ -118,6 +132,7 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
       stato: 'libero',
     }).returning()
     assert.ok(testSlot, 'Slot creato con successo nel DB')
+    createdSlotIds.push(testSlot!.id)
 
     // Esegui due lock in parallelo perfetto sullo stesso slotId (SELECT ... FOR UPDATE)
     const [res1, res2] = await Promise.all([
@@ -156,6 +171,7 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
       durataMin: 20,
       stato: 'libero',
     }).returning()
+    createdSlotIds.push(testSlot!.id)
 
     // 2. Paziente 1 blocca lo slot
     const lock1 = await lockSlot(testSlot!.id, paziente1Id)
@@ -197,6 +213,7 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
       lockToken: crypto.randomUUID(),
       lockedBy: paziente1Id,
     }).returning()
+    createdSlotIds.push(testSlot!.id)
 
     // Esecuzione job di cleanup
     const sbloccati = await cleanupExpiredLocks()
@@ -218,6 +235,7 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
       durataMin: 20,
       stato: 'libero',
     }).returning()
+    createdSlotIds.push(testSlot!.id)
 
     // 1. Lock slot
     const lockRes = await lockSlot(testSlot!.id, paziente1Id)
@@ -291,6 +309,7 @@ describe('🔬 Test Reali Database: Concorrenza ADR-002, Lock & Prenotazioni', (
       durataMin: 20,
       stato: 'libero',
     }).returning()
+    createdSlotIds.push(slotHttp!.id)
 
     // 3. HTTP POST lock
     const lockHttpRes = await app.inject({

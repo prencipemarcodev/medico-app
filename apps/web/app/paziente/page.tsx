@@ -22,43 +22,123 @@ import {
   ChevronRight,
   Download,
   CheckCircle2,
+  Lock,
+  Key,
+  X,
 } from 'lucide-react'
 
+import { useState, useEffect } from 'react'
+
 export default function PazientePage() {
-  const prossimaVisita = {
-    data: 'Mercoledì, 9 Settembre 2026',
-    ora: '09:00 - 09:20',
-    dottore: 'Dott. Mario Verdi',
-    motivo: 'Visita di controllo pressione arteriosa',
-    tipo: 'Standard (20m)',
-    stato: 'Confermata',
+  const [currentUser, setCurrentUser] = useState<any>(null)
+  const [modalPasswordOpen, setModalPasswordOpen] = useState(false)
+  const [nuovaPassword, setNuovaPassword] = useState('')
+  const [confermaPassword, setConfermaPassword] = useState('')
+  const [passwordSuccess, setPasswordSuccess] = useState(false)
+  const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [savingPassword, setSavingPassword] = useState(false)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.authenticated && d.user) {
+          setCurrentUser(d.user)
+        }
+      })
+      .catch(() => {})
+  }, [])
+
+  const handleCambiaPassword = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setPasswordError(null)
+
+    if (nuovaPassword.length < 6) {
+      setPasswordError('La password deve contenere almeno 6 caratteri')
+      return
+    }
+    if (nuovaPassword !== confermaPassword) {
+      setPasswordError('Le due password non coincidono')
+      return
+    }
+
+    setSavingPassword(true)
+    try {
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nuovaPassword }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante il cambio password')
+
+      setPasswordSuccess(true)
+      setCurrentUser({ ...currentUser, primoAccesso: false })
+      setTimeout(() => {
+        setModalPasswordOpen(false)
+        setPasswordSuccess(false)
+      }, 2000)
+    } catch (err: any) {
+      setPasswordError(err.message)
+    } finally {
+      setSavingPassword(false)
+    }
   }
 
-  const storicoVisite = [
-    {
-      data: '15 Luglio 2026',
-      motivo: 'Controllo esami annuali sangue e urine',
-      esito: 'Terapia confermata, regolare',
-    },
-    {
-      data: '02 Febbraio 2026',
-      motivo: 'Sindrome influenzale con tosse',
-      esito: 'Prescritta terapia antibiotica e riposo 5gg',
-    },
-  ]
+  const [prossimaVisita, setProssimaVisita] = useState<{
+    data: string
+    ora: string
+    dottore: string
+    motivo: string
+    tipo: string
+    stato: string
+  } | null>(null)
 
-  const richiesteAttive = [
-    {
-      tipo: 'medicinale',
-      titolo: 'Ripetizione Cardicor 2.5mg',
-      data: '08/09/2026',
-      stato: 'In lavorazione',
-      ritiro: 'PDF in app non appena firmato dal medico',
-    },
-  ]
+  const [storicoVisite, setStoricoVisite] = useState<
+    Array<{
+      data: string
+      motivo: string
+      esito: string
+    }>
+  >([])
+
+  const [richiesteAttive, setRichiesteAttive] = useState<
+    Array<{
+      tipo: string
+      titolo: string
+      data: string
+      stato: string
+      ritiro: string
+    }>
+  >([])
 
   return (
     <div className="space-y-8 font-sans">
+      {/* Banner Primo Accesso Password Temporanea */}
+      {currentUser?.primoAccesso && (
+        <div className="p-5 rounded-3xl bg-amber-50 border border-amber-200 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="h-11 w-11 rounded-2xl bg-amber-500 text-white flex items-center justify-center flex-shrink-0 shadow-sm">
+              <Key className="h-5 w-5" />
+            </div>
+            <div>
+              <p className="font-bold text-amber-950 text-sm">
+                Primo Accesso: Password Temporanea Rilevata
+              </p>
+              <p className="text-xs text-amber-800 mt-0.5">
+                Stai utilizzando la password provvisoria a 6 caratteri generata dallo studio. Ti consigliamo di impostare subito una password personale.
+              </p>
+            </div>
+          </div>
+          <button
+            onClick={() => setModalPasswordOpen(true)}
+            className="px-4 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 transition-all flex-shrink-0"
+          >
+            Personalizza Password
+          </button>
+        </div>
+      )}
+
       {/* Banner Medico Curante */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-700 rounded-3xl p-6 md:p-8 text-white shadow-lg shadow-emerald-600/15 flex flex-col md:flex-row md:items-center justify-between gap-6">
         <div className="flex items-start md:items-center gap-5">
@@ -108,32 +188,50 @@ export default function PazientePage() {
                 <CalendarCheck className="h-5 w-5 text-emerald-600" />
                 Prossima Visita Fissata
               </h2>
-              <span className="px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                ● {prossimaVisita.stato}
+              <span className="px-3 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                {prossimaVisita ? `● ${prossimaVisita.stato}` : 'Nessuna visita attiva'}
               </span>
             </div>
 
-            <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="font-extrabold text-base text-slate-900">{prossimaVisita.data}</p>
-                  <p className="text-xs font-bold text-emerald-700 mt-0.5 flex items-center gap-1.5">
-                    <Clock className="h-3.5 w-3.5" /> Orario: {prossimaVisita.ora} ({prossimaVisita.tipo})
-                  </p>
+            {prossimaVisita ? (
+              <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="font-extrabold text-base text-slate-900">{prossimaVisita.data}</p>
+                    <p className="text-xs font-bold text-emerald-700 mt-0.5 flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5" /> Orario: {prossimaVisita.ora} ({prossimaVisita.tipo})
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200/60 font-medium">
+                  <strong>Motivo:</strong> {prossimaVisita.motivo}
+                </p>
+                <div className="flex items-center justify-between pt-1">
+                  <span className="text-[11px] text-slate-400">
+                    Disdetta libera consentita fino a 2 ore prima
+                  </span>
+                  <button className="px-3.5 py-1.5 rounded-xl border border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
+                    Disdici Visita
+                  </button>
                 </div>
               </div>
-              <p className="text-xs text-slate-600 bg-white p-3 rounded-xl border border-slate-200/60 font-medium">
-                <strong>Motivo:</strong> {prossimaVisita.motivo}
-              </p>
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-[11px] text-slate-400">
-                  Disdetta libera consentita fino a 2 ore prima
-                </span>
-                <button className="px-3.5 py-1.5 rounded-xl border border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors">
-                  Disdici Visita
-                </button>
+            ) : (
+              <div className="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-3">
+                <Clock className="h-8 w-8 text-slate-300 mx-auto" />
+                <p className="text-sm font-bold text-slate-700">Non hai visite in programma</p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Scegli comodamente data e ora per il tuo prossimo controllo o visita medica.
+                </p>
+                <div className="pt-1">
+                  <Link
+                    href="/paziente/prenota"
+                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 text-white text-xs font-bold hover:bg-emerald-700 transition-colors shadow-xs"
+                  >
+                    <Plus className="h-4 w-4" /> Prenota Visita Adesso
+                  </Link>
+                </div>
               </div>
-            </div>
+            )}
           </div>
 
           {/* Storico Visite */}
@@ -142,16 +240,22 @@ export default function PazientePage() {
               Storico Visite Recenti
             </h2>
             <div className="space-y-3">
-              {storicoVisite.map((v, i) => (
-                <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-1">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-slate-900">{v.data}</span>
-                    <span className="text-[11px] text-slate-400 font-semibold">Completata</span>
-                  </div>
-                  <p className="text-xs font-medium text-slate-700">{v.motivo}</p>
-                  <p className="text-[11px] text-slate-500 italic">{v.esito}</p>
+              {storicoVisite.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400">
+                  Nessuna visita precedente presente in archivio.
                 </div>
-              ))}
+              ) : (
+                storicoVisite.map((v, i) => (
+                  <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/50 space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-900">{v.data}</span>
+                      <span className="text-[11px] text-slate-400 font-semibold">Completata</span>
+                    </div>
+                    <p className="text-xs font-medium text-slate-700">{v.motivo}</p>
+                    <p className="text-[11px] text-slate-500 italic">{v.esito}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
         </div>
@@ -164,17 +268,23 @@ export default function PazientePage() {
             </h2>
 
             <div className="space-y-3">
-              {richiesteAttive.map((req, i) => (
-                <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-2">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-xs text-slate-900">{req.titolo}</span>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                      {req.stato}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500">{req.ritiro}</p>
+              {richiesteAttive.length === 0 ? (
+                <div className="p-6 text-center text-xs text-slate-400">
+                  Nessuna richiesta attiva o ricetta in lavorazione.
                 </div>
-              ))}
+              ) : (
+                richiesteAttive.map((req, i) => (
+                  <div key={i} className="p-4 rounded-2xl border border-slate-200 bg-slate-50/60 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-xs text-slate-900">{req.titolo}</span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                        {req.stato}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-500">{req.ritiro}</p>
+                  </div>
+                ))
+              )}
             </div>
 
             {/* Quick action buttons for patient requests */}
@@ -191,6 +301,84 @@ export default function PazientePage() {
           </div>
         </div>
       </div>
+
+      {/* Modal Personalizzazione Password */}
+      {modalPasswordOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                <Lock className="h-4 w-4 text-amber-600" />
+                Personalizza Password Personale
+              </h3>
+              <button onClick={() => setModalPasswordOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {passwordSuccess ? (
+              <div className="p-4 rounded-2xl bg-emerald-50 text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                <span>Password aggiornata con successo!</span>
+              </div>
+            ) : (
+              <form onSubmit={handleCambiaPassword} className="space-y-3 text-xs">
+                {passwordError && (
+                  <div className="p-3 rounded-xl bg-rose-50 text-rose-700 text-xs font-semibold">
+                    {passwordError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Nuova Password * (Minimo 6 caratteri)
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Nuova password personale"
+                    value={nuovaPassword}
+                    onChange={(e) => setNuovaPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                    Conferma Nuova Password *
+                  </label>
+                  <input
+                    type="password"
+                    required
+                    placeholder="Ripeti la nuova password"
+                    value={confermaPassword}
+                    onChange={(e) => setConfermaPassword(e.target.value)}
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => setModalPasswordOpen(false)}
+                    className="px-4 py-2 rounded-xl text-slate-500 font-bold"
+                  >
+                    Annulla
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingPassword}
+                    className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20"
+                  >
+                    {savingPassword ? 'Salvataggio...' : 'Salva Nuova Password'}
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   )
 }
+

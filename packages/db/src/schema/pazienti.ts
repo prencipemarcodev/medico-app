@@ -20,10 +20,11 @@ export const pazienti = pgTable('pazienti', {
   nome:           text('nome').notNull(),            // GDPR-SENSITIVE
   cognome:        text('cognome').notNull(),          // GDPR-SENSITIVE
   dataNascita:    date('data_nascita').notNull(),     // GDPR-SENSITIVE
-  codiceFiscale:  text('codice_fiscale').unique(),    // GDPR-SENSITIVE
-  email:          text('email').notNull().unique(),   // GDPR-SENSITIVE
-  telefono:       text('telefono'),                  // GDPR-SENSITIVE
+  codiceFiscale:  text('codice_fiscale').notNull().unique(), // GDPR-SENSITIVE (Username)
+  email:          text('email').unique(),                    // GDPR-SENSITIVE (Facoltativo per CSV)
+  telefono:       text('telefono'),                          // GDPR-SENSITIVE
   passwordHash:   text('password_hash').notNull(),
+  primoAccesso:   boolean('primo_accesso').notNull().default(true),
   pushConsenso:   boolean('push_consenso').notNull().default(false),
   reminderConfig: jsonb('reminder_config').notNull().default([]),
   attivo:         boolean('attivo').notNull().default(true),

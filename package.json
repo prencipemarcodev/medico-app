@@ -9,7 +9,9 @@
     "db:generate": "turbo run db:generate --filter=@medico/db",
     "db:migrate": "turbo run db:migrate --filter=@medico/db",
     "db:studio": "turbo run db:studio --filter=@medico/db",
-    "db:seed": "turbo run db:seed --filter=@medico/db"
+    "db:seed": "turbo run db:seed --filter=@medico/db",
+    "db:seed:admin": "turbo run db:seed:admin --filter=@medico/db",
+    "db:clean": "turbo run db:clean --filter=@medico/db"
   },
   "devDependencies": {
     "turbo": "^2.1.2",

@@ -13,4 +13,5 @@ export * from './slot'
 export * from './prenotazioni'
 export * from './richieste'
 export * from './notifiche'
+export * from './admin'
 

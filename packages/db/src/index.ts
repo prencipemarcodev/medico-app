@@ -34,3 +34,4 @@ export type DB = typeof db
 
 export * from './schema/index'
 export * from 'drizzle-orm'
+export * from './auth'

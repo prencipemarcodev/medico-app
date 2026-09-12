@@ -115,6 +115,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@medico/db':
+        specifier: workspace:*
+        version: link:../../packages/db
       '@medico/types':
         specifier: workspace:*
         version: link:../../packages/types

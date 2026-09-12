@@ -8,6 +8,7 @@
  * @version     0.2.0
  */
 
+import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -23,11 +24,14 @@ import {
   ChevronRight,
   Clock,
   Settings,
+  Menu,
+  X,
 } from 'lucide-react'
 
 const navItems = [
   { href: '/dashboard', label: 'Panoramica', icon: LayoutDashboard },
   { href: '/dashboard/agenda', label: 'Agenda & Slot', icon: CalendarDays },
+  { href: '/dashboard/pazienti', label: 'Cartella Pazienti', icon: Users },
   { href: '/dashboard/richieste', label: 'Coda Richieste', icon: ClipboardList, badge: '3' },
   { href: '/dashboard/broadcast', label: 'Broadcast Avvisi', icon: Radio },
   { href: '/dashboard/impostazioni', label: 'Impostazioni Studio', icon: Settings },
@@ -35,11 +39,24 @@ const navItems = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+  const [mobileMenuAperto, setMobileMenuAperto] = useState(false)
 
   return (
     <div className="flex h-screen overflow-hidden bg-slate-50 font-sans">
-      {/* Sidebar */}
-      <aside className="w-72 flex-shrink-0 flex flex-col border-r border-slate-200 bg-white shadow-sm z-10">
+      {/* Overlay mobile */}
+      {mobileMenuAperto && (
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/50 backdrop-blur-xs md:hidden"
+          onClick={() => setMobileMenuAperto(false)}
+        />
+      )}
+
+      {/* Sidebar Responsive */}
+      <aside
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-200 bg-white shadow-xl transition-transform duration-300 md:static md:translate-x-0 ${
+          mobileMenuAperto ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
         {/* Studio Branding */}
         <div className="h-20 flex items-center gap-3 px-6 border-b border-slate-100 bg-gradient-to-r from-blue-600 to-indigo-700 text-white">
           <div className="h-11 w-11 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center border border-white/20 shadow-inner">
@@ -132,11 +149,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       {/* Main Content Area */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-8">
-          <div>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+        <header className="h-16 sm:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/80 backdrop-blur-md px-4 sm:px-8">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={() => setMobileMenuAperto(!mobileMenuAperto)}
+              className="p-2 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 md:hidden"
+              aria-label="Apri menu"
+            >
+              {mobileMenuAperto ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60 truncate max-w-[200px] sm:max-w-none">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              Studio Operativo • Lock Transazionale Attivo
+              Studio Operativo • MMG
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -144,8 +169,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Bell className="h-4 w-4" />
               <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-amber-500 ring-2 ring-white" />
             </button>
-            <div className="h-8 w-px bg-slate-200" />
-            <div className="text-right">
+            <div className="h-8 w-px bg-slate-200 hidden sm:block" />
+            <div className="text-right hidden sm:block">
               <p className="text-xs font-semibold text-slate-800">Mercoledì, 9 Settembre</p>
               <p className="text-[11px] text-slate-500">Orario visite: 09:00 - 13:00</p>
             </div>
@@ -153,7 +178,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         </header>
 
         {/* Scrollable Page Body */}
-        <main className="flex-1 overflow-y-auto p-8">{children}</main>
+        <main className="flex-1 overflow-y-auto p-4 sm:p-8">{children}</main>
       </div>
     </div>
   )

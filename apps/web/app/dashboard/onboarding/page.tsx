@@ -28,13 +28,14 @@ export default function OnboardingPage() {
   const router = useRouter()
   const [step, setStep] = useState(1)
 
-  // Form states
-  const [nomeStudio, setNomeStudio] = useState('Studio Medico San Marco')
-  const [citta, setCitta] = useState('Milano')
-  const [indirizzo, setIndirizzo] = useState('Via Roma 123, 20121 Milano (MI)')
-  const [nomeDottore, setNomeDottore] = useState('Mario')
-  const [cognomeDottore, setCognomeDottore] = useState('Verdi')
-  const [telefono, setTelefono] = useState('+39 02 1234567')
+  // Form states (inizializzati vuoti per reale inserimento dati)
+  const [nomeStudio, setNomeStudio] = useState('')
+  const [citta, setCitta] = useState('')
+  const [indirizzo, setIndirizzo] = useState('')
+  const [nomeDottore, setNomeDottore] = useState('')
+  const [cognomeDottore, setCognomeDottore] = useState('')
+  const [emailDottore, setEmailDottore] = useState('')
+  const [telefono, setTelefono] = useState('')
 
   const [durataVisita, setDurataVisita] = useState<10 | 20 | 30>(20)
   const [lockupMinutes, setLockupMinutes] = useState<5 | 10 | 15>(10)
@@ -45,13 +46,56 @@ export default function OnboardingPage() {
   const [delegaRicette, setDelegaRicette] = useState(true)
   const [delegaAccettazione, setDelegaAccettazione] = useState(true)
 
+  const [caricamento, setCaricamento] = useState(false)
   const [salvato, setSalvato] = useState(false)
+  const [errore, setErrore] = useState<string | null>(null)
 
-  const handleFinish = () => {
-    setSalvato(true)
-    setTimeout(() => {
-      router.push('/dashboard')
-    }, 1500)
+  const handleFinish = async () => {
+    if (!nomeStudio.trim() || !nomeDottore.trim() || !cognomeDottore.trim()) {
+      setErrore('Compila il nome dello studio, nome e cognome del medico curante al Passo 1.')
+      setStep(1)
+      return
+    }
+
+    setCaricamento(true)
+    setErrore(null)
+
+    try {
+      const res = await fetch('/api/onboarding', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          nomeStudio,
+          citta,
+          indirizzo,
+          telefono,
+          nomeDottore,
+          cognomeDottore,
+          emailDottore,
+          durataVisita,
+          lockupMinutes,
+          anticipoMax,
+          anticipoDisdetta,
+          riservaUrgenze,
+          delegaRicette,
+          delegaAccettazione,
+        }),
+      })
+
+      const data = await res.json()
+      if (!res.ok) {
+        throw new Error(data.error || 'Errore durante la creazione dello studio')
+      }
+
+      setSalvato(true)
+      setTimeout(() => {
+        router.push('/dashboard')
+      }, 1500)
+    } catch (err: any) {
+      setErrore(err?.message || 'Errore durante il salvataggio dei dati reali')
+    } finally {
+      setCaricamento(false)
+    }
   }
 
   return (
@@ -114,17 +158,24 @@ export default function OnboardingPage() {
               <p className="text-xs text-slate-500">I pazienti vedranno questi dati durante la prenotazione e nei promemoria</p>
             </div>
 
+            {errore && (
+              <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-800 text-xs font-bold">
+                ⚠️ {errore}
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Nome Studio Medico
+                  Nome Studio Medico *
                 </label>
                 <input
                   type="text"
                   value={nomeStudio}
                   onChange={(e) => setNomeStudio(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
-                  placeholder="es. Studio Medico San Marco"
+                  placeholder="es. Studio Medico Dott. Rossi"
+                  required
                 />
               </div>
 
@@ -169,25 +220,42 @@ export default function OnboardingPage() {
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Nome Medico Curante
+                  Nome Medico Curante *
                 </label>
                 <input
                   type="text"
                   value={nomeDottore}
                   onChange={(e) => setNomeDottore(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="es. Mario"
+                  required
                 />
               </div>
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Cognome Medico Curante
+                  Cognome Medico Curante *
                 </label>
                 <input
                   type="text"
                   value={cognomeDottore}
                   onChange={(e) => setCognomeDottore(e.target.value)}
                   className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="es. Rossi"
+                  required
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
+                  Email Medico (Accesso Portale)
+                </label>
+                <input
+                  type="email"
+                  value={emailDottore}
+                  onChange={(e) => setEmailDottore(e.target.value)}
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  placeholder="es. mario.rossi@studio.it (se vuoto: generata automaticamente)"
                 />
               </div>
             </div>
@@ -370,7 +438,14 @@ export default function OnboardingPage() {
           {step < 3 ? (
             <button
               type="button"
-              onClick={() => setStep(step + 1)}
+              onClick={() => {
+                if (step === 1 && (!nomeStudio.trim() || !nomeDottore.trim() || !cognomeDottore.trim())) {
+                  setErrore('Compila i campi obbligatori (Nome studio, Nome e Cognome medico).')
+                  return
+                }
+                setErrore(null)
+                setStep(step + 1)
+              }}
               className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all"
             >
               <span>Continua al Passo {step + 1}</span>
@@ -380,16 +455,21 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={handleFinish}
-              disabled={salvato}
-              className="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all"
+              disabled={salvato || caricamento}
+              className="px-8 py-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-extrabold flex items-center gap-2 shadow-lg shadow-emerald-600/25 transition-all disabled:opacity-60"
             >
               {salvato ? (
                 <>
-                  <Check className="h-4 w-4" /> Configurazione Salvata! Reindirizzamento...
+                  <Check className="h-4 w-4" /> Configurazione Salvata nel Database!
+                </>
+              ) : caricamento ? (
+                <>
+                  <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Salvataggio in Corso...
                 </>
               ) : (
                 <>
-                  <Check className="h-4 w-4" /> Completa Onboarding ed Entra in Dashboard
+                  <Check className="h-4 w-4" /> Salva Studio e Genera Agenda Reale
                 </>
               )}
             </button>

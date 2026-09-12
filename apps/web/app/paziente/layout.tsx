@@ -85,10 +85,28 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
       </header>
 
       {/* Main Container */}
-      <main className="flex-1 max-w-6xl w-full mx-auto p-6 md:p-8">{children}</main>
+      <main className="flex-1 max-w-6xl w-full mx-auto p-4 sm:p-6 md:p-8 pb-24 sm:pb-8">{children}</main>
+
+      {/* Mobile Bottom Navigation Bar */}
+      <nav className="sm:hidden fixed bottom-0 left-0 right-0 z-30 bg-white/95 backdrop-blur-md border-t border-slate-200 flex items-center justify-around py-3 shadow-lg">
+        {nav.map((item) => {
+          const isActive = pathname === item.href
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex flex-col items-center gap-1 px-4 py-1 rounded-xl text-xs font-bold transition-all ${
+                isActive ? 'text-emerald-600 font-black' : 'text-slate-500'
+              }`}
+            >
+              <span>{item.label}</span>
+            </Link>
+          )
+        })}
+      </nav>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400">
+      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-400 mb-16 sm:mb-0">
         <p>Studio Medico San Marco • Via Roma 123, Milano • Telefono: +39 02 1234567</p>
         <p className="mt-1 text-[11px] text-slate-400">Dati protetti conformemente al GDPR Regolamento UE 2016/679</p>
       </footer>

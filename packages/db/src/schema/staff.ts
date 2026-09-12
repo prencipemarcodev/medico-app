@@ -15,13 +15,20 @@ import { medici } from './studi'
 export const staff = pgTable('staff', {
   id:           uuid('id').primaryKey().defaultRandom(),
   studioId:     uuid('studio_id').notNull().references(() => studi.id),
-  medicoId:     uuid('medico_id').notNull().references(() => medici.id),
+  medicoId:     uuid('medico_id').references(() => medici.id),
   nome:         text('nome').notNull(),
   cognome:      text('cognome').notNull(),
   email:        text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   attivo:       boolean('attivo').notNull().default(true),
   createdAt:    timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
+export const staffMedici = pgTable('staff_medici', {
+  id:        uuid('id').primaryKey().defaultRandom(),
+  staffId:   uuid('staff_id').notNull().references(() => staff.id, { onDelete: 'cascade' }),
+  medicoId:  uuid('medico_id').notNull().references(() => medici.id, { onDelete: 'cascade' }),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
 export const staffPermissions = pgTable('staff_permissions', {

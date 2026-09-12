@@ -24,58 +24,23 @@ import {
 
 export default function RichiestePage() {
   const [categoria, setCategoria] = useState<'tutte' | 'malattia' | 'medicinale' | 'certificato'>('tutte')
-  const [richieste, setRichieste] = useState([
-    {
-      id: 'req-001',
-      paziente: 'Giovanni Ferri',
-      cf: 'FRRGVN88A01F205Z',
-      telefono: '+39 349 1234567',
-      tipo: 'malattia',
-      dataArrivo: '09/09/2026 08:30 (FIFO #1)',
-      dettaglio: 'Richiesta certificato di malattia INPS',
-      sintomi: ['Febbre a 38.5°C', 'Forte tosse secca', 'Cefalea intensa'],
-      periodo: 'Dal 09/09/2026 al 12/09/2026 (4 giorni)',
-      modalitaRitiro: 'digitale',
-      stato: 'in_attesa',
-    },
-    {
-      id: 'req-002',
-      paziente: 'Sara Neri',
-      cf: 'NRISRA74E45H501K',
-      telefono: '+39 340 7654321',
-      tipo: 'medicinale',
-      dataArrivo: '09/09/2026 07:45 (FIFO #2)',
-      dettaglio: 'Prescrizione farmaco continuativo per ipertensione',
-      farmaco: 'Cardicor 2.5 mg (Bisoprololo) — 1 confezione',
-      terapiaCronica: true,
-      modalitaRitiro: 'digitale',
-      stato: 'in_attesa',
-    },
-    {
-      id: 'req-003',
-      paziente: 'Paolo Rossi',
-      cf: 'RSSPLA60M12H501U',
-      telefono: '+39 320 1199887',
-      tipo: 'medicinale',
-      dataArrivo: '08/09/2026 19:10 (FIFO #3)',
-      dettaglio: 'Richiesta prescrizione ansiolitico',
-      farmaco: 'Xanax 0.50 mg compresse (Alprazolam) — Ritiro obbligatorio in studio (Ricetta bianca)',
-      terapiaCronica: false,
-      modalitaRitiro: 'studio',
-      stato: 'in_attesa',
-    },
-    {
-      id: 'req-004',
-      paziente: 'Roberto De Luca',
-      cf: 'DLCRBT92B10F205W',
-      telefono: '+39 338 5544332',
-      tipo: 'certificato',
-      dataArrivo: '08/09/2026 18:20 (FIFO #4)',
-      dettaglio: 'Certificato di idoneità all\'attività sportiva non agonistica con ECG recente allegato',
-      modalitaRitiro: 'digitale',
-      stato: 'in_attesa',
-    },
-  ])
+  const [richieste, setRichieste] = useState<
+    Array<{
+      id: string
+      paziente: string
+      cf: string
+      telefono: string
+      tipo: string
+      dataArrivo: string
+      dettaglio: string
+      sintomi?: string[]
+      periodo?: string
+      farmaco?: string
+      terapiaCronica?: boolean
+      modalitaRitiro: string
+      stato: 'in_attesa' | 'completata' | 'rifiutata'
+    }>
+  >([])
 
   const handleEvadi = (id: string) => {
     setRichieste(richieste.map((r) => (r.id === id ? { ...r, stato: 'completata' } : r)))
@@ -135,7 +100,16 @@ export default function RichiestePage() {
 
       {/* Requests List */}
       <div className="space-y-4">
-        {richiesteFiltrate.map((req) => (
+        {richiesteFiltrate.length === 0 ? (
+          <div className="p-12 text-center bg-white rounded-3xl border border-slate-200/80 shadow-sm space-y-3">
+            <ClipboardList className="h-10 w-10 text-slate-300 mx-auto" />
+            <p className="text-base font-bold text-slate-800">Nessuna richiesta da evadere</p>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Non ci sono richieste di prescrizione farmaci o certificati in attesa per questa categoria.
+            </p>
+          </div>
+        ) : (
+          richiesteFiltrate.map((req) => (
           <div
             key={req.id}
             className={`p-6 rounded-3xl border transition-all space-y-4 ${
@@ -230,7 +204,7 @@ export default function RichiestePage() {
               )}
             </div>
           </div>
-        ))}
+        )))}
       </div>
     </div>
   )

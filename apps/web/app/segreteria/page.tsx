@@ -24,58 +24,28 @@ import {
 } from 'lucide-react'
 
 export default function SegreteriaPage() {
-  // Sala d'attesa state
-  const [salaAttesa, setSalaAttesa] = useState([
-    {
-      id: 'p-1',
-      nome: 'Anna Bianchi',
-      ora: '09:20',
-      stato: 'in_visita',
-      motivo: 'Controllo esami sangue e terapia ipertensiva',
-      arrivatoAlle: '09:12',
-    },
-    {
-      id: 'p-2',
-      nome: 'Luigi Esposito',
-      ora: '09:40',
-      stato: 'in_attesa',
-      motivo: 'Valutazione dolore lombare acuto',
-      arrivatoAlle: '09:25',
-    },
-    {
-      id: 'p-3',
-      nome: 'Chiara Romano',
-      ora: '10:20',
-      stato: 'in_attesa',
-      motivo: 'Certificato medico sportivo non agonistico',
-      arrivatoAlle: '09:35 (In anticipo)',
-    },
-  ])
+  // Sala d'attesa (inizializzata vuota per accogliere dati reali)
+  const [salaAttesa, setSalaAttesa] = useState<
+    Array<{
+      id: string
+      nome: string
+      ora: string
+      stato: 'in_attesa' | 'in_visita'
+      motivo: string
+      arrivatoAlle: string
+    }>
+  >([])
 
-  // Ritiro ricette cartacee
-  const [ricetteDaRitirare, setRicetteDaRitirare] = useState([
-    {
-      id: 'ritiro-1',
-      paziente: 'Paolo Rossi',
-      documento: 'Xanax 0.50mg (Ricetta bianca non ripetibile)',
-      emessaIl: 'Oggi 08:30',
-      consegnata: false,
-    },
-    {
-      id: 'ritiro-2',
-      paziente: 'Elena Morandi',
-      documento: 'Certificato Medico per Assunzione Lavoro (In originale)',
-      emessaIl: 'Ieri 18:00',
-      consegnata: false,
-    },
-    {
-      id: 'ritiro-3',
-      paziente: 'Matteo Gatti',
-      documento: 'Prescrizione Fisioterapia e Riabilitazione Motoria',
-      emessaIl: 'Ieri 16:30',
-      consegnata: false,
-    },
-  ])
+  // Ritiro ricette cartacee (inizializzato vuoto)
+  const [ricetteDaRitirare, setRicetteDaRitirare] = useState<
+    Array<{
+      id: string
+      paziente: string
+      documento: string
+      emessaIl: string
+      consegnata: boolean
+    }>
+  >([])
 
   // Form rapido accettazione telefonica
   const [nomeTel, setNomeTel] = useState('')
@@ -132,7 +102,11 @@ export default function SegreteriaPage() {
               <p className="font-extrabold text-slate-900">
                 {salaAttesa.filter((p) => p.stato === 'in_attesa').length} Pazienti in Attesa
               </p>
-              <p className="text-[11px] text-amber-700">1 Paziente dentro con il dottore</p>
+              <p className="text-[11px] text-amber-700">
+                {salaAttesa.some((p) => p.stato === 'in_visita')
+                  ? '1 Paziente dentro con il dottore'
+                  : 'Nessun paziente in ambulatorio'}
+              </p>
             </div>
           </div>
         </div>
@@ -147,68 +121,84 @@ export default function SegreteriaPage() {
                 <Users className="h-5 w-5 text-blue-600" />
                 Sala d'Attesa Studio (Stato Attuale)
               </h2>
-              <p className="text-xs text-slate-400 mt-0.5">Visite del Dott. Mario Verdi</p>
+              <p className="text-xs text-slate-400 mt-0.5">Visite e presenze allo sportello</p>
             </div>
-            <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-              ● In Visita: Anna Bianchi
-            </span>
+            {salaAttesa.find((p) => p.stato === 'in_visita') ? (
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                ● In Visita: {salaAttesa.find((p) => p.stato === 'in_visita')?.nome}
+              </span>
+            ) : (
+              <span className="px-2.5 py-1 rounded-full text-xs font-bold bg-slate-100 text-slate-600 border border-slate-200">
+                ● Studio Libero
+              </span>
+            )}
           </div>
 
           <div className="space-y-3">
-            {salaAttesa.map((paz) => (
-              <div
-                key={paz.id}
-                className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
-                  paz.stato === 'in_visita'
-                    ? 'bg-blue-50/70 border-blue-300 ring-2 ring-blue-500/20'
-                    : 'bg-white border-slate-200 shadow-xs'
-                }`}
-              >
-                <div className="flex items-center gap-4">
-                  <div className="font-mono text-xs font-bold text-slate-700 w-16 text-center py-2 bg-slate-100 rounded-xl">
-                    {paz.ora}
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className="font-extrabold text-sm text-slate-900">{paz.nome}</span>
-                      {paz.stato === 'in_visita' ? (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
-                          In Ambulatorio
-                        </span>
-                      ) : (
-                        <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
-                          In Poltrona
-                        </span>
-                      )}
-                    </div>
-                    <p className="text-xs text-slate-500 mt-0.5">{paz.motivo}</p>
-                    <p className="text-[10px] text-slate-400 mt-0.5">Arrivo segnato: {paz.arrivatoAlle}</p>
-                  </div>
-                </div>
-
-                <div>
-                  {paz.stato === 'in_attesa' && (
-                    <button
-                      onClick={() =>
-                        setSalaAttesa(
-                          salaAttesa.map((x) =>
-                            x.id === paz.id ? { ...x, stato: 'in_visita' } : { ...x, stato: 'in_attesa' }
-                          )
-                        )
-                      }
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors"
-                    >
-                      Fai Entrare
-                    </button>
-                  )}
-                  {paz.stato === 'in_visita' && (
-                    <span className="text-xs font-bold text-blue-600 flex items-center gap-1">
-                      <Stethoscope className="h-4 w-4" /> In Visita
-                    </span>
-                  )}
-                </div>
+            {salaAttesa.length === 0 ? (
+              <div className="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                <Users className="h-8 w-8 text-slate-300 mx-auto" />
+                <p className="text-sm font-bold text-slate-700">Nessun paziente in sala d'attesa</p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  La sala d'attesa è attualmente vuota. Quando un paziente arriva o chiama allo sportello, puoi registrarlo tramite il form rapido sottostante.
+                </p>
               </div>
-            ))}
+            ) : (
+              salaAttesa.map((paz) => (
+                <div
+                  key={paz.id}
+                  className={`p-4 rounded-2xl border transition-all flex items-center justify-between ${
+                    paz.stato === 'in_visita'
+                      ? 'bg-blue-50/70 border-blue-300 ring-2 ring-blue-500/20'
+                      : 'bg-white border-slate-200 shadow-xs'
+                  }`}
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="font-mono text-xs font-bold text-slate-700 w-16 text-center py-2 bg-slate-100 rounded-xl">
+                      {paz.ora}
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-extrabold text-sm text-slate-900">{paz.nome}</span>
+                        {paz.stato === 'in_visita' ? (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-600 text-white">
+                            In Ambulatorio
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                            In Poltrona
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-slate-500 mt-0.5">{paz.motivo}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">Arrivo segnato: {paz.arrivatoAlle}</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    {paz.stato === 'in_attesa' && (
+                      <button
+                        onClick={() =>
+                          setSalaAttesa(
+                            salaAttesa.map((x) =>
+                              x.id === paz.id ? { ...x, stato: 'in_visita' } : { ...x, stato: 'in_attesa' }
+                            )
+                          )
+                        }
+                        className="px-3 py-1.5 rounded-xl text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-xs transition-colors"
+                      >
+                        Fai Entrare
+                      </button>
+                    )}
+                    {paz.stato === 'in_visita' && (
+                      <span className="text-xs font-bold text-blue-600 flex items-center gap-1">
+                        <Stethoscope className="h-4 w-4" /> In Visita
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
 
           {/* Form Rapido Prenotazione Telefonica */}
@@ -242,7 +232,7 @@ export default function SegreteriaPage() {
             </form>
             {prenotatoSuccess && (
               <p className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                <CheckCircle2 className="h-3.5 w-3.5" /> Paziente aggiunto con successo in agenda!
+                <CheckCircle2 className="h-3.5 w-3.5" /> Paziente aggiunto con successo in sala d'attesa!
               </p>
             )}
           </div>
@@ -261,38 +251,48 @@ export default function SegreteriaPage() {
           </div>
 
           <div className="space-y-3">
-            {ricetteDaRitirare.map((r) => (
-              <div
-                key={r.id}
-                className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
-                  r.consegnata
-                    ? 'bg-slate-50 border-slate-200 opacity-60'
-                    : 'bg-amber-50/40 border-amber-200/80'
-                }`}
-              >
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-sm text-slate-900">{r.paziente}</span>
-                  <span className="text-[10px] font-semibold text-slate-400">{r.emessaIl}</span>
-                </div>
-                <p className="text-xs font-medium text-slate-700 bg-white p-2 rounded-xl border border-slate-100">
-                  {r.documento}
+            {ricetteDaRitirare.length === 0 ? (
+              <div className="p-8 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                <PackageCheck className="h-8 w-8 text-slate-300 mx-auto" />
+                <p className="text-sm font-bold text-slate-700">Nessuna ricetta da ritirare</p>
+                <p className="text-xs text-slate-400 max-w-sm mx-auto">
+                  Al momento non ci sono ricette cartacee o certificati fisici in attesa di ritiro allo sportello.
                 </p>
-                <div className="flex items-center justify-between pt-1">
-                  {r.consegnata ? (
-                    <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
-                      <Check className="h-3.5 w-3.5" /> Consegnata al paziente
-                    </span>
-                  ) : (
-                    <button
-                      onClick={() => handleSegnaConsegnata(r.id)}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center gap-1"
-                    >
-                      <Check className="h-3.5 w-3.5" /> Segna come Consegnata
-                    </button>
-                  )}
-                </div>
               </div>
-            ))}
+            ) : (
+              ricetteDaRitirare.map((r) => (
+                <div
+                  key={r.id}
+                  className={`p-4 rounded-2xl border transition-all space-y-2.5 ${
+                    r.consegnata
+                      ? 'bg-slate-50 border-slate-200 opacity-60'
+                      : 'bg-amber-50/40 border-amber-200/80'
+                  }`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-sm text-slate-900">{r.paziente}</span>
+                    <span className="text-[10px] font-semibold text-slate-400">{r.emessaIl}</span>
+                  </div>
+                  <p className="text-xs font-medium text-slate-700 bg-white p-2 rounded-xl border border-slate-100">
+                    {r.documento}
+                  </p>
+                  <div className="flex items-center justify-between pt-1">
+                    {r.consegnata ? (
+                      <span className="text-xs font-bold text-emerald-600 flex items-center gap-1">
+                        <Check className="h-3.5 w-3.5" /> Consegnata al paziente
+                      </span>
+                    ) : (
+                      <button
+                        onClick={() => handleSegnaConsegnata(r.id)}
+                        className="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs transition-all flex items-center gap-1"
+                      >
+                        <Check className="h-3.5 w-3.5" /> Segna come Consegnata
+                      </button>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

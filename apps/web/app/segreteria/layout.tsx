@@ -22,6 +22,7 @@ import {
   Clock,
   PhoneCall,
   UserCheck,
+  Search,
 } from 'lucide-react'
 
 export default function SegreteriaLayout({ children }: { children: React.ReactNode }) {
@@ -32,7 +33,11 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
       href: '/segreteria',
       label: "Sala d'Attesa & Sportello",
       icon: Users,
-      badge: '3',
+    },
+    {
+      href: '/segreteria/pazienti',
+      label: 'Ricerca Pazienti & Scheda',
+      icon: Search,
     },
     {
       href: '/segreteria/agenda',
@@ -110,11 +115,11 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
             Medico di Riferimento
           </div>
           <div className="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs space-y-1">
-            <p className="font-bold text-slate-900">Dott. Mario Verdi</p>
+            <p className="font-bold text-slate-900">Medico Titolare</p>
             <p className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
-              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> In Studio (Stanza 1)
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> In Studio
             </p>
-            <p className="text-[11px] text-slate-400">Paziente attuale: Anna Bianchi</p>
+            <p className="text-[11px] text-slate-400">Ambulatorio Libero</p>
           </div>
         </div>
 
@@ -122,11 +127,11 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
         <div className="p-4 border-t border-slate-100 bg-slate-50/50 m-3 rounded-2xl border">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-xl bg-amber-100 text-amber-800 font-bold flex items-center justify-center border border-amber-200">
-              GC
+              ST
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-xs font-bold text-slate-900 truncate">Giulia Colombo</p>
-              <p className="text-[11px] text-slate-500 truncate">Segreteria San Marco</p>
+              <p className="text-xs font-bold text-slate-900 truncate">Operatore Studio</p>
+              <p className="text-[11px] text-slate-500 truncate">Postazione Segreteria</p>
             </div>
             <Link
               href="/login"

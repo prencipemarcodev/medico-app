@@ -34,10 +34,7 @@ export async function buildApp() {
 
   // ── Plugin: CORS ──────────────────────────────────────────────────────────
   await app.register(cors, {
-    origin: [
-      process.env['NEXT_PUBLIC_API_URL'] ?? 'http://localhost:3000',
-      'http://localhost:19006', // Expo web
-    ],
+    origin: true,
     credentials: true,
   })
 

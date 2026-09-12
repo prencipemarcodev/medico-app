@@ -24,6 +24,9 @@
     },
     "db:seed": {
       "cache": false
+    },
+    "db:clean": {
+      "cache": false
     }
   }
 }

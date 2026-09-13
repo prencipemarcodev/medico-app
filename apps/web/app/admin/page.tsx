@@ -39,6 +39,14 @@ import {
   Settings,
   Copy,
   ExternalLink,
+  Eye,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
+  ShieldAlert,
+  ShieldCheck,
+  ArrowUpDown,
+  FileDown,
 } from 'lucide-react'
 
 interface Studio {
@@ -109,7 +117,14 @@ export default function AdminPage() {
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
   const [auditQuery, setAuditQuery] = useState('')
+  const [auditFiltroRuolo, setAuditFiltroRuolo] = useState<string>('tutti')
+  const [auditFiltroCategoria, setAuditFiltroCategoria] = useState<string>('tutte')
+  const [auditPagina, setAuditPagina] = useState(1)
+  const [auditRighePerPagina, setAuditRighePerPagina] = useState(25)
   const [loadingAudit, setLoadingAudit] = useState(false)
+  const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLogItem | null>(null)
+  const [jsonCopiato, setJsonCopiato] = useState(false)
+  const [modalEmergencyOpen, setModalEmergencyOpen] = useState(false)
 
   // Modali Creazione
   const [modalStudioOpen, setModalStudioOpen] = useState(false)
@@ -245,20 +260,124 @@ export default function AdminPage() {
   }
 
   // Caricamento Audit Logs dal Database
-  const caricaAuditLogs = async (query = auditQuery) => {
+  const caricaAuditLogs = async (query = auditQuery, ruolo = auditFiltroRuolo) => {
     setLoadingAudit(true)
     try {
-      const url = query ? `/api/admin/audit?q=${encodeURIComponent(query)}` : '/api/admin/audit'
-      const res = await fetch(url)
+      const params = new URLSearchParams()
+      if (query.trim()) params.set('q', query.trim())
+      if (ruolo && ruolo !== 'tutti') params.set('ruolo', ruolo)
+      params.set('limit', '300')
+      const res = await fetch(`/api/admin/audit?${params.toString()}`)
       const data = await res.json()
       if (data.success) {
         setAuditLogs(data.logs || [])
+        setAuditPagina(1)
       }
     } catch (err) {
       console.error('Errore caricamento audit logs:', err)
     } finally {
       setLoadingAudit(false)
     }
+  }
+
+  // Filtro client-side combinato
+  const auditLogsFiltrati = auditLogs.filter((log) => {
+    if (auditFiltroRuolo !== 'tutti' && log.ruolo?.toLowerCase() !== auditFiltroRuolo.toLowerCase()) {
+      return false
+    }
+
+    if (auditFiltroCategoria !== 'tutte') {
+      const az = log.azione.toUpperCase()
+      if (auditFiltroCategoria === 'auth' && !az.includes('LOGIN') && !az.includes('LOGOUT') && !az.includes('PASSWORD')) {
+        return false
+      }
+      if (auditFiltroCategoria === 'creazione' && !az.includes('CREAT') && !az.includes('SUCCESS') && !az.includes('REGISTR')) {
+        return false
+      }
+      if (auditFiltroCategoria === 'modifica' && !az.includes('MODIF') && !az.includes('AGGIORN') && !az.includes('UPDATE')) {
+        return false
+      }
+      if (auditFiltroCategoria === 'eliminazione' && !az.includes('ELIMIN') && !az.includes('DELETE') && !az.includes('FAILED')) {
+        return false
+      }
+      if (auditFiltroCategoria === 'clinica' && !az.includes('ASSOCIAZ') && !az.includes('DOCUMENT') && !az.includes('PAZIENTE')) {
+        return false
+      }
+    }
+
+    if (auditQuery.trim()) {
+      const q = auditQuery.toLowerCase().trim()
+      const matchEmail = log.attoreEmail?.toLowerCase().includes(q)
+      const matchAzione = log.azione?.toLowerCase().includes(q)
+      const matchEntita = log.entita?.toLowerCase().includes(q)
+      const matchIp = log.ip?.toLowerCase().includes(q)
+      const matchDettagli = typeof log.dettagli === 'object'
+        ? JSON.stringify(log.dettagli).toLowerCase().includes(q)
+        : String(log.dettagli || '').toLowerCase().includes(q)
+      if (!matchEmail && !matchAzione && !matchEntita && !matchIp && !matchDettagli) {
+        return false
+      }
+    }
+
+    return true
+  })
+
+  // Paginazione tabellare
+  const totalePagineAudit = Math.max(1, Math.ceil(auditLogsFiltrati.length / auditRighePerPagina))
+  const indiceInizioAudit = (auditPagina - 1) * auditRighePerPagina
+  const auditLogsPaginati = auditLogsFiltrati.slice(indiceInizioAudit, indiceInizioAudit + auditRighePerPagina)
+
+  // Esportazione CSV
+  const esportaAuditCsv = () => {
+    if (auditLogsFiltrati.length === 0) {
+      alert('Nessun record da esportare con i filtri attuali.')
+      return
+    }
+    const headers = 'ID,DataOra,Ruolo,AttoreEmail,Azione,Entita,EntitaId,IP,Dettagli\n'
+    const rows = auditLogsFiltrati
+      .map((l) => {
+        const dettagliStr = l.dettagli ? JSON.stringify(l.dettagli).replace(/"/g, '""') : ''
+        return `"${l.id}","${l.createdAt}","${l.ruolo}","${l.attoreEmail}","${l.azione}","${l.entita}","${l.entitaId || ''}","${l.ip || ''}","${dettagliStr}"`
+      })
+      .join('\n')
+
+    const blob = new Blob([headers + rows], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `audit_logs_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+  }
+
+  // Sintesi leggibile dettagli per la riga della tabella
+  const formatAuditDetailsSummary = (log: AuditLogItem) => {
+    if (!log.dettagli) return '—'
+    const d = log.dettagli
+
+    if (log.azione === 'LOGIN_SUCCESS') return 'Autenticazione riuscita con token di sessione'
+    if (log.azione === 'LOGIN_FAILED') return `Tentativo non autorizzato (${d.motivo || 'Credenziali errate'})`
+    if (d.nomeStudio) return `Studio: ${d.nomeStudio}`
+    if (d.titolo) return `Doc: "${d.titolo}" (${d.categoria || 'appunto'})`
+    if (d.codiceFiscale) return `CF: ${d.codiceFiscale}`
+    if (d.conteggio) return `${d.conteggio} record elaborati`
+    if (d.motivo) return `Motivo: ${d.motivo}`
+
+    if (typeof d === 'object') {
+      const entries = Object.entries(d).filter(([k]) => k !== 'password' && k !== 'passwordHash')
+      if (entries.length === 0) return '—'
+      return entries.slice(0, 2).map(([k, v]) => `${k}: ${String(v)}`).join(' • ')
+    }
+
+    return String(d)
+  }
+
+  // Copia JSON
+  const copiaJsonLog = (log: AuditLogItem) => {
+    navigator.clipboard.writeText(JSON.stringify(log, null, 2))
+    setJsonCopiato(true)
+    setTimeout(() => setJsonCopiato(false), 2000)
   }
 
   useEffect(() => {
@@ -713,73 +832,73 @@ export default function AdminPage() {
   const totaleMediciTotali = studiList.reduce((acc, s) => acc + s.totaleMedici, 0)
 
   return (
-    <div className="space-y-8 max-w-7xl mx-auto font-sans">
+    <div className="space-y-6 max-w-7xl mx-auto font-sans">
       {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-xl">
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-950 p-5 rounded-xl border border-slate-800 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-400 mb-1">
+          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 mb-1">
             <Shield className="h-4 w-4" />
-            Amministrazione & Gestione Rete Multi-Tenant
+            <span>Amministrazione & Gestione Rete Multi-Tenant</span>
           </div>
-          <h1 className="text-2xl font-black text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
             Pannello di Controllo Generale
           </h1>
           <p className="text-xs text-slate-400 mt-0.5">
-            Configurazione di Studi Medici, Medici di Medicina Generale, importazione dataset Pazienti in CSV con generazione credenziali e Segreteria.
+            Configurazione studi medici, medici curanti (MMG), dataset assistiti con credenziali e segreteria.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={caricaDati}
-            className="p-2.5 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
             title="Aggiorna Dati"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <span className="px-3 py-1.5 rounded-xl bg-slate-900 border border-slate-700 text-xs font-mono font-bold text-emerald-400 flex items-center gap-1.5">
+          <span className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono font-semibold text-emerald-400 flex items-center gap-1.5">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Postgres DB Connesso
+            Postgres Connesso
           </span>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Studi Medici</span>
-            <Building2 className="h-5 w-5 text-indigo-400" />
+            <span className="text-xs font-medium text-slate-400">Studi Medici</span>
+            <Building2 className="h-4 w-4 text-indigo-400" />
           </div>
-          <div className="text-3xl font-black text-white">{studiList.length}</div>
-          <p className="text-xs text-indigo-400 font-medium">Istanze attive su rete</p>
+          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{studiList.length}</div>
+          <p className="text-xs text-slate-500 font-medium">Istanze attive su rete</p>
         </div>
 
-        <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-2">
+        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Medici Curanti (MMG)</span>
-            <Stethoscope className="h-5 w-5 text-blue-400" />
+            <span className="text-xs font-medium text-slate-400">Medici Curanti (MMG)</span>
+            <Stethoscope className="h-4 w-4 text-blue-400" />
           </div>
-          <div className="text-3xl font-black text-white">{totaleMediciTotali}</div>
-          <p className="text-xs text-blue-400 font-medium">Slot agenda attivi</p>
+          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{totaleMediciTotali}</div>
+          <p className="text-xs text-slate-500 font-medium">Slot agenda attivi</p>
         </div>
 
-        <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-2">
+        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pazienti Registrati</span>
-            <Users className="h-5 w-5 text-emerald-400" />
+            <span className="text-xs font-medium text-slate-400">Pazienti Registrati</span>
+            <Users className="h-4 w-4 text-emerald-400" />
           </div>
-          <div className="text-3xl font-black text-white">{totalePazientiTotali}</div>
-          <p className="text-xs text-emerald-400 font-medium">CF Username + Pass 6 car.</p>
+          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{totalePazientiTotali}</div>
+          <p className="text-xs text-slate-500 font-medium">Accessi CF & credenziali</p>
         </div>
 
-        <div className="bg-slate-950 p-6 rounded-3xl border border-slate-800 shadow-sm space-y-2">
+        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Personale Segreteria</span>
-            <UserCheck className="h-5 w-5 text-amber-400" />
+            <span className="text-xs font-medium text-slate-400">Personale Segreteria</span>
+            <UserCheck className="h-4 w-4 text-amber-400" />
           </div>
-          <div className="text-3xl font-black text-white">{staffList.length}</div>
-          <p className="text-xs text-amber-400 font-medium">Deleghe multi-medico</p>
+          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{staffList.length}</div>
+          <p className="text-xs text-slate-500 font-medium">Deleghe multi-medico</p>
         </div>
       </div>
 
@@ -828,7 +947,7 @@ export default function AdminPage() {
           </div>
 
           {studiList.length === 0 ? (
-            <div className="p-12 text-center bg-slate-950 rounded-3xl border border-dashed border-slate-800 space-y-3">
+            <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
               <Building2 className="h-10 w-10 text-slate-600 mx-auto" />
               <p className="text-sm font-bold text-slate-300">Nessuno studio medico registrato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -840,7 +959,7 @@ export default function AdminPage() {
               {studiList.map((studio) => (
                 <div
                   key={studio.id}
-                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
+                  className="bg-slate-950 rounded-xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
@@ -982,7 +1101,7 @@ export default function AdminPage() {
           </div>
 
           {mediciList.length === 0 ? (
-            <div className="p-12 text-center bg-slate-950 rounded-3xl border border-dashed border-slate-800 space-y-3">
+            <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
               <Stethoscope className="h-10 w-10 text-slate-600 mx-auto" />
               <p className="text-sm font-bold text-slate-300">Nessun medico registrato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -994,7 +1113,7 @@ export default function AdminPage() {
               {mediciList.map((medico) => (
                 <div
                   key={medico.id}
-                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
+                  className="bg-slate-950 rounded-xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
@@ -1103,7 +1222,7 @@ export default function AdminPage() {
           </div>
 
           {staffList.length === 0 ? (
-            <div className="p-12 text-center bg-slate-950 rounded-3xl border border-dashed border-slate-800 space-y-3">
+            <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
               <UserCheck className="h-10 w-10 text-slate-600 mx-auto" />
               <p className="text-sm font-bold text-slate-300">Nessun account di segreteria creato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -1115,7 +1234,7 @@ export default function AdminPage() {
               {staffList.map((st) => (
                 <div
                   key={st.id}
-                  className="bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
+                  className="bg-slate-950 rounded-xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
@@ -1190,159 +1309,334 @@ export default function AdminPage() {
 
       {/* TAB 4: AUDIT LOG & SICUREZZA DB */}
       {tabAttiva === 'audit' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-          <div className="lg:col-span-8 bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div>
-                <h2 className="text-base font-bold text-white flex items-center gap-2">
-                  <FileSpreadsheet className="h-5 w-5 text-emerald-400" />
+        <div className="w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm flex flex-col">
+          {/* Header Bar */}
+          <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <FileSpreadsheet className="h-5 w-5 text-emerald-400 flex-shrink-0" />
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
                   Registro Audit di Sistema (PostgreSQL audit_logs)
                 </h2>
-                <p className="text-xs text-slate-400">
-                  Tracciamento immutabile di accessi, creazioni, eliminazioni e modifiche (GDPR Art. 30)
-                </p>
+                <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800/80 text-[10px] font-mono font-semibold text-emerald-400">
+                  GDPR Art. 30
+                </span>
               </div>
-
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => caricaAuditLogs()}
-                  className="p-2 rounded-xl bg-slate-900 border border-slate-700 text-slate-300 hover:text-white"
-                  title="Ricarica registri"
-                >
-                  <RefreshCw className={`h-4 w-4 ${loadingAudit ? 'animate-spin' : ''}`} />
-                </button>
-              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Tracciamento immutabile di accessi, creazioni, eliminazioni e consultazione cartelle cliniche.
+              </p>
             </div>
 
-            {/* Barra di ricerca audit */}
-            <div className="flex items-center gap-2">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500" />
-                <input
-                  type="text"
-                  value={auditQuery}
-                  onChange={(e) => setAuditQuery(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') caricaAuditLogs(auditQuery)
-                  }}
-                  placeholder="Filtra per email attore, azione (es. LOGIN, STUDIO_CREATO, ELIMINATO)..."
-                  className="w-full pl-9 pr-4 py-2 rounded-xl bg-slate-900 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
-                />
-              </div>
+            <div className="flex items-center flex-wrap gap-2">
               <button
                 type="button"
-                onClick={() => caricaAuditLogs(auditQuery)}
-                className="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs"
+                onClick={() => caricaAuditLogs()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                title="Ricarica registri dal database"
               >
-                Cerca
+                <RefreshCw className={`h-3.5 w-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
+                <span>Aggiorna</span>
               </button>
-            </div>
-
-            <div className="overflow-x-auto -mx-6 px-6">
-              <table className="w-full text-left text-xs min-w-[650px]">
-                <thead>
-                  <tr className="border-b border-slate-800 text-slate-400 font-bold uppercase tracking-wider text-[10px]">
-                    <th className="pb-3">Data / Ora</th>
-                    <th className="pb-3">Attore</th>
-                    <th className="pb-3">Azione</th>
-                    <th className="pb-3">Entità & IP</th>
-                    <th className="pb-3">Dettagli</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60 font-medium">
-                  {auditLogs.length === 0 ? (
-                    <tr>
-                      <td colSpan={5} className="py-8 text-center text-slate-500">
-                        {loadingAudit ? 'Caricamento registri audit...' : 'Nessun evento registrato nei log di audit.'}
-                      </td>
-                    </tr>
-                  ) : (
-                    auditLogs.map((log) => {
-                      const isDanger = log.azione.includes('ELIMINAT') || log.azione.includes('FAILED')
-                      const isSuccess = log.azione.includes('SUCCESS') || log.azione.includes('CREAT')
-                      return (
-                        <tr key={log.id} className="hover:bg-slate-900/50 transition-colors">
-                          <td className="py-3 text-slate-400 font-mono text-[11px] whitespace-nowrap">
-                            {new Date(log.createdAt).toLocaleString('it-IT', {
-                              day: '2-digit',
-                              month: '2-digit',
-                              year: '2-digit',
-                              hour: '2-digit',
-                              minute: '2-digit',
-                              second: '2-digit',
-                            })}
-                          </td>
-                          <td className="py-3 text-white font-bold whitespace-nowrap">
-                            <div className="flex items-center gap-1.5">
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono uppercase bg-slate-800 text-indigo-300">
-                                {log.ruolo}
-                              </span>
-                              <span className="text-xs">{log.attoreEmail}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 whitespace-nowrap">
-                            <span
-                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold border ${
-                                isDanger
-                                  ? 'bg-rose-950 text-rose-400 border-rose-800'
-                                  : isSuccess
-                                  ? 'bg-emerald-950 text-emerald-400 border-emerald-800'
-                                  : 'bg-indigo-950 text-indigo-400 border-indigo-800'
-                              }`}
-                            >
-                              {log.azione}
-                            </span>
-                          </td>
-                          <td className="py-3 text-slate-300 text-[11px] whitespace-nowrap">
-                            <div>
-                              <span className="font-semibold text-slate-200">{log.entita}</span>
-                              {log.ip && <span className="text-slate-500 block text-[10px]">{log.ip}</span>}
-                            </div>
-                          </td>
-                          <td className="py-3 text-slate-400 text-[11px] max-w-[200px] truncate">
-                            {log.dettagli ? (
-                              <span className="font-mono text-[10px] text-slate-400 truncate block">
-                                {typeof log.dettagli === 'object'
-                                  ? JSON.stringify(log.dettagli)
-                                  : String(log.dettagli)}
-                              </span>
-                            ) : (
-                              '—'
-                            )}
-                          </td>
-                        </tr>
-                      )
-                    })
-                  )}
-                </tbody>
-              </table>
+              <button
+                type="button"
+                onClick={esportaAuditCsv}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                title="Esporta in formato CSV i log attualmente filtrati"
+              >
+                <FileDown className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Esporta CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setModalEmergencyOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-600/40 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 transition-colors"
+                title="Accesso di emergenza operatore (ADR-006)"
+              >
+                <Key className="h-3.5 w-3.5 text-amber-400" />
+                <span>Accesso di Emergenza</span>
+              </button>
             </div>
           </div>
 
-          <div className="lg:col-span-4 bg-slate-950 rounded-3xl p-6 border border-slate-800 space-y-4 flex flex-col justify-between">
-            <div className="space-y-3">
-              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
-                <Key className="h-5 w-5" />
-                <span>Accesso di Emergenza (ADR-006)</span>
+          {/* Sticky Filter Toolbar */}
+          <div className="p-3 sm:p-4 bg-slate-900/60 border-b border-slate-800 flex flex-col gap-3">
+            {/* Top Row: Search input and count */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
+              <div className="relative flex-1 max-w-xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={auditQuery}
+                  onChange={(e) => {
+                    setAuditQuery(e.target.value)
+                    setAuditPagina(1)
+                  }}
+                  placeholder="Cerca per email, azione (LOGIN, ELIMINA, CREA), entità, IP o dettagli..."
+                  className="w-full pl-9 pr-8 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                />
+                {auditQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAuditQuery('')
+                      setAuditPagina(1)
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                    title="Cancella filtro di ricerca"
+                  >
+                    ✕
+                  </button>
+                )}
               </div>
-              <p className="text-xs text-slate-400 leading-relaxed">
-                Genera un codice monouso valido per 1 ora per ripristinare l'accesso in caso di emergenza o guasto operatore.
-              </p>
-              {emergencyCode && (
-                <div className="p-4 rounded-2xl bg-amber-950/40 border border-amber-800 text-center space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Codice Monouso</p>
-                  <p className="font-mono text-base font-black text-white tracking-widest">{emergencyCode}</p>
-                </div>
-              )}
+
+              <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-400">
+                <span className="font-semibold text-slate-200 tabular-nums font-mono">
+                  {auditLogsFiltrati.length}
+                </span>
+                <span>{auditLogsFiltrati.length === 1 ? 'evento trovato' : 'eventi trovati'}</span>
+                {auditLogsFiltrati.length !== auditLogs.length && (
+                  <span className="text-slate-500 text-[11px]">(su {auditLogs.length} totali)</span>
+                )}
+              </div>
             </div>
-            <button
-              onClick={handleGenerateEmergencyCode}
-              className="w-full py-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 transition-all flex items-center justify-center gap-2"
-            >
-              <Key className="h-4 w-4" />
-              <span>{generato ? 'Codice Registrato in Audit!' : 'Genera Recovery Code'}</span>
-            </button>
+
+            {/* Bottom Row: Quick filters by Role & Category */}
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
+                <Filter className="h-3.5 w-3.5 text-slate-500" />
+                <span>Ruolo:</span>
+              </div>
+              {(['tutti', 'admin', 'medico', 'segreteria', 'paziente'] as const).map((r) => (
+                <button
+                  key={r}
+                  type="button"
+                  onClick={() => {
+                    setAuditFiltroRuolo(r)
+                    setAuditPagina(1)
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold capitalize transition-colors ${
+                    auditFiltroRuolo === r
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  {r === 'tutti' ? 'Tutti i ruoli' : r}
+                </button>
+              ))}
+
+              <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
+                <span>Azione:</span>
+              </div>
+              <select
+                value={auditFiltroCategoria}
+                onChange={(e) => {
+                  setAuditFiltroCategoria(e.target.value as any)
+                  setAuditPagina(1)
+                }}
+                className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+              >
+                <option value="tutte">Tutte le azioni</option>
+                <option value="auth">Accessi & Autenticazione (LOGIN / LOGOUT)</option>
+                <option value="creazione">Creazioni & Registrazioni</option>
+                <option value="modifica">Modifiche & Aggiornamenti</option>
+                <option value="eliminazione">Eliminazioni & Errori</option>
+                <option value="clinica">Cartella Clinica & Pazienti</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="sticky top-0 bg-slate-900/95 border-b border-slate-800 text-slate-400 font-semibold text-[11px] backdrop-blur z-10">
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Data / Ora</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Attore</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Ruolo</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Azione</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Entità & Target</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Indirizzo IP</th>
+                  <th className="py-2.5 px-3.5 min-w-[200px]">Dettagli Evento</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Ispezione</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-normal">
+                {loadingAudit ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-2">
+                        <RefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
+                        <span>Caricamento registri di audit...</span>
+                      </div>
+                    </td>
+                  </tr>
+                ) : auditLogsPaginati.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <ShieldAlert className="h-6 w-6 text-slate-600 mb-1" />
+                        <p className="text-sm font-semibold text-slate-400">Nessun evento registrato trovato</p>
+                        <p className="text-xs text-slate-600">Prova a modificare i filtri di ricerca o la categoria selezionata.</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  auditLogsPaginati.map((log, idx) => {
+                    const isDanger = log.azione.includes('ELIMINAT') || log.azione.includes('FAILED') || log.azione.includes('DELETE')
+                    const isSuccess = log.azione.includes('SUCCESS') || log.azione.includes('CREAT') || log.azione.includes('REGISTR')
+                    const isWarning = log.azione.includes('MODIF') || log.azione.includes('UPDATE') || log.azione.includes('REVOCA')
+                    const summary = formatAuditDetailsSummary(log)
+
+                    return (
+                      <tr
+                        key={log.id}
+                        className={`hover:bg-indigo-950/20 transition-colors ${idx % 2 === 1 ? 'bg-slate-900/30' : 'bg-transparent'}`}
+                      >
+                        {/* Data / Ora con tabular-nums font-mono */}
+                        <td className="py-2.5 px-3.5 text-slate-300 font-mono text-[11px] tabular-nums whitespace-nowrap">
+                          {new Date(log.createdAt).toLocaleString('it-IT', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                          })}
+                        </td>
+
+                        {/* Attore */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <span className="font-semibold text-white text-xs">{log.attoreEmail}</span>
+                        </td>
+
+                        {/* Ruolo */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold border ${
+                              log.ruolo === 'ADMIN'
+                                ? 'bg-purple-950/60 text-purple-300 border-purple-800/80'
+                                : log.ruolo === 'MEDICO'
+                                ? 'bg-blue-950/60 text-blue-300 border-blue-800/80'
+                                : log.ruolo === 'SEGRETERIA'
+                                ? 'bg-amber-950/60 text-amber-300 border-amber-800/80'
+                                : 'bg-emerald-950/60 text-emerald-300 border-emerald-800/80'
+                            }`}
+                          >
+                            {log.ruolo}
+                          </span>
+                        </td>
+
+                        {/* Azione con badge semantico */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <span
+                            className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
+                              isDanger
+                                ? 'bg-rose-950/70 text-rose-300 border-rose-800/80'
+                                : isSuccess
+                                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/80'
+                                : isWarning
+                                ? 'bg-amber-950/70 text-amber-300 border-amber-800/80'
+                                : 'bg-indigo-950/70 text-indigo-300 border-indigo-800/80'
+                            }`}
+                          >
+                            {log.azione}
+                          </span>
+                        </td>
+
+                        {/* Entità & Target */}
+                        <td className="py-2.5 px-3.5 text-slate-300 text-xs whitespace-nowrap">
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-semibold text-slate-200">{log.entita}</span>
+                            {log.entitaId && (
+                              <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1 rounded border border-slate-800" title={`ID Entità: ${log.entitaId}`}>
+                                #{log.entitaId.slice(0, 8)}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Indirizzo IP con tabular-nums font-mono */}
+                        <td className="py-2.5 px-3.5 text-slate-400 font-mono text-[11px] tabular-nums whitespace-nowrap">
+                          {log.ip || '—'}
+                        </td>
+
+                        {/* Dettagli sintetici leggibili */}
+                        <td className="py-2.5 px-3.5 text-slate-400 text-xs max-w-xs">
+                          <span className="truncate block" title={typeof log.dettagli === 'object' ? JSON.stringify(log.dettagli) : String(log.dettagli || '')}>
+                            {summary}
+                          </span>
+                        </td>
+
+                        {/* Tasto Ispezione / Dettagli */}
+                        <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                          <button
+                            type="button"
+                            onClick={() => setSelectedAuditLog(log)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-600 transition-colors text-xs font-semibold"
+                          >
+                            <Eye className="h-3 w-3 text-indigo-400" />
+                            <span>Dettagli</span>
+                          </button>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination Bar */}
+          <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-3">
+              <span>
+                Mostrati <strong className="text-white font-mono">{auditLogsFiltrati.length === 0 ? 0 : indiceInizioAudit + 1}</strong> - <strong className="text-white font-mono">{Math.min(indiceInizioAudit + auditRighePerPagina, auditLogsFiltrati.length)}</strong> di <strong className="text-white font-mono">{auditLogsFiltrati.length}</strong>
+              </span>
+
+              <div className="flex items-center gap-1.5 ml-2">
+                <span className="text-slate-500">Righe:</span>
+                <select
+                  value={auditRighePerPagina}
+                  onChange={(e) => {
+                    setAuditRighePerPagina(Number(e.target.value))
+                    setAuditPagina(1)
+                  }}
+                  className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs focus:outline-none cursor-pointer"
+                >
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => setAuditPagina((p) => Math.max(1, p - 1))}
+                disabled={auditPagina <= 1}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:hover:text-slate-300 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>Precedente</span>
+              </button>
+
+              <span className="px-2 py-1 font-mono text-slate-300">
+                Pag. <strong className="text-white">{auditPagina}</strong> / {totalePagineAudit}
+              </span>
+
+              <button
+                type="button"
+                onClick={() => setAuditPagina((p) => Math.min(totalePagineAudit, p + 1))}
+                disabled={auditPagina >= totalePagineAudit}
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:hover:text-slate-300 disabled:cursor-not-allowed transition-colors font-medium"
+              >
+                <span>Successiva</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1350,7 +1644,7 @@ export default function AdminPage() {
       {/* MODALE: NUOVO STUDIO MEDICO */}
       {modalStudioOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Building2 className="h-5 w-5 text-indigo-400" />
@@ -1652,7 +1946,7 @@ export default function AdminPage() {
       {/* MODALE: NUOVO MEDICO */}
       {modalMedicoOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Stethoscope className="h-5 w-5 text-blue-400" />
@@ -1782,7 +2076,7 @@ export default function AdminPage() {
       {/* MODALE: NUOVO OPERATORE SEGRETERIA (MULTI-MEDICO) */}
       {modalStaffOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <UserCheck className="h-5 w-5 text-amber-400" />
@@ -1936,7 +2230,7 @@ export default function AdminPage() {
       {/* MODALE: IMPORTAZIONE DATASET PAZIENTI IN CSV */}
       {modalCsvOpen && medicoTargetCsv && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-2xl w-full space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-2xl w-full space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <div>
                 <h3 className="text-base font-bold text-white flex items-center gap-2">
@@ -2145,7 +2439,7 @@ export default function AdminPage() {
       {/* MODALE: MODIFICA STUDIO MEDICO */}
       {modalEditStudioOpen && studioInModifica && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Settings className="h-5 w-5 text-indigo-400" />
@@ -2326,7 +2620,7 @@ export default function AdminPage() {
       {/* MODALE: MODIFICA MEDICO */}
       {modalEditMedicoOpen && medicoInModifica && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Settings className="h-5 w-5 text-indigo-400" />
@@ -2441,7 +2735,7 @@ export default function AdminPage() {
       {/* MODALE: MODIFICA OPERATORE STAFF */}
       {modalEditStaffOpen && staffInModifica && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-3xl border border-slate-800 p-6 max-w-lg w-full space-y-5 max-h-[90vh] overflow-y-auto">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-800 pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Settings className="h-5 w-5 text-amber-400" />
@@ -2572,6 +2866,157 @@ export default function AdminPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: DETTAGLI AUDIT LOG */}
+      {selectedAuditLog && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 sm:p-6 max-w-2xl w-full space-y-4 max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2">
+                <Eye className="h-5 w-5 text-indigo-400" />
+                <h3 className="text-base font-bold text-white">
+                  Dettaglio Evento Audit #{selectedAuditLog.id.slice(0, 8)}
+                </h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAuditLog(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 overflow-y-auto pr-1">
+              {/* Griglia Metadati */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/60 p-3.5 rounded-lg border border-slate-800 text-xs">
+                <div>
+                  <span className="text-slate-500 block font-medium">Data & Ora Registrazione</span>
+                  <span className="font-mono text-slate-200 tabular-nums font-semibold">
+                    {new Date(selectedAuditLog.createdAt).toLocaleString('it-IT', {
+                      dateStyle: 'full',
+                      timeStyle: 'medium',
+                    })}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block font-medium">Indirizzo IP Connessione</span>
+                  <span className="font-mono text-slate-200 tabular-nums">
+                    {selectedAuditLog.ip || 'Non rilevato'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block font-medium">Attore Operazione</span>
+                  <span className="text-white font-semibold">{selectedAuditLog.attoreEmail}</span>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block font-medium">Ruolo e Privilegi</span>
+                  <span className="font-mono text-indigo-300 font-bold uppercase">{selectedAuditLog.ruolo}</span>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block font-medium">Azione Eseguita</span>
+                  <span className="font-mono text-white font-bold">{selectedAuditLog.azione}</span>
+                </div>
+
+                <div>
+                  <span className="text-slate-500 block font-medium">Entità Coinvolta</span>
+                  <span className="text-slate-200 font-medium">
+                    {selectedAuditLog.entita} {selectedAuditLog.entitaId ? `(ID: ${selectedAuditLog.entitaId})` : ''}
+                  </span>
+                </div>
+              </div>
+
+              {/* Payload JSON */}
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-slate-300">Payload Dati Evento (JSON)</span>
+                  <button
+                    type="button"
+                    onClick={() => copiaJsonLog(selectedAuditLog)}
+                    className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-semibold transition-colors"
+                  >
+                    {jsonCopiato ? '✓ Copiato negli appunti' : 'Copia JSON'}
+                  </button>
+                </div>
+
+                <pre className="p-3 bg-slate-900 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto max-h-64 whitespace-pre-wrap leading-relaxed">
+                  {selectedAuditLog.dettagli ? JSON.stringify(selectedAuditLog.dettagli, null, 2) : '{\n  "messaggio": "Nessun payload aggiuntivo"\n}'}
+                </pre>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setSelectedAuditLog(null)}
+                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-white transition-colors"
+              >
+                Chiudi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: ACCESSO DI EMERGENZA (ADR-006) */}
+      {modalEmergencyOpen && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+                <Key className="h-5 w-5" />
+                <h3 className="text-base font-bold text-white">Accesso di Emergenza (ADR-006)</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setModalEmergencyOpen(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-xs text-slate-300 leading-relaxed">
+                Genera un codice monouso valido per 1 ora per ripristinare l'accesso ai sistemi in caso di guasto o indisponibilità dell'operatore autorizzato.
+              </p>
+              <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/60 text-xs text-amber-200">
+                Tutti i codici di emergenza generati e utilizzati vengono registrati in modo permanente nel log di audit.
+              </div>
+
+              {emergencyCode && (
+                <div className="p-4 rounded-lg bg-amber-950/40 border border-amber-800 text-center space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Codice Monouso Generato</p>
+                  <p className="font-mono text-lg font-black text-white tracking-widest select-all">{emergencyCode}</p>
+                  <p className="text-[10px] text-slate-400">Valido per 60 minuti dalla generazione</p>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => setModalEmergencyOpen(false)}
+                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+              >
+                Chiudi
+              </button>
+              <button
+                type="button"
+                onClick={handleGenerateEmergencyCode}
+                className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 transition-all flex items-center justify-center gap-1.5"
+              >
+                <Key className="h-4 w-4" />
+                <span>{generato ? 'Codice Registrato in Audit!' : 'Genera Recovery Code'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

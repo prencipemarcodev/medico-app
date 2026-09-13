@@ -184,7 +184,7 @@ export async function POST(request: Request) {
           cognome: inserito.cognome,
           codiceFiscale: inserito.codiceFiscale,
           passwordTemporanea,
-          dataNascita: inserito.dataNascita,
+          dataNascita: inserito.dataNascita || '—',
           email: inserito.email || '—',
           telefono: inserito.telefono || '—',
         })

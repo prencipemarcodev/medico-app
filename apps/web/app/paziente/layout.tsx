@@ -8,6 +8,7 @@
  * @version     0.2.0
  */
 
+import { useState, useEffect } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
@@ -25,6 +26,19 @@ import { AppLogo } from '@/components/AppLogo'
 
 export default function PazienteLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname()
+
+  const [user, setUser] = useState<any>(null)
+
+  useEffect(() => {
+    fetch('/api/auth/me')
+      .then((r) => r.json())
+      .then((d) => {
+        if (d.authenticated && d.user) {
+          setUser(d.user)
+        }
+      })
+      .catch(() => {})
+  }, [])
 
   const handleLogout = async () => {
     try {
@@ -50,7 +64,9 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
               <span className="font-black text-slate-900 text-lg tracking-tight block">
                 Portale Sanitario Paziente
               </span>
-              <span className="text-xs text-slate-400 font-medium">Studio Medico Curante</span>
+              <span className="text-xs text-slate-400 font-medium">
+                {user?.nomeStudio ? user.nomeStudio : 'Studio Medico Curante'}
+              </span>
             </div>
           </Link>
 
@@ -77,8 +93,12 @@ export default function PazienteLayout({ children }: { children: React.ReactNode
           {/* Patient pill & logout */}
           <div className="flex items-center gap-4">
             <div className="text-right hidden sm:block">
-              <p className="text-xs font-bold text-slate-900">Marco Prencipe</p>
-              <p className="text-[11px] text-slate-500">Curato: Dott. Mario Verdi</p>
+              <p className="text-xs font-bold text-slate-900">
+                {user ? `${user.nome} ${user.cognome}` : 'Paziente'}
+              </p>
+              <p className="text-[11px] text-slate-500 font-mono">
+                {user?.codiceFiscale || (user?.studioId ? 'Associato' : 'In attesa studio')}
+              </p>
             </div>
             <button
               type="button"

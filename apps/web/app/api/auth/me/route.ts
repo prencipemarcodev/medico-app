@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getSession } from '@/lib/server-auth'
 import { db, eq, and } from '@medico/db'
-import { studi, medici } from '@medico/db/schema'
+import { studi, medici, pazienti } from '@medico/db/schema'
 
 export async function GET() {
   const session = await getSession()
@@ -13,7 +13,24 @@ export async function GET() {
   let studioInfo = null
   let mediciStudio: Array<{ id: string; nome: string; cognome: string; email: string }> = []
 
-  if (session.studioId) {
+  let studioId = session.studioId
+  let medicoId = session.medicoId
+
+  // Se paziente e studioId non presente nel token, controlla se è stato associato nel DB
+  if (session.ruolo === 'paziente' && !studioId) {
+    const [p] = await db
+      .select({ studioId: pazienti.studioId, medicoId: pazienti.medicoId })
+      .from(pazienti)
+      .where(eq(pazienti.id, session.id))
+      .limit(1)
+
+    if (p?.studioId) {
+      studioId = p.studioId
+      medicoId = p.medicoId || null
+    }
+  }
+
+  if (studioId) {
     const [studio] = await db
       .select({
         id: studi.id,
@@ -23,7 +40,7 @@ export async function GET() {
         telefono: studi.telefono,
       })
       .from(studi)
-      .where(eq(studi.id, session.studioId))
+      .where(eq(studi.id, studioId))
       .limit(1)
 
     if (studio) {
@@ -46,6 +63,8 @@ export async function GET() {
     authenticated: true,
     user: {
       ...session,
+      studioId: studioId || null,
+      medicoId: medicoId || null,
       codiceStudio: studioInfo?.codiceStudio || null,
       nomeStudio: studioInfo?.nome || null,
     },

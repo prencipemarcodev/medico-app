@@ -15,11 +15,11 @@ import { studi, medici } from './studi'
 
 export const pazienti = pgTable('pazienti', {
   id:             uuid('id').primaryKey().defaultRandom(),
-  studioId:       uuid('studio_id').notNull().references(() => studi.id),
-  medicoId:       uuid('medico_id').notNull().references(() => medici.id),
+  studioId:       uuid('studio_id').references(() => studi.id),
+  medicoId:       uuid('medico_id').references(() => medici.id),
   nome:           text('nome').notNull(),            // GDPR-SENSITIVE
   cognome:        text('cognome').notNull(),          // GDPR-SENSITIVE
-  dataNascita:    date('data_nascita').notNull(),     // GDPR-SENSITIVE
+  dataNascita:    date('data_nascita'),              // GDPR-SENSITIVE
   codiceFiscale:  text('codice_fiscale').notNull().unique(), // GDPR-SENSITIVE (Username)
   email:          text('email').unique(),                    // GDPR-SENSITIVE (Facoltativo per CSV)
   telefono:       text('telefono'),                          // GDPR-SENSITIVE

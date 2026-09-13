@@ -2,6 +2,24 @@ import { NextResponse } from 'next/server'
 import { db, hashPassword, createSessionToken, eq, and, sql, recordAuditLog } from '@medico/db'
 import { studi, medici, pazienti } from '@medico/db/schema'
 
+function extractBirthDateFromCF(cf: string): string | null {
+  if (cf.length !== 16) return null
+  const yearPart = parseInt(cf.slice(6, 8), 10)
+  const monthChar = cf[8]?.toUpperCase()
+  let dayPart = parseInt(cf.slice(9, 11), 10)
+  if (isNaN(yearPart) || isNaN(dayPart)) return null
+  if (dayPart > 40) dayPart -= 40
+  const months: Record<string, string> = {
+    A: '01', B: '02', C: '03', D: '04', E: '05', H: '06',
+    L: '07', M: '08', P: '09', R: '10', S: '11', T: '12',
+  }
+  const month = months[monthChar!]
+  if (!month) return null
+  const currentYearShort = new Date().getFullYear() % 100
+  const century = yearPart <= currentYearShort ? '20' : '19'
+  return `${century}${yearPart.toString().padStart(2, '0')}-${month}-${dayPart.toString().padStart(2, '0')}`
+}
+
 export async function POST(request: Request) {
   const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || '127.0.0.1'
 
@@ -19,10 +37,10 @@ export async function POST(request: Request) {
       password,
     } = body
 
-    // 1. Validazione campi obbligatori
-    if (!codiceStudio || !medicoId || !nome || !cognome || !codiceFiscale || !dataNascita || !password) {
+    // 1. Validazione campi obbligatori per la registrazione autonoma
+    if (!nome?.trim() || !cognome?.trim() || !codiceFiscale?.trim() || !telefono?.trim() || !password) {
       return NextResponse.json(
-        { error: 'Compila tutti i campi obbligatori: Studio, Medico, Nome, Cognome, Codice Fiscale, Data di Nascita e Password' },
+        { error: 'Compila tutti i campi obbligatori: Nome, Cognome, Codice Fiscale, Telefono e Password' },
         { status: 400 }
       )
     }
@@ -44,36 +62,40 @@ export async function POST(request: Request) {
       )
     }
 
-    // 4. Verifica Studio Medico attivo
-    const cleanCodiceStudio = codiceStudio.trim().toUpperCase()
-    const [studio] = await db
-      .select({ id: studi.id, nome: studi.nome, attivo: studi.attivo })
-      .from(studi)
-      .where(eq(studi.codiceStudio, cleanCodiceStudio))
-      .limit(1)
+    // 4. Se forniti, verifica Studio Medico e Medico Curante
+    let verifiedStudioId: string | null = null
+    let verifiedMedicoId: string | null = null
+    let nomeStudio: string | null = null
+    let nomeMedico: string | null = null
 
-    if (!studio || !studio.attivo) {
-      return NextResponse.json(
-        { error: 'Codice Studio non valido o studio medico non attivo' },
-        { status: 404 }
-      )
+    if (codiceStudio?.trim()) {
+      const cleanCodiceStudio = codiceStudio.trim().toUpperCase()
+      const [studio] = await db
+        .select({ id: studi.id, nome: studi.nome, attivo: studi.attivo })
+        .from(studi)
+        .where(eq(studi.codiceStudio, cleanCodiceStudio))
+        .limit(1)
+
+      if (studio && studio.attivo) {
+        verifiedStudioId = studio.id
+        nomeStudio = studio.nome
+
+        if (medicoId) {
+          const [medico] = await db
+            .select({ id: medici.id, nome: medici.nome, cognome: medici.cognome, attivo: medici.attivo })
+            .from(medici)
+            .where(and(eq(medici.id, medicoId), eq(medici.studioId, studio.id), eq(medici.attivo, true)))
+            .limit(1)
+
+          if (medico) {
+            verifiedMedicoId = medico.id
+            nomeMedico = `${medico.nome} ${medico.cognome}`
+          }
+        }
+      }
     }
 
-    // 5. Verifica Medico Curante attivo e appartenente allo Studio
-    const [medico] = await db
-      .select({ id: medici.id, nome: medici.nome, cognome: medici.cognome, attivo: medici.attivo })
-      .from(medici)
-      .where(and(eq(medici.id, medicoId), eq(medici.studioId, studio.id), eq(medici.attivo, true)))
-      .limit(1)
-
-    if (!medico) {
-      return NextResponse.json(
-        { error: 'Medico curante selezionato non trovato o non attivo in questo studio' },
-        { status: 404 }
-      )
-    }
-
-    // 6. Verifica univocità Codice Fiscale
+    // 5. Verifica univocità Codice Fiscale
     const [esistenteCf] = await db
       .select({ id: pazienti.id })
       .from(pazienti)
@@ -82,12 +104,12 @@ export async function POST(request: Request) {
 
     if (esistenteCf) {
       return NextResponse.json(
-        { error: 'Un paziente con questo Codice Fiscale è già registrato. Accedi con il tuo Codice Fiscale.' },
+        { error: 'Un paziente con questo Codice Fiscale è già registrato. Accedi direttamente con le tue credenziali.' },
         { status: 409 }
       )
     }
 
-    // 7. Normalizzazione email e verifica univocità se fornita
+    // 6. Normalizzazione email e verifica univocità se fornita
     const cleanEmail = email?.trim().toLowerCase() || null
     if (cleanEmail) {
       const [esistenteEmail] = await db
@@ -98,30 +120,37 @@ export async function POST(request: Request) {
 
       if (esistenteEmail) {
         return NextResponse.json(
-          { error: 'Questa email è già associata a un altro assistito registrato' },
+          { error: 'Questa email è già associata a un altro account registrato' },
           { status: 409 }
         )
       }
     }
 
-    // 8. Normalizzazione data di nascita (supporto YYYY-MM-DD e DD/MM/YYYY)
-    let dataNascitaFormatted = dataNascita.trim()
-    if (dataNascitaFormatted.includes('/')) {
-      const parts = dataNascitaFormatted.split('/')
-      if (parts.length === 3 && parts[2]?.length === 4) {
-        dataNascitaFormatted = `${parts[2]}-${parts[1]?.padStart(2, '0')}-${parts[0]?.padStart(2, '0')}`
+    // 7. Determinazione data di nascita
+    let dataNascitaFormatted: string | null = null
+    if (dataNascita?.trim()) {
+      let raw = dataNascita.trim()
+      if (raw.includes('/')) {
+        const parts = raw.split('/')
+        if (parts.length === 3 && parts[2]?.length === 4) {
+          dataNascitaFormatted = `${parts[2]}-${parts[1]?.padStart(2, '0')}-${parts[0]?.padStart(2, '0')}`
+        }
+      } else {
+        dataNascitaFormatted = raw
       }
+    } else {
+      dataNascitaFormatted = extractBirthDateFromCF(cleanCf)
     }
 
-    // 9. Creazione record Paziente con password hashata
+    // 8. Creazione record Paziente
     const passwordHash = hashPassword(password)
-    const cleanTelefono = telefono?.trim() || null
+    const cleanTelefono = telefono.trim()
 
     const [nuovoPaziente] = await db
       .insert(pazienti)
       .values({
-        studioId: studio.id,
-        medicoId: medico.id,
+        studioId: verifiedStudioId,
+        medicoId: verifiedMedicoId,
         nome: nome.trim(),
         cognome: cognome.trim(),
         codiceFiscale: cleanCf,
@@ -129,7 +158,7 @@ export async function POST(request: Request) {
         email: cleanEmail,
         telefono: cleanTelefono,
         passwordHash,
-        primoAccesso: false, // Ha impostato autonomamente la password
+        primoAccesso: false,
         pushConsenso: true,
         attivo: true,
       })
@@ -139,7 +168,7 @@ export async function POST(request: Request) {
       throw new Error('Impossibile completare la registrazione del paziente')
     }
 
-    // 10. Creazione sessione crittografata con cookie HTTP-only
+    // 9. Creazione sessione crittografata
     const userPayload = {
       id: nuovoPaziente.id,
       nome: nuovoPaziente.nome,
@@ -154,7 +183,7 @@ export async function POST(request: Request) {
 
     const token = createSessionToken(userPayload)
 
-    // 11. Tracciamento Audit Log GDPR
+    // 10. Tracciamento Audit Log GDPR
     await recordAuditLog({
       attoreId: nuovoPaziente.id,
       attoreEmail: nuovoPaziente.codiceFiscale,
@@ -163,10 +192,10 @@ export async function POST(request: Request) {
       entita: 'pazienti',
       entitaId: nuovoPaziente.id,
       dettagli: {
-        studioId: studio.id,
-        medicoId: medico.id,
-        nomeStudio: studio.nome,
-        nomeMedico: `${medico.nome} ${medico.cognome}`,
+        studioId: verifiedStudioId,
+        medicoId: verifiedMedicoId,
+        nomeStudio,
+        nomeMedico,
       },
       ip,
     })

@@ -15,4 +15,5 @@ export * from './richieste'
 export * from './notifiche'
 export * from './admin'
 export * from './audit'
+export * from './documenti'
 

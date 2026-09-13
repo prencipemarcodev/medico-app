@@ -57,13 +57,23 @@ export async function POST(
       })
     }
 
+    const targetStudioId = paziente.studioId || auth.session.studioId
+    const targetMedicoId = paziente.medicoId || (auth.session.ruolo === 'medico' ? auth.session.id : null)
+
     if (azione === 'richiesta') {
+      if (!targetStudioId || !targetMedicoId) {
+        return NextResponse.json(
+          { error: 'Paziente non associato a uno studio o medico curante' },
+          { status: 400 }
+        )
+      }
+
       const { tipo, dettaglio, farmaco, modalitaRitiro = 'studio' } = body
       const [nuovaRichiesta] = await db
         .insert(richiesteSpeciali)
         .values({
-          studioId: paziente.studioId,
-          medicoId: paziente.medicoId,
+          studioId: targetStudioId,
+          medicoId: targetMedicoId,
           pazienteId: paziente.id,
           tipo: tipo || 'medicinale',
           sottotipo: 'ricetta_dematerializzata',
@@ -84,6 +94,13 @@ export async function POST(
     }
 
     if (azione === 'prenota_slot') {
+      if (!targetStudioId || !targetMedicoId) {
+        return NextResponse.json(
+          { error: 'Paziente non associato a uno studio o medico curante' },
+          { status: 400 }
+        )
+      }
+
       const { slotId, motivo = 'Visita ambulatoriale programmata' } = body
       if (!slotId) {
         return NextResponse.json({ error: 'Specificare lo slotId' }, { status: 400 })
@@ -92,8 +109,8 @@ export async function POST(
       const [prenotazione] = await db
         .insert(prenotazioni)
         .values({
-          studioId: paziente.studioId,
-          medicoId: paziente.medicoId,
+          studioId: targetStudioId,
+          medicoId: targetMedicoId,
           pazienteId: paziente.id,
           slotId,
           tipologiaVisita: 'standard',

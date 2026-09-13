@@ -33,6 +33,13 @@ import {
   Copy,
   Download,
   FileSpreadsheet,
+  FolderLock,
+  Link2,
+  Paperclip,
+  Trash2,
+  ShieldCheck,
+  Check,
+  RefreshCw,
 } from 'lucide-react'
 
 interface PazienteItem {
@@ -123,6 +130,44 @@ export default function SegreteriaPazientiPage() {
   const [modalQrOpen, setModalQrOpen] = useState(false)
   const [linkCopiato, setLinkCopiato] = useState(false)
 
+  // 4. MODALE ASSOCIA PAZIENTE REGISTRATO DA CODICE FISCALE
+  const [modalAssociaCfOpen, setModalAssociaCfOpen] = useState(false)
+  const [associaCfInput, setAssociaCfInput] = useState('')
+  const [associaMedicoId, setAssociaMedicoId] = useState('')
+  const [associandoCf, setAssociandoCf] = useState(false)
+  const [erroreAssociaCf, setErroreAssociaCf] = useState<string | null>(null)
+
+  // 5. CARTELLA CLINICA & APPUNTI PAZIENTE SELEZIONATO
+  const [documentiPaziente, setDocumentiPaziente] = useState<any[]>([])
+  const [caricamentoDocPaziente, setCaricamentoDocPaziente] = useState(false)
+  const [filtroDocPaziente, setFiltroDocPaziente] = useState<string>('tutti')
+  const [modalDocPazienteOpen, setModalDocPazienteOpen] = useState(false)
+  const [docTitolo, setDocTitolo] = useState('')
+  const [docCategoria, setDocCategoria] = useState<
+    'referto' | 'esame' | 'ricetta' | 'terapia' | 'allergia' | 'appunto'
+  >('appunto')
+  const [docNote, setDocNote] = useState('')
+  const [docFileName, setDocFileName] = useState('')
+  const [docFileType, setDocFileType] = useState('')
+  const [docFileSize, setDocFileSize] = useState<number | null>(null)
+  const [docFileUrl, setDocFileUrl] = useState('')
+  const [salvandoDocPaziente, setSalvandoDocPaziente] = useState(false)
+
+  const caricaDocumentiPaziente = async (pazienteId: string) => {
+    setCaricamentoDocPaziente(true)
+    try {
+      const res = await fetch(`/api/pazienti/documenti?pazienteId=${pazienteId}`)
+      const data = await res.json()
+      if (data.success) {
+        setDocumentiPaziente(data.documenti || [])
+      }
+    } catch (err) {
+      console.error('Errore recupero documenti clinici:', err)
+    } finally {
+      setCaricamentoDocPaziente(false)
+    }
+  }
+
   // Carica sessione e medici dello studio
   useEffect(() => {
     async function loadStudioData() {
@@ -136,8 +181,9 @@ export default function SegreteriaPazientiPage() {
           const mediciList = data.medici || []
           setMediciStudio(mediciList)
           if (mediciList.length > 0) {
-            setNuovoMedicoId(mediciList[0].id)
-            setCsvMedicoId(mediciList[0].id)
+            setNuovoMedicoId(mediciList[0]?.id || '')
+            setCsvMedicoId(mediciList[0]?.id || '')
+            setAssociaMedicoId(mediciList[0]?.id || '')
           }
         }
       } catch (err) {
@@ -156,7 +202,7 @@ export default function SegreteriaPazientiPage() {
       if (data.success) {
         setPazienti(data.pazienti || [])
         if (data.pazienti?.length > 0 && !selezionato) {
-          setSelezionato(data.pazienti[0])
+          setSelezionato(data.pazienti[0] || null)
         }
       }
     } catch (err) {
@@ -174,6 +220,134 @@ export default function SegreteriaPazientiPage() {
 
     return () => clearTimeout(timer)
   }, [query])
+
+  // Ricarica documenti clinici quando cambia il paziente selezionato
+  useEffect(() => {
+    if (selezionato?.id) {
+      caricaDocumentiPaziente(selezionato.id)
+    } else {
+      setDocumentiPaziente([])
+    }
+  }, [selezionato?.id])
+
+  // Azione Associa Paziente da Codice Fiscale
+  const handleAssociaPazienteCf = async (e: React.FormEvent) => {
+    e.preventDefault()
+    setErroreAssociaCf(null)
+
+    if (!associaCfInput.trim()) {
+      setErroreAssociaCf('Inserisci il Codice Fiscale del paziente')
+      return
+    }
+
+    if (!associaMedicoId) {
+      setErroreAssociaCf('Seleziona il Medico Curante da assegnare al paziente')
+      return
+    }
+
+    setAssociandoCf(true)
+    try {
+      const res = await fetch('/api/pazienti/associa-studio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          codiceFiscale: associaCfInput.trim(),
+          customStudioId: studioId,
+          customMedicoId: associaMedicoId,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante l\'associazione del paziente')
+
+      setFeedbackSuccess(data.message || 'Paziente associato con successo!')
+      setTimeout(() => setFeedbackSuccess(null), 4000)
+      setModalAssociaCfOpen(false)
+      setAssociaCfInput('')
+      await ricaricaPazienti()
+      if (data.paziente) {
+        setSelezionato(data.paziente)
+      }
+    } catch (err: any) {
+      setErroreAssociaCf(err.message)
+    } finally {
+      setAssociandoCf(false)
+    }
+  }
+
+  // Azione Salvataggio Documento / Appunto Medico
+  const handleDocFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (file) {
+      setDocFileName(file.name)
+      setDocFileType(file.type || 'application/octet-stream')
+      setDocFileSize(file.size)
+
+      const reader = new FileReader()
+      reader.onload = () => {
+        setDocFileUrl(reader.result as string)
+      }
+      reader.readAsDataURL(file)
+    }
+  }
+
+  const handleSalvaDocPaziente = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!selezionato) return
+    if (!docTitolo.trim()) return
+
+    setSalvandoDocPaziente(true)
+    try {
+      const res = await fetch('/api/pazienti/documenti', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pazienteId: selezionato.id,
+          titolo: docTitolo.trim(),
+          categoria: docCategoria,
+          note: docNote.trim() || null,
+          fileName: docFileName || null,
+          fileType: docFileType || null,
+          fileSize: docFileSize || null,
+          fileUrl: docFileUrl || null,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore durante il salvataggio')
+
+      setModalDocPazienteOpen(false)
+      setDocTitolo('')
+      setDocCategoria('appunto')
+      setDocNote('')
+      setDocFileName('')
+      setDocFileType('')
+      setDocFileSize(null)
+      setDocFileUrl('')
+
+      setFeedbackSuccess('Documento / appunto inserito con successo!')
+      setTimeout(() => setFeedbackSuccess(null), 4000)
+      await caricaDocumentiPaziente(selezionato.id)
+    } catch (err: any) {
+      alert(err.message)
+    } finally {
+      setSalvandoDocPaziente(false)
+    }
+  }
+
+  const handleEliminaDocPaziente = async (docId: string) => {
+    if (!confirm('Eliminare questo documento / appunto dalla cartella del paziente?')) return
+
+    try {
+      const res = await fetch(`/api/pazienti/documenti?id=${docId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setDocumentiPaziente((prev) => prev.filter((d) => d.id !== docId))
+      } else {
+        const err = await res.json()
+        alert(err.error || 'Errore eliminazione')
+      }
+    } catch (err) {
+      console.error('Errore eliminazione documento:', err)
+    }
+  }
 
   // Azione Accettazione in Sala d'Attesa
   const handleAccettaInSala = async () => {
@@ -482,6 +656,21 @@ export default function SegreteriaPazientiPage() {
 
             <button
               onClick={() => {
+                setErroreAssociaCf(null)
+                setAssociaCfInput('')
+                if (mediciStudio.length > 0) {
+                  setAssociaMedicoId(mediciStudio[0]?.id || '')
+                }
+                setModalAssociaCfOpen(true)
+              }}
+              className="px-3.5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs flex items-center gap-1.5 shadow-sm shadow-indigo-600/20 transition-all"
+            >
+              <Link2 className="h-4 w-4" />
+              <span>Associa da CF</span>
+            </button>
+
+            <button
+              onClick={() => {
                 setAnteprimaPazienti([])
                 setImportCompletato(false)
                 setCredenzialiGenerateCsv([])
@@ -683,12 +872,173 @@ export default function SegreteriaPazientiPage() {
                 </div>
                 {selezionato.primoAccesso ? (
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                    Password temporanea (Primo Accesso)
+                    Password iniziale di 6 caratteri
                   </span>
                 ) : (
                   <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    Password Personalizzata
+                    Password personalizzata
                   </span>
+                )}
+              </div>
+
+              {/* Sezione Cartella Clinica & Appunti Sanitari Condivisi col Paziente */}
+              <div className="pt-4 border-t border-slate-100 space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <FolderLock className="h-4 w-4 text-indigo-600" />
+                    <h4 className="text-xs font-black uppercase tracking-wider text-slate-900">
+                      Cartella Clinica & Appunti Condivisi ({documentiPaziente.length})
+                    </h4>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setDocTitolo('')
+                      setDocCategoria('appunto')
+                      setDocNote('')
+                      setDocFileName('')
+                      setDocFileUrl('')
+                      setDocFileType('')
+                      setDocFileSize(null)
+                      setModalDocPazienteOpen(true)
+                    }}
+                    className="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs flex items-center gap-1.5 transition-colors border border-indigo-200/60"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Aggiungi Appunto / Doc</span>
+                  </button>
+                </div>
+
+                {/* Filtri */}
+                <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-[11px]">
+                  {[
+                    { id: 'tutti', label: 'Tutti' },
+                    { id: 'referti_esami', label: 'Referti & Esami' },
+                    { id: 'terapie_ricette', label: 'Terapie & Farmaci' },
+                    { id: 'allergie', label: 'Allergie' },
+                    { id: 'appunti', label: 'Appunti' },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      type="button"
+                      onClick={() => setFiltroDocPaziente(f.id)}
+                      className={`px-2.5 py-1 rounded-lg font-bold transition-all ${
+                        filtroDocPaziente === f.id
+                          ? 'bg-slate-900 text-white'
+                          : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                      }`}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Lista Documenti Paziente */}
+                {caricamentoDocPaziente ? (
+                  <div className="p-4 text-center text-xs text-slate-400">
+                    Caricamento cartella in corso...
+                  </div>
+                ) : documentiPaziente.length === 0 ? (
+                  <div className="p-6 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-2">
+                    <FileText className="h-7 w-7 text-slate-300 mx-auto" />
+                    <p className="text-xs font-bold text-slate-600">Nessun appunto o referto clinico</p>
+                    <p className="text-[11px] text-slate-400">
+                      I documenti inseriti dal paziente o dalla segreteria appariranno qui.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="space-y-2.5 max-h-[360px] overflow-y-auto pr-1">
+                    {documentiPaziente
+                      .filter((d) => {
+                        if (filtroDocPaziente === 'tutti') return true
+                        if (filtroDocPaziente === 'referti_esami')
+                          return d.categoria === 'referto' || d.categoria === 'esame'
+                        if (filtroDocPaziente === 'terapie_ricette')
+                          return d.categoria === 'terapia' || d.categoria === 'ricetta'
+                        if (filtroDocPaziente === 'allergie') return d.categoria === 'allergia'
+                        if (filtroDocPaziente === 'appunti') return d.categoria === 'appunto'
+                        return d.categoria === filtroDocPaziente
+                      })
+                      .map((doc) => {
+                        const isPaziente = doc.autoreRuolo === 'paziente'
+                        const badgeColore =
+                          doc.categoria === 'referto'
+                            ? 'bg-blue-100 text-blue-800'
+                            : doc.categoria === 'esame'
+                            ? 'bg-purple-100 text-purple-800'
+                            : doc.categoria === 'terapia'
+                            ? 'bg-emerald-100 text-emerald-800'
+                            : doc.categoria === 'allergia'
+                            ? 'bg-rose-100 text-rose-800'
+                            : 'bg-amber-100 text-amber-800'
+
+                        return (
+                          <div
+                            key={doc.id}
+                            className="p-3.5 rounded-2xl border border-slate-200 bg-slate-50/70 space-y-2 text-xs"
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`text-[9px] font-black uppercase px-2 py-0.5 rounded-full ${badgeColore}`}
+                                >
+                                  {doc.categoria}
+                                </span>
+                                <h5 className="font-extrabold text-slate-900">{doc.titolo}</h5>
+                              </div>
+                              <div className="flex items-center gap-1.5">
+                                <span className="text-[10px] text-slate-400">
+                                  {new Date(doc.createdAt).toLocaleDateString('it-IT', {
+                                    day: '2-digit',
+                                    month: 'short',
+                                    year: 'numeric',
+                                  })}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleEliminaDocPaziente(doc.id)}
+                                  className="text-slate-300 hover:text-rose-600 p-0.5"
+                                  title="Elimina"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              </div>
+                            </div>
+
+                            {doc.note && (
+                              <p className="text-[11px] text-slate-600 bg-white p-2.5 rounded-xl border border-slate-100 whitespace-pre-wrap">
+                                {doc.note}
+                              </p>
+                            )}
+
+                            <div className="flex items-center justify-between pt-1 text-[10px] text-slate-400">
+                              <span className="font-semibold text-slate-500">
+                                Autore: {isPaziente ? '👤 Paziente' : `🏢 Studio (${doc.autoreRuolo})`}
+                              </span>
+
+                              {doc.fileName && (
+                                <div className="flex items-center gap-1">
+                                  <Paperclip className="h-3 w-3 text-slate-400" />
+                                  <span className="font-mono text-slate-600 truncate max-w-[140px]">
+                                    {doc.fileName}
+                                  </span>
+                                  {doc.fileUrl && (
+                                    <a
+                                      href={doc.fileUrl}
+                                      download={doc.fileName}
+                                      className="text-blue-600 hover:text-blue-800 font-bold ml-1"
+                                      title="Scarica allegato"
+                                    >
+                                      Scarica
+                                    </a>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        )
+                      })}
+                  </div>
                 )}
               </div>
             </div>
@@ -1262,6 +1612,203 @@ export default function SegreteriaPazientiPage() {
                   className="px-5 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20"
                 >
                   Salva Modifiche
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 4. MODALE ASSOCIA PAZIENTE REGISTRATO TRAMITE CODICE FISCALE */}
+      {modalAssociaCfOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Link2 className="h-5 w-5 text-indigo-600" />
+                Associa Paziente Registrato allo Studio
+              </h3>
+              <button
+                onClick={() => setModalAssociaCfOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500 leading-relaxed">
+              Inserisci il <strong>Codice Fiscale</strong> del paziente registrato e assegna il suo <strong>Medico Curante</strong> di riferimento.
+            </p>
+
+            {erroreAssociaCf && (
+              <div className="p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 shrink-0 text-rose-600" />
+                <span>{erroreAssociaCf}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleAssociaPazienteCf} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Codice Fiscale Paziente *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Es. RSSMRA80A01H501U"
+                  value={associaCfInput}
+                  onChange={(e) => setAssociaCfInput(e.target.value.toUpperCase())}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 uppercase font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50 text-sm"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Assegna a Medico Curante *
+                </label>
+                <select
+                  required
+                  value={associaMedicoId}
+                  onChange={(e) => setAssociaMedicoId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-bold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  {mediciStudio.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      Dott. {m.nome} {m.cognome}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setModalAssociaCfOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 font-bold"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  disabled={associandoCf}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-1.5"
+                >
+                  {associandoCf ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Associazione in corso...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Check className="h-4 w-4" />
+                      <span>Associa Paziente</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 5. MODALE AGGIUNGI DOCUMENTO / APPUNTO CLINICO */}
+      {modalDocPazienteOpen && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-slate-200">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
+                <FolderLock className="h-4 w-4 text-indigo-600" />
+                Aggiungi Documento o Appunto Clinico
+              </h3>
+              <button
+                onClick={() => setModalDocPazienteOpen(false)}
+                className="text-slate-400 hover:text-slate-600"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <p className="text-xs text-slate-500">
+              Paziente: <strong>{selezionato?.nome} {selezionato?.cognome}</strong> ({selezionato?.codiceFiscale})
+            </p>
+
+            <form onSubmit={handleSalvaDocPaziente} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Titolo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Es. Esami urine, Referto specialistico, Nota segreteria..."
+                  value={docTitolo}
+                  onChange={(e) => setDocTitolo(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Categoria Clinica *
+                </label>
+                <select
+                  value={docCategoria}
+                  onChange={(e) => setDocCategoria(e.target.value as any)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                >
+                  <option value="appunto">Appunto Studio / Nota</option>
+                  <option value="referto">Referto Medico / Specialistico</option>
+                  <option value="esame">Esame di Laboratorio / Diagnostica</option>
+                  <option value="terapia">Piano Terapeutico / Dosaggio</option>
+                  <option value="ricetta">Ricetta o Prescrizione</option>
+                  <option value="allergia">Allergia o Controindicazione</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Note & Dettagli
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder="Note, annotazioni o comunicazioni dello studio per il paziente..."
+                  value={docNote}
+                  onChange={(e) => setDocNote(e.target.value)}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
+                  Allegato (PDF, Referto, Immagine)
+                </label>
+                <input
+                  type="file"
+                  onChange={handleDocFileChange}
+                  accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-bold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                />
+                {docFileName && (
+                  <p className="mt-1 text-[11px] text-indigo-600 font-semibold">
+                    File selezionato: {docFileName} ({(Number(docFileSize || 0) / 1024).toFixed(1)} KB)
+                  </p>
+                )}
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+                <button
+                  type="button"
+                  onClick={() => setModalDocPazienteOpen(false)}
+                  className="px-4 py-2 rounded-xl text-slate-500 font-bold"
+                >
+                  Annulla
+                </button>
+                <button
+                  type="submit"
+                  disabled={salvandoDocPaziente}
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                >
+                  {salvandoDocPaziente ? 'Salvataggio...' : 'Salva nella Cartella'}
                 </button>
               </div>
             </form>

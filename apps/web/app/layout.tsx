@@ -9,6 +9,7 @@
 import type { Metadata, Viewport } from 'next'
 import { Analytics } from '@vercel/analytics/next'
 import { SpeedInsights } from '@vercel/speed-insights/next'
+import { ToastProvider } from '@/components/ui/toast'
 import './globals.css'
 
 export const viewport: Viewport = {
@@ -56,7 +57,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
       <body className="min-h-[100dvh] bg-[#090d16] text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
-        {children}
+        <ToastProvider>
+          {children}
+        </ToastProvider>
         <Analytics />
         <SpeedInsights />
       </body>

@@ -41,6 +41,9 @@ import {
   Check,
   RefreshCw,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { PatientListSkeleton, DocumentCardSkeleton, Skeleton } from '@/components/ui/skeleton'
 
 interface PazienteItem {
   id: string
@@ -70,10 +73,17 @@ interface AnteprimaPaziente {
 }
 
 export default function MedicoPazientiPage() {
+  const toast = useToast()
   const [query, setQuery] = useState('')
   const [pazienti, setPazienti] = useState<PazienteItem[]>([])
   const [loading, setLoading] = useState(false)
   const [selezionato, setSelezionato] = useState<PazienteItem | null>(null)
+
+  // Conferma eliminazione documento non bloccante
+  const [docToDelete, setDocToDelete] = useState<{ id: string; titolo: string } | null>(null)
+  const [eliminandoDoc, setEliminandoDoc] = useState(false)
+  const [nuovoFieldErrors, setNuovoFieldErrors] = useState<Record<string, string>>({})
+  const [docFieldErrors, setDocFieldErrors] = useState<Record<string, string>>({})
 
   // Dati studio e medico autenticato
   const [medicoId, setMedicoId] = useState<string>('')
@@ -300,36 +310,45 @@ export default function MedicoPazientiPage() {
       setDocFileType('')
       setDocFileSize(null)
       setDocFileUrl('')
+      setDocFieldErrors({})
 
+      toast.success('Documento salvato!', 'Aggiunto con successo alla cartella del paziente')
       setFeedbackSuccess('Documento / appunto inserito con successo!')
       setTimeout(() => setFeedbackSuccess(null), 4000)
       await caricaDocumentiPaziente(selezionato.id)
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore salvataggio', err.message || 'Impossibile salvare il documento')
     } finally {
       setSalvandoDocPaziente(false)
     }
   }
 
-  const handleEliminaDocPaziente = async (docId: string) => {
-    if (!confirm('Eliminare questo documento / appunto dalla cartella del paziente?')) return
+  // Esecuzione eliminazione documento confermata da modale
+  const eseguiEliminazioneDocPaziente = async () => {
+    if (!docToDelete) return
+    setEliminandoDoc(true)
 
     try {
-      const res = await fetch(`/api/pazienti/documenti?id=${docId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/pazienti/documenti?id=${docToDelete.id}`, { method: 'DELETE' })
       if (res.ok) {
-        setDocumentiPaziente((prev) => prev.filter((d) => d.id !== docId))
+        setDocumentiPaziente((prev) => prev.filter((d) => d.id !== docToDelete.id))
+        toast.success('Documento eliminato', `"${docToDelete.titolo}" rimosso dalla cartella`)
+        setDocToDelete(null)
       } else {
         const err = await res.json()
-        alert(err.error || 'Errore eliminazione')
+        toast.error('Errore eliminazione', err.error || 'Impossibile eliminare il documento')
       }
-    } catch (err) {
-      console.error('Errore eliminazione documento:', err)
+    } catch (err: any) {
+      toast.error('Errore di connessione', err.message)
+    } finally {
+      setEliminandoDoc(false)
     }
   }
 
   // Azione Chiama in Visita
   const handleChiamaVisita = () => {
     if (!selezionato) return
+    toast.info('Chiamata ambulatorio', `Paziente ${selezionato.nome} ${selezionato.cognome} chiamato in visita`)
     setFeedbackSuccess(`Paziente ${selezionato.nome} ${selezionato.cognome} chiamato in ambulatorio!`)
     setTimeout(() => setFeedbackSuccess(null), 4000)
   }
@@ -356,10 +375,11 @@ export default function MedicoPazientiPage() {
 
       setModalPrescriviOpen(false)
       setFarmaco('')
+      toast.success('Ricetta emessa!', `Prescrizione per ${farmaco} registrata con successo`)
       setFeedbackSuccess(`Ricetta dematerializzata per ${farmaco} emessa con successo!`)
       setTimeout(() => setFeedbackSuccess(null), 4000)
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore prescrizione', err.message || 'Impossibile emettere la prescrizione')
     }
   }
 
@@ -394,10 +414,11 @@ export default function MedicoPazientiPage() {
             : p
         )
       )
+      toast.success('Contatti salvati', 'I recapiti del paziente sono stati aggiornati')
       setFeedbackSuccess('Recapiti del paziente salvati!')
       setTimeout(() => setFeedbackSuccess(null), 4000)
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore aggiornamento contatti', err.message || 'Impossibile aggiornare i contatti')
     }
   }
 
@@ -405,6 +426,22 @@ export default function MedicoPazientiPage() {
   const handleCreaNuovoPaziente = async (e: React.FormEvent) => {
     e.preventDefault()
     setErroreNuovo(null)
+    setNuovoFieldErrors({})
+
+    const errs: Record<string, string> = {}
+    if (!nuovoNome.trim()) errs.nome = 'Il nome è obbligatorio'
+    if (!nuovoCognome.trim()) errs.cognome = 'Il cognome è obbligatorio'
+    if (!nuovoCf.trim() || nuovoCf.trim().length !== 16) {
+      errs.cf = 'Il Codice Fiscale deve contenere esattamente 16 caratteri'
+    }
+    if (!nuovaDataNascita) errs.dataNascita = 'La data di nascita è obbligatoria'
+
+    if (Object.keys(errs).length > 0) {
+      setNuovoFieldErrors(errs)
+      toast.warning('Dati non validi', 'Compila tutti i campi obbligatori contrassegnati in rosso.')
+      return
+    }
+
     setCreazioneInCorso(true)
 
     try {
@@ -412,18 +449,23 @@ export default function MedicoPazientiPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          nome: nuovoNome,
-          cognome: nuovoCognome,
+          nome: nuovoNome.trim(),
+          cognome: nuovoCognome.trim(),
           codiceFiscale: nuovoCf.trim().toUpperCase(),
           dataNascita: nuovaDataNascita,
-          email: nuovaEmail || undefined,
-          telefono: nuovoTelefono || undefined,
-          passwordPersonalizzata: nuovaPassword || undefined,
+          email: nuovaEmail.trim() || undefined,
+          telefono: nuovoTelefono.trim() || undefined,
+          passwordPersonalizzata: nuovaPassword.trim() || undefined,
         }),
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore creazione paziente')
+
+      toast.success(
+        'Paziente creato!',
+        `Profilo di ${data.paziente.nome} ${data.paziente.cognome} registrato con successo.`
+      )
 
       setCredenzialeCreata({
         nome: data.paziente.nome,
@@ -442,10 +484,13 @@ export default function MedicoPazientiPage() {
       setNuovaEmail('')
       setNuovoTelefono('')
       setNuovaPassword('')
+      setNuovoFieldErrors({})
 
       ricaricaPazienti()
     } catch (err: any) {
-      setErroreNuovo(err.message || 'Errore durante la creazione del paziente')
+      const msg = err.message || 'Errore durante la creazione del paziente'
+      setErroreNuovo(msg)
+      toast.error('Creazione fallita', msg)
     } finally {
       setCreazioneInCorso(false)
     }
@@ -455,7 +500,7 @@ export default function MedicoPazientiPage() {
   const parseCsvContent = (content: string) => {
     const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0)
     if (lines.length <= 1) {
-      alert('Il file CSV sembra vuoto o contiene solo le intestazioni')
+      toast.warning('File non valido', 'Il file CSV sembra vuoto o contiene solo le intestazioni')
       return
     }
 
@@ -530,7 +575,7 @@ export default function MedicoPazientiPage() {
   const handleImportCsv = async () => {
     const validi = anteprimaPazienti.filter((p) => p.valido)
     if (validi.length === 0) {
-      alert('Nessun paziente valido da importare')
+      toast.warning('Nessun record valido', 'Nessun paziente valido trovato nel CSV da importare')
       return
     }
 
@@ -547,11 +592,15 @@ export default function MedicoPazientiPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore durante l\'importazione')
 
+      toast.success(
+        'Importazione completata!',
+        `${data.credenziali?.length || validi.length} pazienti importati con successo.`
+      )
       setCredenzialiGenerateCsv(data.credenziali || [])
       setImportCompletato(true)
       ricaricaPazienti()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore importazione CSV', err.message || 'Impossibile completare l\'importazione')
     } finally {
       setImportInCorso(false)
     }
@@ -683,7 +732,9 @@ export default function MedicoPazientiPage() {
           </div>
 
           <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-            {pazienti.length === 0 ? (
+            {loading ? (
+              <PatientListSkeleton count={5} />
+            ) : pazienti.length === 0 ? (
               <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
                 <Users className="h-8 w-8 text-slate-300 mx-auto" />
                 <p className="text-xs font-bold text-slate-600">Nessun assistito trovato</p>
@@ -898,9 +949,7 @@ export default function MedicoPazientiPage() {
 
                 {/* Lista Documenti Paziente */}
                 {caricamentoDocPaziente ? (
-                  <div className="p-4 text-center text-xs text-slate-400">
-                    Caricamento cartella in corso...
-                  </div>
+                  <DocumentCardSkeleton count={2} />
                 ) : documentiPaziente.length === 0 ? (
                   <div className="p-6 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-2">
                     <FileText className="h-7 w-7 text-slate-300 mx-auto" />
@@ -959,7 +1008,7 @@ export default function MedicoPazientiPage() {
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() => handleEliminaDocPaziente(doc.id)}
+                                  onClick={() => setDocToDelete({ id: doc.id, titolo: doc.titolo })}
                                   className="text-slate-300 hover:text-rose-600 p-0.5"
                                   title="Elimina"
                                 >
@@ -1064,7 +1113,7 @@ export default function MedicoPazientiPage() {
                       navigator.clipboard.writeText(
                         `PORTALE STUDIO MEDICO\nPaziente: ${credenzialeCreata.nome} ${credenzialeCreata.cognome}\nUsername (CF): ${credenzialeCreata.codiceFiscale}\nPassword provvisoria: ${credenzialeCreata.passwordTemporanea}`
                       )
-                      alert('Credenziali copiate negli appunti!')
+                      toast.success('Credenziali copiate!', 'Dati di accesso copiati negli appunti')
                     }}
                     className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5"
                   >
@@ -1094,25 +1143,55 @@ export default function MedicoPazientiPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Nome *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Mario"
-                      value={nuovoNome}
-                      onChange={(e) => setNuovoNome(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Mario"
+                        value={nuovoNome}
+                        onChange={(e) => {
+                          setNuovoNome(e.target.value)
+                          if (nuovoFieldErrors.nome) setNuovoFieldErrors((prev) => ({ ...prev, nome: '' }))
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl border font-semibold focus:outline-none transition-all ${
+                          nuovoFieldErrors.nome
+                            ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-8'
+                            : 'border-slate-200 focus:ring-2 focus:ring-blue-500'
+                        }`}
+                      />
+                      {nuovoFieldErrors.nome && (
+                        <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-rose-500 pointer-events-none" />
+                      )}
+                    </div>
+                    {nuovoFieldErrors.nome && (
+                      <p className="mt-1 text-[11px] text-rose-600 font-medium">{nuovoFieldErrors.nome}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Cognome *</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Rossi"
-                      value={nuovoCognome}
-                      onChange={(e) => setNuovoCognome(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        placeholder="Rossi"
+                        value={nuovoCognome}
+                        onChange={(e) => {
+                          setNuovoCognome(e.target.value)
+                          if (nuovoFieldErrors.cognome) setNuovoFieldErrors((prev) => ({ ...prev, cognome: '' }))
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl border font-semibold focus:outline-none transition-all ${
+                          nuovoFieldErrors.cognome
+                            ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-8'
+                            : 'border-slate-200 focus:ring-2 focus:ring-blue-500'
+                        }`}
+                      />
+                      {nuovoFieldErrors.cognome && (
+                        <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-rose-500 pointer-events-none" />
+                      )}
+                    </div>
+                    {nuovoFieldErrors.cognome && (
+                      <p className="mt-1 text-[11px] text-rose-600 font-medium">{nuovoFieldErrors.cognome}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1122,25 +1201,52 @@ export default function MedicoPazientiPage() {
                       <label className="block font-bold text-slate-700 uppercase tracking-wider">Codice Fiscale *</label>
                       <span className="text-[10px] text-slate-400">{nuovoCf.length}/16</span>
                     </div>
-                    <input
-                      type="text"
-                      required
-                      maxLength={16}
-                      placeholder="RSSMRA85M01H501Z"
-                      value={nuovoCf}
-                      onChange={(e) => setNuovoCf(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold uppercase focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        maxLength={16}
+                        placeholder="RSSMRA85M01H501Z"
+                        value={nuovoCf}
+                        onChange={(e) => {
+                          setNuovoCf(e.target.value.toUpperCase())
+                          if (nuovoFieldErrors.cf) setNuovoFieldErrors((prev) => ({ ...prev, cf: '' }))
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl border font-mono font-bold uppercase focus:outline-none transition-all ${
+                          nuovoFieldErrors.cf
+                            ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-8'
+                            : 'border-slate-200 focus:ring-2 focus:ring-blue-500'
+                        }`}
+                      />
+                      {nuovoFieldErrors.cf && (
+                        <AlertCircle className="absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-rose-500 pointer-events-none" />
+                      )}
+                    </div>
+                    {nuovoFieldErrors.cf && (
+                      <p className="mt-1 text-[11px] text-rose-600 font-medium">{nuovoFieldErrors.cf}</p>
+                    )}
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Data di Nascita *</label>
-                    <input
-                      type="date"
-                      required
-                      value={nuovaDataNascita}
-                      onChange={(e) => setNuovaDataNascita(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-blue-500"
-                    />
+                    <div className="relative">
+                      <input
+                        type="date"
+                        required
+                        value={nuovaDataNascita}
+                        onChange={(e) => {
+                          setNuovaDataNascita(e.target.value)
+                          if (nuovoFieldErrors.dataNascita) setNuovoFieldErrors((prev) => ({ ...prev, dataNascita: '' }))
+                        }}
+                        className={`w-full px-3 py-2 rounded-xl border font-semibold focus:outline-none transition-all ${
+                          nuovoFieldErrors.dataNascita
+                            ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20'
+                            : 'border-slate-200 focus:ring-2 focus:ring-blue-500'
+                        }`}
+                      />
+                    </div>
+                    {nuovoFieldErrors.dataNascita && (
+                      <p className="mt-1 text-[11px] text-rose-600 font-medium">{nuovoFieldErrors.dataNascita}</p>
+                    )}
                   </div>
                 </div>
 
@@ -1720,15 +1826,35 @@ export default function MedicoPazientiPage() {
                 <button
                   type="submit"
                   disabled={salvandoDocPaziente}
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20 flex items-center gap-2"
                 >
-                  {salvandoDocPaziente ? 'Salvataggio...' : 'Salva nella Cartella'}
+                  {salvandoDocPaziente ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Salvataggio...</span>
+                    </>
+                  ) : (
+                    'Salva nella Cartella'
+                  )}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      {/* Modal Conferma Eliminazione Documento */}
+      <ConfirmModal
+        isOpen={!!docToDelete}
+        title="Eliminare questo documento?"
+        description={`Sei sicuro di voler eliminare definitivamente "${docToDelete?.titolo}" dalla cartella clinica di questo paziente?`}
+        confirmText="Elimina definitivamente"
+        cancelText="Annulla"
+        isDestructive={true}
+        loading={eliminandoDoc}
+        onConfirm={eseguiEliminazioneDocPaziente}
+        onClose={() => setDocToDelete(null)}
+      />
     </div>
   )
 }

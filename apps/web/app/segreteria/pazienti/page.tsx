@@ -41,6 +41,9 @@ import {
   Check,
   RefreshCw,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { PatientListSkeleton, DocumentCardSkeleton, Skeleton } from '@/components/ui/skeleton'
 
 interface PazienteItem {
   id: string
@@ -77,10 +80,17 @@ interface AnteprimaPaziente {
 }
 
 export default function SegreteriaPazientiPage() {
+  const toast = useToast()
   const [query, setQuery] = useState('')
   const [pazienti, setPazienti] = useState<PazienteItem[]>([])
   const [loading, setLoading] = useState(false)
   const [selezionato, setSelezionato] = useState<PazienteItem | null>(null)
+
+  // Conferma eliminazione documento non bloccante
+  const [docToDelete, setDocToDelete] = useState<{ id: string; titolo: string } | null>(null)
+  const [eliminandoDoc, setEliminandoDoc] = useState(false)
+  const [nuovoFieldErrors, setNuovoFieldErrors] = useState<Record<string, string>>({})
+  const [docFieldErrors, setDocFieldErrors] = useState<Record<string, string>>({})
 
   // Studio e Medici
   const [studioId, setStudioId] = useState<string>('')
@@ -322,36 +332,45 @@ export default function SegreteriaPazientiPage() {
       setDocFileType('')
       setDocFileSize(null)
       setDocFileUrl('')
+      setDocFieldErrors({})
 
+      toast.success('Documento salvato!', 'Aggiunto con successo alla cartella del paziente')
       setFeedbackSuccess('Documento / appunto inserito con successo!')
       setTimeout(() => setFeedbackSuccess(null), 4000)
       await caricaDocumentiPaziente(selezionato.id)
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore salvataggio', err.message || 'Impossibile salvare il documento')
     } finally {
       setSalvandoDocPaziente(false)
     }
   }
 
-  const handleEliminaDocPaziente = async (docId: string) => {
-    if (!confirm('Eliminare questo documento / appunto dalla cartella del paziente?')) return
+  // Esecuzione eliminazione documento confermata da modale
+  const eseguiEliminazioneDocPaziente = async () => {
+    if (!docToDelete) return
+    setEliminandoDoc(true)
 
     try {
-      const res = await fetch(`/api/pazienti/documenti?id=${docId}`, { method: 'DELETE' })
+      const res = await fetch(`/api/pazienti/documenti?id=${docToDelete.id}`, { method: 'DELETE' })
       if (res.ok) {
-        setDocumentiPaziente((prev) => prev.filter((d) => d.id !== docId))
+        setDocumentiPaziente((prev) => prev.filter((d) => d.id !== docToDelete.id))
+        toast.success('Documento eliminato', `"${docToDelete.titolo}" rimosso dalla cartella`)
+        setDocToDelete(null)
       } else {
         const err = await res.json()
-        alert(err.error || 'Errore eliminazione')
+        toast.error('Errore eliminazione', err.error || 'Impossibile eliminare il documento')
       }
-    } catch (err) {
-      console.error('Errore eliminazione documento:', err)
+    } catch (err: any) {
+      toast.error('Errore di connessione', err.message)
+    } finally {
+      setEliminandoDoc(false)
     }
   }
 
   // Azione Accettazione in Sala d'Attesa
   const handleAccettaInSala = async () => {
     if (!selezionato) return
+    toast.info('Accettazione completata', `Paziente ${selezionato.nome} ${selezionato.cognome} inserito in sala d'attesa`)
     setFeedbackSuccess(`Paziente ${selezionato.nome} ${selezionato.cognome} inserito in sala d'attesa studio!`)
     setTimeout(() => setFeedbackSuccess(null), 4000)
   }
@@ -378,10 +397,11 @@ export default function SegreteriaPazientiPage() {
 
       setModalRichiestaOpen(false)
       setFarmacoNome('')
+      toast.success('Richiesta registrata!', 'Inserita con successo nella coda ricette')
       setFeedbackSuccess('Richiesta registrata con successo nella coda ricette!')
       setTimeout(() => setFeedbackSuccess(null), 4000)
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore richiesta', err.message || 'Impossibile registrare la richiesta')
     }
   }
 
@@ -416,10 +436,11 @@ export default function SegreteriaPazientiPage() {
             : p
         )
       )
+      toast.success('Contatti salvati', 'I recapiti del paziente sono stati aggiornati')
       setFeedbackSuccess('Recapiti del paziente aggiornati!')
       setTimeout(() => setFeedbackSuccess(null), 4000)
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore contatti', err.message || 'Impossibile aggiornare i contatti')
     }
   }
 
@@ -427,6 +448,23 @@ export default function SegreteriaPazientiPage() {
   const handleCreaNuovoPaziente = async (e: React.FormEvent) => {
     e.preventDefault()
     setErroreNuovo(null)
+    setNuovoFieldErrors({})
+
+    const errs: Record<string, string> = {}
+    if (!nuovoMedicoId) errs.medico = 'Seleziona il medico curante'
+    if (!nuovoNome.trim()) errs.nome = 'Il nome è obbligatorio'
+    if (!nuovoCognome.trim()) errs.cognome = 'Il cognome è obbligatorio'
+    if (!nuovoCf.trim() || nuovoCf.trim().length !== 16) {
+      errs.cf = 'Il Codice Fiscale deve contenere esattamente 16 caratteri'
+    }
+    if (!nuovaDataNascita) errs.dataNascita = 'La data di nascita è obbligatoria'
+
+    if (Object.keys(errs).length > 0) {
+      setNuovoFieldErrors(errs)
+      toast.warning('Dati non validi', 'Compila tutti i campi obbligatori contrassegnati in rosso.')
+      return
+    }
+
     setCreazioneInCorso(true)
 
     try {
@@ -435,18 +473,23 @@ export default function SegreteriaPazientiPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           medicoId: nuovoMedicoId,
-          nome: nuovoNome,
-          cognome: nuovoCognome,
+          nome: nuovoNome.trim(),
+          cognome: nuovoCognome.trim(),
           codiceFiscale: nuovoCf.trim().toUpperCase(),
           dataNascita: nuovaDataNascita,
-          email: nuovaEmail || undefined,
-          telefono: nuovoTelefono || undefined,
-          passwordPersonalizzata: nuovaPassword || undefined,
+          email: nuovaEmail.trim() || undefined,
+          telefono: nuovoTelefono.trim() || undefined,
+          passwordPersonalizzata: nuovaPassword.trim() || undefined,
         }),
       })
 
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore creazione paziente')
+
+      toast.success(
+        'Paziente creato!',
+        `Profilo di ${data.paziente.nome} ${data.paziente.cognome} registrato con successo.`
+      )
 
       setCredenzialeCreata({
         nome: data.paziente.nome,
@@ -464,10 +507,13 @@ export default function SegreteriaPazientiPage() {
       setNuovaEmail('')
       setNuovoTelefono('')
       setNuovaPassword('')
+      setNuovoFieldErrors({})
 
       ricaricaPazienti()
     } catch (err: any) {
-      setErroreNuovo(err.message || 'Errore durante la creazione del paziente')
+      const msg = err.message || 'Errore durante la creazione del paziente'
+      setErroreNuovo(msg)
+      toast.error('Creazione fallita', msg)
     } finally {
       setCreazioneInCorso(false)
     }
@@ -477,7 +523,7 @@ export default function SegreteriaPazientiPage() {
   const parseCsvContent = (content: string) => {
     const lines = content.split(/\r?\n/).filter((l) => l.trim().length > 0)
     if (lines.length <= 1) {
-      alert('Il file CSV sembra vuoto o contiene solo intestazioni')
+      toast.warning('File non valido', 'Il file CSV sembra vuoto o contiene solo intestazioni')
       return
     }
 
@@ -552,12 +598,12 @@ export default function SegreteriaPazientiPage() {
   const handleImportCsv = async () => {
     const validi = anteprimaPazienti.filter((p) => p.valido)
     if (validi.length === 0) {
-      alert('Nessun paziente valido da importare')
+      toast.warning('Nessun record valido', 'Nessun paziente valido da importare')
       return
     }
 
     if (!csvMedicoId) {
-      alert('Seleziona il Medico Curante a cui assegnare i pazienti')
+      toast.warning('Medico richiesto', 'Seleziona il Medico Curante a cui assegnare i pazienti')
       return
     }
 
@@ -575,11 +621,15 @@ export default function SegreteriaPazientiPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore durante l\'importazione')
 
+      toast.success(
+        'Importazione completata!',
+        `${data.credenziali?.length || validi.length} pazienti importati con credenziali generate.`
+      )
       setCredenzialiGenerateCsv(data.credenziali || [])
       setImportCompletato(true)
       ricaricaPazienti()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore importazione CSV', err.message || 'Impossibile completare l\'importazione')
     } finally {
       setImportInCorso(false)
     }
@@ -713,7 +763,9 @@ export default function SegreteriaPazientiPage() {
           </div>
 
           <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
-            {pazienti.length === 0 ? (
+            {loading ? (
+              <PatientListSkeleton count={5} />
+            ) : pazienti.length === 0 ? (
               <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
                 <Users className="h-8 w-8 text-slate-300 mx-auto" />
                 <p className="text-xs font-bold text-slate-600">Nessun paziente trovato</p>
@@ -935,9 +987,7 @@ export default function SegreteriaPazientiPage() {
 
                 {/* Lista Documenti Paziente */}
                 {caricamentoDocPaziente ? (
-                  <div className="p-4 text-center text-xs text-slate-400">
-                    Caricamento cartella in corso...
-                  </div>
+                  <DocumentCardSkeleton count={2} />
                 ) : documentiPaziente.length === 0 ? (
                   <div className="p-6 text-center bg-slate-50/60 rounded-2xl border border-dashed border-slate-200 space-y-2">
                     <FileText className="h-7 w-7 text-slate-300 mx-auto" />
@@ -996,8 +1046,8 @@ export default function SegreteriaPazientiPage() {
                                 </span>
                                 <button
                                   type="button"
-                                  onClick={() => handleEliminaDocPaziente(doc.id)}
-                                  className="text-slate-300 hover:text-rose-600 p-0.5"
+                                  onClick={() => setDocToDelete({ id: doc.id, titolo: doc.titolo })}
+                                  className="text-slate-300 hover:text-rose-600 p-0.5 transition-colors"
                                   title="Elimina"
                                 >
                                   <Trash2 className="h-3 w-3" />
@@ -1101,7 +1151,7 @@ export default function SegreteriaPazientiPage() {
                       navigator.clipboard.writeText(
                         `PORTALE STUDIO MEDICO\nPaziente: ${credenzialeCreata.nome} ${credenzialeCreata.cognome}\nUsername (CF): ${credenzialeCreata.codiceFiscale}\nPassword provvisoria: ${credenzialeCreata.passwordTemporanea}`
                       )
-                      alert('Credenziali copiate negli appunti!')
+                      toast.success('Copiato!', 'Credenziali copiate negli appunti')
                     }}
                     className="flex-1 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs flex items-center justify-center gap-1.5"
                   >
@@ -1135,9 +1185,18 @@ export default function SegreteriaPazientiPage() {
                   </label>
                   <select
                     value={nuovoMedicoId}
-                    onChange={(e) => setNuovoMedicoId(e.target.value)}
+                    onChange={(e) => {
+                      setNuovoMedicoId(e.target.value)
+                      if (nuovoFieldErrors.medico) {
+                        setNuovoFieldErrors((prev) => ({ ...prev, medico: '' }))
+                      }
+                    }}
                     required
-                    className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500 bg-white"
+                    className={`w-full px-3 py-2.5 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 bg-white ${
+                      nuovoFieldErrors.medico
+                        ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
+                        : 'border-slate-200'
+                    }`}
                   >
                     {mediciStudio.map((m) => (
                       <option key={m.id} value={m.id}>
@@ -1145,6 +1204,11 @@ export default function SegreteriaPazientiPage() {
                       </option>
                     ))}
                   </select>
+                  {nuovoFieldErrors.medico && (
+                    <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3 inline" /> {nuovoFieldErrors.medico}
+                    </p>
+                  )}
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1155,9 +1219,23 @@ export default function SegreteriaPazientiPage() {
                       required
                       placeholder="Mario"
                       value={nuovoNome}
-                      onChange={(e) => setNuovoNome(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                      onChange={(e) => {
+                        setNuovoNome(e.target.value)
+                        if (nuovoFieldErrors.nome) {
+                          setNuovoFieldErrors((prev) => ({ ...prev, nome: '' }))
+                        }
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 ${
+                        nuovoFieldErrors.nome
+                          ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
+                          : 'border-slate-200'
+                      }`}
                     />
+                    {nuovoFieldErrors.nome && (
+                      <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 inline" /> {nuovoFieldErrors.nome}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Cognome *</label>
@@ -1166,9 +1244,23 @@ export default function SegreteriaPazientiPage() {
                       required
                       placeholder="Rossi"
                       value={nuovoCognome}
-                      onChange={(e) => setNuovoCognome(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                      onChange={(e) => {
+                        setNuovoCognome(e.target.value)
+                        if (nuovoFieldErrors.cognome) {
+                          setNuovoFieldErrors((prev) => ({ ...prev, cognome: '' }))
+                        }
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 ${
+                        nuovoFieldErrors.cognome
+                          ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
+                          : 'border-slate-200'
+                      }`}
                     />
+                    {nuovoFieldErrors.cognome && (
+                      <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 inline" /> {nuovoFieldErrors.cognome}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1176,7 +1268,9 @@ export default function SegreteriaPazientiPage() {
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <label className="block font-bold text-slate-700 uppercase tracking-wider">Codice Fiscale *</label>
-                      <span className="text-[10px] text-slate-400">{nuovoCf.length}/16</span>
+                      <span className={`text-[10px] ${nuovoCf.length === 16 ? 'text-emerald-600 font-bold' : 'text-slate-400'}`}>
+                        {nuovoCf.length}/16
+                      </span>
                     </div>
                     <input
                       type="text"
@@ -1184,9 +1278,23 @@ export default function SegreteriaPazientiPage() {
                       maxLength={16}
                       placeholder="RSSMRA85M01H501Z"
                       value={nuovoCf}
-                      onChange={(e) => setNuovoCf(e.target.value.toUpperCase())}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-mono font-bold uppercase focus:ring-2 focus:ring-amber-500"
+                      onChange={(e) => {
+                        setNuovoCf(e.target.value.toUpperCase())
+                        if (nuovoFieldErrors.cf) {
+                          setNuovoFieldErrors((prev) => ({ ...prev, cf: '' }))
+                        }
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl border font-mono font-bold uppercase focus:ring-2 focus:ring-amber-500 ${
+                        nuovoFieldErrors.cf
+                          ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
+                          : 'border-slate-200'
+                      }`}
                     />
+                    {nuovoFieldErrors.cf && (
+                      <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 inline" /> {nuovoFieldErrors.cf}
+                      </p>
+                    )}
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">Data di Nascita *</label>
@@ -1194,9 +1302,23 @@ export default function SegreteriaPazientiPage() {
                       type="date"
                       required
                       value={nuovaDataNascita}
-                      onChange={(e) => setNuovaDataNascita(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                      onChange={(e) => {
+                        setNuovaDataNascita(e.target.value)
+                        if (nuovoFieldErrors.dataNascita) {
+                          setNuovoFieldErrors((prev) => ({ ...prev, dataNascita: '' }))
+                        }
+                      }}
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 ${
+                        nuovoFieldErrors.dataNascita
+                          ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
+                          : 'border-slate-200'
+                      }`}
                     />
+                    {nuovoFieldErrors.dataNascita && (
+                      <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                        <AlertCircle className="h-3 w-3 inline" /> {nuovoFieldErrors.dataNascita}
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -1247,10 +1369,10 @@ export default function SegreteriaPazientiPage() {
                   <button
                     type="submit"
                     disabled={creazioneInCorso}
-                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20"
+                    className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20 disabled:opacity-50"
                   >
                     {creazioneInCorso ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
-                    <span>Crea Paziente ed Emetti Password</span>
+                    <span>{creazioneInCorso ? 'Creazione...' : 'Crea Paziente ed Emetti Password'}</span>
                   </button>
                 </div>
               </form>
@@ -1814,6 +1936,21 @@ export default function SegreteriaPazientiPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {/* MODALE CONFERMA ELIMINAZIONE DOCUMENTO */}
+      {docToDelete && (
+        <ConfirmModal
+          isOpen={true}
+          title="Elimina Documento Clinico"
+          description={`Sei sicuro di voler eliminare "${docToDelete.titolo}"? L'azione non potrà essere annullata.`}
+          confirmLabel={eliminandoDoc ? 'Eliminazione in corso...' : 'Elimina Documento'}
+          cancelLabel="Annulla"
+          variant="danger"
+          isLoading={eliminandoDoc}
+          onConfirm={eseguiEliminazioneDocPaziente}
+          onClose={() => !eliminandoDoc && setDocToDelete(null)}
+        />
       )}
     </div>
   )

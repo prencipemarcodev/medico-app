@@ -9,14 +9,17 @@
  */
 
 import { useState } from 'react'
-import { Radio, Send, Bell, Smartphone, CheckCircle2, Clock, AlertTriangle } from 'lucide-react'
+import { Radio, Send, Bell, Smartphone, CheckCircle2, Clock, AlertTriangle, AlertCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 export default function SegreteriaBroadcastPage() {
+  const { toast } = useToast()
   const [dataTarget, setDataTarget] = useState('2026-09-09')
   const [testo, setTesto] = useState(
     'AVVISO SEGRETERIA: Le visite odierne con il Dott. Mario Verdi subiranno un ritardo di circa 25 minuti causa emergenza clinica in studio. Ci scusiamo per l\'attesa.'
   )
   const [inviato, setInviato] = useState(false)
+  const [erroreTesto, setErroreTesto] = useState<string | null>(null)
 
   const maxChars = 160
   const charsLeft = maxChars - testo.length
@@ -40,7 +43,14 @@ export default function SegreteriaBroadcastPage() {
   ]
 
   const handleSend = () => {
+    if (!testo.trim()) {
+      setErroreTesto('Inserisci il testo dell\'avviso prima di inviare')
+      toast.error('Testo mancante', 'Il messaggio non può essere vuoto')
+      return
+    }
+    setErroreTesto(null)
     setInviato(true)
+    toast.success('Avviso inviato!', 'Notifica push recapitata ai 7 pazienti prenotati')
     setTimeout(() => setInviato(false), 5000)
   }
 
@@ -113,10 +123,20 @@ export default function SegreteriaBroadcastPage() {
             <textarea
               rows={4}
               value={testo}
-              onChange={(e) => setTesto(e.target.value)}
-              className="w-full p-4 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-amber-500 resize-none"
+              onChange={(e) => {
+                setTesto(e.target.value)
+                if (erroreTesto) setErroreTesto(null)
+              }}
+              className={`w-full p-4 rounded-2xl border text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-amber-500 resize-none transition-all ${
+                erroreTesto ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+              }`}
               placeholder="Scrivi qui il messaggio..."
             />
+            {erroreTesto && (
+              <p className="text-[11px] text-rose-600 font-bold mt-1.5 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5 inline" /> {erroreTesto}
+              </p>
+            )}
           </div>
 
           <button

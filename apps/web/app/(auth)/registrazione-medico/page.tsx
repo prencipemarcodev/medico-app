@@ -28,6 +28,13 @@ import {
   ShieldCheck,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
+import { useToast } from '@/components/ui/toast'
+import {
+  validateEmail,
+  validateTelefono,
+  validatePassword,
+  validateRequired,
+} from '@/lib/validation'
 
 interface StudioVerificato {
   id: string
@@ -40,6 +47,7 @@ interface StudioVerificato {
 function RegistrazioneMedicoForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
+  const toast = useToast()
 
   const [codiceStudio, setCodiceStudio] = useState('')
   const [verificandoCodice, setVerificandoCodice] = useState(false)
@@ -56,8 +64,19 @@ function RegistrazioneMedicoForm() {
 
   const [loading, setLoading] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
   const [completato, setCompletato] = useState(false)
   const [messaggioSuccesso, setMessaggioSuccesso] = useState('')
+
+  const clearFieldError = (field: string) => {
+    if (fieldErrors[field]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev }
+        delete next[field]
+        return next
+      })
+    }
+  }
 
   // Inizializza codice studio da query param ?codice=...
   useEffect(() => {
@@ -71,8 +90,9 @@ function RegistrazioneMedicoForm() {
   const verificaCodiceStudio = async (codiceDaVerificare = codiceStudio) => {
     const cleanCode = codiceDaVerificare.trim().toUpperCase()
     if (!cleanCode || cleanCode.length < 4) {
-      setErroreCodice('Inserisci un codice valido (es. STU-ROMA-1001)')
+      setErroreCodice('Inserisci un codice studio valido (es. STU-ROMA-1001)')
       setStudioVerificato(null)
+      toast.warning('Codice mancante', 'Inserisci il codice studio prima di verificare')
       return
     }
 
@@ -84,23 +104,53 @@ function RegistrazioneMedicoForm() {
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Codice Studio non trovato')
+        throw new Error(data.error || 'Codice Studio non trovato o non valido')
       }
 
       setStudioVerificato(data.studio)
       setCodiceStudio(cleanCode)
+      toast.success('Studio verificato', `Collegato a ${data.studio.nome}`)
     } catch (err: any) {
-      setErroreCodice(err.message || 'Errore durante la verifica del codice')
+      const msg = err.message || 'Errore durante la verifica del codice'
+      setErroreCodice(msg)
       setStudioVerificato(null)
+      toast.error('Verifica fallita', msg)
     } finally {
       setVerificandoCodice(false)
     }
   }
 
+  const validateForm = (): boolean => {
+    const errors: Record<string, string> = {}
+
+    if (!studioVerificato) {
+      errors.codiceStudio = 'Devi prima verificare con successo un Codice Studio valido'
+    }
+
+    const vNome = validateRequired(nome, 'Il nome')
+    if (!vNome.valid) errors.nome = vNome.error!
+
+    const vCognome = validateRequired(cognome, 'Il cognome')
+    if (!vCognome.valid) errors.cognome = vCognome.error!
+
+    const vEmail = validateEmail(email, true)
+    if (!vEmail.valid) errors.email = vEmail.error!
+
+    const vTel = validateTelefono(telefono, true)
+    if (!vTel.valid) errors.telefono = vTel.error!
+
+    const vPwd = validatePassword(password, 6)
+    if (!vPwd.valid) errors.password = vPwd.error!
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleRegistrazione = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!studioVerificato) {
-      setErrore('Verifica prima un Codice Studio valido')
+
+    if (!validateForm()) {
+      toast.warning('Dati non validi', 'Controlla i campi contrassegnati in rosso')
       return
     }
 
@@ -114,10 +164,10 @@ function RegistrazioneMedicoForm() {
         body: JSON.stringify({
           codiceStudio,
           ruolo,
-          nome,
-          cognome,
-          email,
-          telefono,
+          nome: nome.trim(),
+          cognome: cognome.trim(),
+          email: email.trim().toLowerCase(),
+          telefono: telefono.trim(),
           password,
         }),
       })
@@ -128,10 +178,16 @@ function RegistrazioneMedicoForm() {
         throw new Error(data.error || 'Errore durante la registrazione')
       }
 
+      toast.success('Registrazione completata!', data.message || 'Account attivato con successo')
       setMessaggioSuccesso(data.message)
       setCompletato(true)
     } catch (err: any) {
-      setErrore(err.message || 'Errore durante la registrazione')
+      const msg = err.message || 'Errore durante la registrazione'
+      setErrore(msg)
+      toast.error('Registrazione non riuscita', msg)
+      if (msg.toLowerCase().includes('email')) {
+        setFieldErrors((prev) => ({ ...prev, email: msg }))
+      }
     } finally {
       setLoading(false)
     }
@@ -139,7 +195,7 @@ function RegistrazioneMedicoForm() {
 
   if (completato) {
     return (
-      <div className="w-full max-w-lg bg-white rounded-3xl p-8 shadow-xl border border-slate-200/80 space-y-6 text-center">
+      <div className="w-full max-w-lg bg-white rounded-2xl p-8 shadow-xl border border-slate-200/80 space-y-6 text-center">
         <div className="inline-flex h-16 w-16 rounded-2xl bg-emerald-100 text-emerald-600 items-center justify-center shadow-lg shadow-emerald-500/20 mb-2">
           <CheckCircle2 className="h-8 w-8 text-emerald-600" />
         </div>
@@ -166,7 +222,7 @@ function RegistrazioneMedicoForm() {
   }
 
   return (
-    <div className="w-full max-w-xl bg-white rounded-3xl p-8 shadow-xl border border-slate-200/80 space-y-6">
+    <div className="w-full max-w-xl bg-white rounded-2xl p-8 shadow-xl border border-slate-200/80 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
         <div className="flex justify-center mb-1">
@@ -181,9 +237,13 @@ function RegistrazioneMedicoForm() {
       </div>
 
       {/* Step 1: Codice Studio */}
-      <div className="p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3">
+      <div
+        className={`p-5 rounded-2xl border transition-all ${
+          fieldErrors.codiceStudio ? 'bg-rose-50/40 border-rose-400' : 'bg-slate-50 border-slate-200'
+        } space-y-3`}
+      >
         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-          1. Inserisci il Codice Studio (ricevuto dall'Amministratore)
+          1. Inserisci il Codice Studio (ricevuto dall'Amministratore) *
         </label>
         <div className="flex gap-2">
           <div className="relative flex-1">
@@ -197,16 +257,21 @@ function RegistrazioneMedicoForm() {
                 setCodiceStudio(e.target.value.toUpperCase())
                 setStudioVerificato(null)
                 setErroreCodice(null)
+                clearFieldError('codiceStudio')
               }}
               placeholder="Es. STU-ROMA-1001"
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-sm font-mono font-bold text-slate-900 uppercase focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-mono font-bold uppercase focus:outline-none transition-all ${
+                fieldErrors.codiceStudio
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/60 text-rose-900 focus:border-rose-600'
+                  : 'border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 bg-white'
+              }`}
             />
           </div>
           <button
             type="button"
             onClick={() => verificaCodiceStudio()}
             disabled={verificandoCodice || !codiceStudio.trim()}
-            className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-xs flex items-center gap-1.5 transition-all"
+            className="px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 disabled:bg-slate-300 text-white font-bold text-xs flex items-center gap-1.5 transition-all cursor-pointer"
           >
             {verificandoCodice ? (
               <Loader2 className="h-4 w-4 animate-spin" />
@@ -220,6 +285,13 @@ function RegistrazioneMedicoForm() {
           <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
             <AlertCircle className="h-3.5 w-3.5" />
             <span>{erroreCodice}</span>
+          </p>
+        )}
+
+        {fieldErrors.codiceStudio && (
+          <p className="text-xs font-semibold text-rose-600 flex items-center gap-1">
+            <AlertCircle className="h-3.5 w-3.5" />
+            <span>{fieldErrors.codiceStudio}</span>
           </p>
         )}
 
@@ -238,24 +310,24 @@ function RegistrazioneMedicoForm() {
 
       {/* Error notification */}
       {errore && (
-        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5">
+        <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5">
           <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-600" />
           <span>{errore}</span>
         </div>
       )}
 
       {/* Step 2 & 3 Form: Abilitato solo se lo studio è verificato */}
-      <form onSubmit={handleRegistrazione} className="space-y-4">
+      <form onSubmit={handleRegistrazione} className="space-y-4" noValidate>
         {/* Scelta Ruolo */}
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-            2. Seleziona il tuo Ruolo
+            2. Seleziona il tuo Ruolo *
           </label>
           <div className="grid grid-cols-2 gap-3">
             <button
               type="button"
               onClick={() => setRuolo('medico')}
-              className={`p-3.5 rounded-2xl border text-left transition-all ${
+              className={`p-3.5 rounded-xl border text-left transition-all ${
                 ruolo === 'medico'
                   ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-500/20 text-blue-950'
                   : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
@@ -273,7 +345,7 @@ function RegistrazioneMedicoForm() {
             <button
               type="button"
               onClick={() => setRuolo('collaboratore')}
-              className={`p-3.5 rounded-2xl border text-left transition-all ${
+              className={`p-3.5 rounded-xl border text-left transition-all ${
                 ruolo === 'collaboratore'
                   ? 'bg-amber-50 border-amber-500 ring-2 ring-amber-500/20 text-amber-950'
                   : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
@@ -294,35 +366,59 @@ function RegistrazioneMedicoForm() {
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Nome
+              Nome *
             </label>
             <input
               type="text"
               value={nome}
-              onChange={(e) => setNome(e.target.value)}
+              onChange={(e) => {
+                setNome(e.target.value)
+                clearFieldError('nome')
+              }}
               placeholder="Mario"
-              required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                fieldErrors.nome
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+              }`}
             />
+            {fieldErrors.nome && (
+              <p className="text-xs text-rose-600 mt-1 flex items-center gap-1 font-semibold">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{fieldErrors.nome}</span>
+              </p>
+            )}
           </div>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-              Cognome
+              Cognome *
             </label>
             <input
               type="text"
               value={cognome}
-              onChange={(e) => setCognome(e.target.value)}
+              onChange={(e) => {
+                setCognome(e.target.value)
+                clearFieldError('cognome')
+              }}
               placeholder="Rossi"
-              required
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+              className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                fieldErrors.cognome
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+              }`}
             />
+            {fieldErrors.cognome && (
+              <p className="text-xs text-rose-600 mt-1 flex items-center gap-1 font-semibold">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{fieldErrors.cognome}</span>
+              </p>
+            )}
           </div>
         </div>
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Indirizzo Email Professionale (Login)
+            Indirizzo Email Professionale (Login) *
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -331,17 +427,29 @@ function RegistrazioneMedicoForm() {
             <input
               type="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value)
+                clearFieldError('email')
+              }}
               placeholder="dott.rossi@studiomedico.it"
-              required
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                fieldErrors.email
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+              }`}
             />
           </div>
+          {fieldErrors.email && (
+            <p className="text-xs text-rose-600 mt-1 flex items-center gap-1 font-semibold">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{fieldErrors.email}</span>
+            </p>
+          )}
         </div>
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Recapito Telefonico Primario
+            Recapito Telefonico Primario *
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -350,17 +458,29 @@ function RegistrazioneMedicoForm() {
             <input
               type="tel"
               value={telefono}
-              onChange={(e) => setTelefono(e.target.value)}
+              onChange={(e) => {
+                setTelefono(e.target.value)
+                clearFieldError('telefono')
+              }}
               placeholder="+39 340 1234567"
-              required
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                fieldErrors.telefono
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+              }`}
             />
           </div>
+          {fieldErrors.telefono && (
+            <p className="text-xs text-rose-600 mt-1 flex items-center gap-1 font-semibold">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{fieldErrors.telefono}</span>
+            </p>
+          )}
         </div>
 
         <div>
           <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1">
-            Password Personale (min. 6 caratteri)
+            Password Personale (min. 6 caratteri) *
           </label>
           <div className="relative">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -369,19 +489,30 @@ function RegistrazioneMedicoForm() {
             <input
               type="password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value)
+                clearFieldError('password')
+              }}
               placeholder="••••••••"
-              required
-              minLength={6}
-              className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
+              className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
+                fieldErrors.password
+                  ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+              }`}
             />
           </div>
+          {fieldErrors.password && (
+            <p className="text-xs text-rose-600 mt-1 flex items-center gap-1 font-semibold">
+              <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+              <span>{fieldErrors.password}</span>
+            </p>
+          )}
         </div>
 
         <button
           type="submit"
           disabled={loading || !studioVerificato}
-          className="w-full py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all"
+          className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
         >
           {loading ? (
             <>

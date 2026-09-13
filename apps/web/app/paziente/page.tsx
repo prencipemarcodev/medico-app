@@ -39,9 +39,13 @@ import {
   Activity,
   AlertTriangle,
   FileCheck,
+  Loader2,
 } from 'lucide-react'
 
 import { useState, useEffect } from 'react'
+import { useToast } from '@/components/ui/toast'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { Skeleton, DocumentCardSkeleton } from '@/components/ui/skeleton'
 
 interface DocumentoItem {
   id: string
@@ -67,6 +71,7 @@ interface MedicoStudio {
 }
 
 export default function PazientePage() {
+  const toast = useToast()
   const [currentUser, setCurrentUser] = useState<any>(null)
   const [studioInfo, setStudioInfo] = useState<any>(null)
   const [mediciStudio, setMediciStudio] = useState<MedicoStudio[]>([])
@@ -78,6 +83,7 @@ export default function PazientePage() {
   const [confermaPassword, setConfermaPassword] = useState('')
   const [passwordSuccess, setPasswordSuccess] = useState(false)
   const [passwordError, setPasswordError] = useState<string | null>(null)
+  const [passwordFieldErrors, setPasswordFieldErrors] = useState<Record<string, string>>({})
   const [savingPassword, setSavingPassword] = useState(false)
 
   // Sezione Associazione Studio (quando studioId è assente)
@@ -108,6 +114,11 @@ export default function PazientePage() {
   const [docFileUrl, setDocFileUrl] = useState('')
   const [salvandoDoc, setSalvandoDoc] = useState(false)
   const [erroreDoc, setErroreDoc] = useState<string | null>(null)
+  const [docFieldErrors, setDocFieldErrors] = useState<Record<string, string>>({})
+
+  // Modale di conferma eliminazione documento
+  const [docToDelete, setDocToDelete] = useState<DocumentoItem | null>(null)
+  const [eliminandoDoc, setEliminandoDoc] = useState(false)
 
   // Visite e Richieste simulate
   const [prossimaVisita, setProssimaVisita] = useState<{
@@ -185,6 +196,7 @@ export default function PazientePage() {
 
     if (!codiceStudioInput.trim()) {
       setErroreAssociazione('Inserisci un codice studio valido')
+      toast.warning('Codice mancante', 'Inserisci il codice dello studio prima di verificare')
       return
     }
 
@@ -201,8 +213,11 @@ export default function PazientePage() {
       if (data.medici?.length > 0) {
         setMedicoSelezionatoId(data.medici[0]?.id || '')
       }
+      toast.success('Studio trovato!', `Seleziona il tuo medico per ${data.studio?.nome}`)
     } catch (err: any) {
-      setErroreAssociazione(err.message)
+      const msg = err.message || 'Studio non trovato'
+      setErroreAssociazione(msg)
+      toast.error('Verifica fallita', msg)
     } finally {
       setVerificandoStudio(false)
     }
@@ -212,6 +227,7 @@ export default function PazientePage() {
   const handleConfermaAssociazione = async () => {
     if (!studioTrovato || !medicoSelezionatoId) {
       setErroreAssociazione('Seleziona il tuo medico curante per completare l\'associazione')
+      toast.warning('Selezione richiesta', 'Scegli il medico curante dall\'elenco')
       return
     }
 
@@ -230,12 +246,16 @@ export default function PazientePage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore durante l\'associazione')
 
-      setSuccessoAssociazione(`Profilo collegato con successo allo studio ${data.studio?.nome || ''}!`)
+      const successMsg = `Profilo collegato con successo allo studio ${data.studio?.nome || ''}!`
+      setSuccessoAssociazione(successMsg)
+      toast.success('Associazione completata!', successMsg)
       setCurrentUser(data.paziente)
       await fetchDatiUtente()
       await fetchDocumenti()
     } catch (err: any) {
-      setErroreAssociazione(err.message)
+      const msg = err.message || 'Errore durante l\'associazione'
+      setErroreAssociazione(msg)
+      toast.error('Associazione fallita', msg)
     } finally {
       setAssociandoStudio(false)
     }
@@ -247,6 +267,7 @@ export default function PazientePage() {
     await fetchDatiUtente()
     await fetchDocumenti()
     setRicaricandoStato(false)
+    toast.info('Stato sincronizzato', 'Dati profilo aggiornati dal database')
   }
 
   // Copia Codice Fiscale
@@ -254,6 +275,7 @@ export default function PazientePage() {
     if (currentUser?.codiceFiscale) {
       navigator.clipboard.writeText(currentUser.codiceFiscale)
       setCfCopiato(true)
+      toast.success('Codice Fiscale copiato', currentUser.codiceFiscale)
       setTimeout(() => setCfCopiato(false), 2500)
     }
   }
@@ -272,6 +294,13 @@ export default function PazientePage() {
         setDocFileUrl(reader.result as string)
       }
       reader.readAsDataURL(file)
+      if (docFieldErrors.file) {
+        setDocFieldErrors((prev) => {
+          const updated = { ...prev }
+          delete updated.file
+          return updated
+        })
+      }
     }
   }
 
@@ -280,7 +309,8 @@ export default function PazientePage() {
     setErroreDoc(null)
 
     if (!docTitolo.trim()) {
-      setErroreDoc('Il titolo del documento o appunto è obbligatorio')
+      setDocFieldErrors({ titolo: 'Il titolo del documento o appunto è obbligatorio' })
+      toast.warning('Campo obbligatorio', 'Inserisci il titolo del documento prima di salvare')
       return
     }
 
@@ -311,33 +341,40 @@ export default function PazientePage() {
       setDocFileType('')
       setDocFileSize(null)
       setDocFileUrl('')
+      setDocFieldErrors({})
       setModalDocOpen(false)
 
+      toast.success('Documento salvato!', 'Aggiunto con successo alla tua cartella clinica')
       // Ricarica documenti
       await fetchDocumenti()
     } catch (err: any) {
-      setErroreDoc(err.message)
+      const msg = err.message || 'Errore salvataggio documento'
+      setErroreDoc(msg)
+      toast.error('Salvataggio fallito', msg)
     } finally {
       setSalvandoDoc(false)
     }
   }
 
-  // Elimina Documento
-  const handleEliminaDocumento = async (id: string) => {
-    if (!confirm('Sei sicuro di voler rimuovere questo documento o appunto dalla tua cartella clinica?')) {
-      return
-    }
+  // Esecuzione eliminazione documento confermata dalla modale
+  const eseguiEliminazioneDocumento = async () => {
+    if (!docToDelete) return
 
+    setEliminandoDoc(true)
     try {
-      const res = await fetch(`/api/pazienti/documenti?id=${id}`, { method: 'DELETE' })
+      const res = await fetch(`/api/pazienti/documenti?id=${docToDelete.id}`, { method: 'DELETE' })
       if (res.ok) {
-        setDocumenti((prev) => prev.filter((d) => d.id !== id))
+        setDocumenti((prev) => prev.filter((d) => d.id !== docToDelete.id))
+        toast.success('Documento eliminato', `"${docToDelete.titolo}" è stato rimosso dalla cartella clinica`)
+        setDocToDelete(null)
       } else {
         const err = await res.json()
-        alert(err.error || 'Errore eliminazione')
+        toast.error('Errore eliminazione', err.error || 'Impossibile eliminare il documento')
       }
-    } catch (err) {
-      console.error('Errore eliminazione:', err)
+    } catch (err: any) {
+      toast.error('Errore di connessione', err.message)
+    } finally {
+      setEliminandoDoc(false)
     }
   }
 
@@ -345,13 +382,19 @@ export default function PazientePage() {
   const handleCambiaPassword = async (e: React.FormEvent) => {
     e.preventDefault()
     setPasswordError(null)
+    setPasswordFieldErrors({})
 
+    const errs: Record<string, string> = {}
     if (nuovaPassword.length < 6) {
-      setPasswordError('La password deve contenere almeno 6 caratteri')
-      return
+      errs.nuova = 'La password deve contenere almeno 6 caratteri'
     }
     if (nuovaPassword !== confermaPassword) {
-      setPasswordError('Le due password non coincidono')
+      errs.conferma = 'Le due password non corrispondono'
+    }
+
+    if (Object.keys(errs).length > 0) {
+      setPasswordFieldErrors(errs)
+      toast.warning('Dati non validi', 'Correggi i campi evidenziati in rosso')
       return
     }
 
@@ -366,13 +409,16 @@ export default function PazientePage() {
       if (!res.ok) throw new Error(data.error || 'Errore durante il cambio password')
 
       setPasswordSuccess(true)
+      toast.success('Password aggiornata!', 'La tua password personale è stata salvata con successo')
       setCurrentUser({ ...currentUser, primoAccesso: false })
       setTimeout(() => {
         setModalPasswordOpen(false)
         setPasswordSuccess(false)
-      }, 2000)
+      }, 1500)
     } catch (err: any) {
-      setPasswordError(err.message)
+      const msg = err.message || 'Errore durante il cambio password'
+      setPasswordError(msg)
+      toast.error('Errore cambio password', msg)
     } finally {
       setSavingPassword(false)
     }
@@ -390,6 +436,40 @@ export default function PazientePage() {
 
   // Ricerca nome medico curante assegnato
   const medicoCurante = mediciStudio.find((m) => m.id === currentUser?.medicoId)
+
+  if (loadingUser) {
+    return (
+      <div className="space-y-8 font-sans">
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-14 w-14 rounded-2xl" />
+            <div className="space-y-2 flex-1">
+              <Skeleton className="h-5 w-48 rounded-lg" />
+              <Skeleton className="h-4 w-72 rounded-lg" />
+            </div>
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+          <div className="lg:col-span-7 space-y-6">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+              <Skeleton className="h-6 w-36 rounded-lg" />
+              <Skeleton className="h-28 w-full rounded-2xl" />
+            </div>
+          </div>
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+              <Skeleton className="h-6 w-40 rounded-lg" />
+              <Skeleton className="h-24 w-full rounded-2xl" />
+            </div>
+          </div>
+        </div>
+        <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-6">
+          <Skeleton className="h-6 w-60 rounded-lg" />
+          <DocumentCardSkeleton count={2} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-8 font-sans">
@@ -476,13 +556,25 @@ export default function PazientePage() {
 
               <form onSubmit={handleVerificaCodiceStudio} className="space-y-3 pt-1">
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    placeholder="Es. SM-2026-A1"
-                    value={codiceStudioInput}
-                    onChange={(e) => setCodiceStudioInput(e.target.value.toUpperCase())}
-                    className="flex-1 px-4 py-2.5 rounded-xl border border-slate-200 uppercase font-mono font-bold text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white"
-                  />
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      placeholder="Es. SM-2026-A1"
+                      value={codiceStudioInput}
+                      onChange={(e) => {
+                        setCodiceStudioInput(e.target.value.toUpperCase())
+                        if (erroreAssociazione) setErroreAssociazione(null)
+                      }}
+                      className={`w-full px-4 py-2.5 rounded-xl border uppercase font-mono font-bold text-xs text-slate-900 focus:outline-none transition-all ${
+                        erroreAssociazione
+                          ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-10'
+                          : 'border-slate-200 focus:ring-2 focus:ring-emerald-500 bg-white'
+                      }`}
+                    />
+                    {erroreAssociazione && (
+                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 pointer-events-none" />
+                    )}
+                  </div>
                   <button
                     type="submit"
                     disabled={verificandoStudio}
@@ -864,9 +956,7 @@ export default function PazientePage() {
 
         {/* Lista Documenti e Appunti */}
         {caricamentoDocs ? (
-          <div className="p-8 text-center text-xs text-slate-400">
-            Caricamento documenti in corso...
-          </div>
+          <DocumentCardSkeleton count={4} />
         ) : documentiFiltrati.length === 0 ? (
           <div className="p-10 text-center bg-slate-50/60 rounded-3xl border border-dashed border-slate-200 space-y-3">
             <FileText className="h-10 w-10 text-slate-300 mx-auto" />
@@ -922,7 +1012,7 @@ export default function PazientePage() {
                           })}
                         </span>
                         <button
-                          onClick={() => handleEliminaDocumento(doc.id)}
+                          onClick={() => setDocToDelete(doc)}
                           title="Elimina"
                           className="text-slate-300 hover:text-rose-600 p-1 transition-colors"
                         >
@@ -1004,14 +1094,32 @@ export default function PazientePage() {
                 <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Titolo *
                 </label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Es. Esami del sangue Febbraio 2026, Allergia a Penicillina..."
-                  value={docTitolo}
-                  onChange={(e) => setDocTitolo(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                />
+                <div className="relative">
+                  <input
+                    type="text"
+                    required
+                    placeholder="Es. Esami del sangue Febbraio 2026, Allergia a Penicillina..."
+                    value={docTitolo}
+                    onChange={(e) => {
+                      setDocTitolo(e.target.value)
+                      if (docFieldErrors.titolo) setDocFieldErrors((prev) => ({ ...prev, titolo: '' }))
+                    }}
+                    className={`w-full px-3.5 py-2.5 rounded-xl border font-semibold text-slate-900 focus:outline-none transition-all ${
+                      docFieldErrors.titolo
+                        ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-10'
+                        : 'border-slate-200 focus:ring-2 focus:ring-emerald-500'
+                    }`}
+                  />
+                  {docFieldErrors.titolo && (
+                    <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 pointer-events-none" />
+                  )}
+                </div>
+                {docFieldErrors.titolo && (
+                  <p className="mt-1 text-[11px] text-rose-600 font-medium flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3" />
+                    <span>{docFieldErrors.titolo}</span>
+                  </p>
+                )}
               </div>
 
               <div>
@@ -1073,9 +1181,16 @@ export default function PazientePage() {
                 <button
                   type="submit"
                   disabled={salvandoDoc}
-                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold shadow-md shadow-emerald-600/20 flex items-center gap-2"
                 >
-                  {salvandoDoc ? 'Salvataggio...' : 'Salva nella Cartella'}
+                  {salvandoDoc ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <span>Salvataggio...</span>
+                    </>
+                  ) : (
+                    'Salva nella Cartella'
+                  )}
                 </button>
               </div>
             </form>
@@ -1117,28 +1232,64 @@ export default function PazientePage() {
                   <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Nuova Password * (Minimo 6 caratteri)
                   </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Nuova password personale"
-                    value={nuovaPassword}
-                    onChange={(e) => setNuovaPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="password"
+                      required
+                      placeholder="Nuova password personale"
+                      value={nuovaPassword}
+                      onChange={(e) => {
+                        setNuovaPassword(e.target.value)
+                        if (passwordFieldErrors.nuova) setPasswordFieldErrors((prev) => ({ ...prev, nuova: '' }))
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border font-semibold text-slate-900 focus:outline-none transition-all ${
+                        passwordFieldErrors.nuova
+                          ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-10'
+                          : 'border-slate-200 focus:ring-2 focus:ring-amber-500'
+                      }`}
+                    />
+                    {passwordFieldErrors.nuova && (
+                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 pointer-events-none" />
+                    )}
+                  </div>
+                  {passwordFieldErrors.nuova && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>{passwordFieldErrors.nuova}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Conferma Nuova Password *
                   </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="Ripeti la nuova password"
-                    value={confermaPassword}
-                    onChange={(e) => setConfermaPassword(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  />
+                  <div className="relative">
+                    <input
+                      type="password"
+                      required
+                      placeholder="Ripeti la nuova password"
+                      value={confermaPassword}
+                      onChange={(e) => {
+                        setConfermaPassword(e.target.value)
+                        if (passwordFieldErrors.conferma) setPasswordFieldErrors((prev) => ({ ...prev, conferma: '' }))
+                      }}
+                      className={`w-full px-3.5 py-2.5 rounded-xl border font-semibold text-slate-900 focus:outline-none transition-all ${
+                        passwordFieldErrors.conferma
+                          ? 'border-rose-500 bg-rose-50/20 focus:ring-2 focus:ring-rose-500/20 pr-10'
+                          : 'border-slate-200 focus:ring-2 focus:ring-amber-500'
+                      }`}
+                    />
+                    {passwordFieldErrors.conferma && (
+                      <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-rose-500 pointer-events-none" />
+                    )}
+                  </div>
+                  {passwordFieldErrors.conferma && (
+                    <p className="mt-1 text-[11px] text-rose-600 font-medium flex items-center gap-1">
+                      <AlertCircle className="h-3 w-3" />
+                      <span>{passwordFieldErrors.conferma}</span>
+                    </p>
+                  )}
                 </div>
 
                 <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
@@ -1152,9 +1303,16 @@ export default function PazientePage() {
                   <button
                     type="submit"
                     disabled={savingPassword}
-                    className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20"
+                    className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20 flex items-center gap-2"
                   >
-                    {savingPassword ? 'Salvataggio...' : 'Salva Nuova Password'}
+                    {savingPassword ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Salvataggio...</span>
+                      </>
+                    ) : (
+                      'Salva Nuova Password'
+                    )}
                   </button>
                 </div>
               </form>
@@ -1162,6 +1320,19 @@ export default function PazientePage() {
           </div>
         </div>
       )}
+
+      {/* Modal Conferma Eliminazione Documento */}
+      <ConfirmModal
+        isOpen={!!docToDelete}
+        title="Eliminare questo documento?"
+        message={`Sei sicuro di voler eliminare definitivamente "${docToDelete?.titolo}" dalla tua cartella clinica? Questa azione non può essere annullata.`}
+        confirmText="Elimina definitivamente"
+        cancelText="Annulla"
+        variant="danger"
+        loading={eliminandoDoc}
+        onConfirm={eseguiEliminazioneDocumento}
+        onCancel={() => setDocToDelete(null)}
+      />
     </div>
   )
 }

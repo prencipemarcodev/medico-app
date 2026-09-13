@@ -23,8 +23,10 @@ import {
   AlertCircle,
   Filter,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 export default function SegreteriaRichiestePage() {
+  const toast = useToast()
   const [filtro, setFiltro] = useState<'tutte' | 'da_ritirare' | 'consegnate' | 'digitali'>('tutte')
   const [searchQuery, setSearchQuery] = useState('')
 
@@ -251,7 +253,7 @@ export default function SegreteriaRichiestePage() {
 
                 <button
                   type="button"
-                  onClick={() => alert(`Stampa promemoria per ${r.paziente}`)}
+                  onClick={() => toast.info('Stampa promemoria', `Invio comando di stampa promemoria per ${r.paziente}...`)}
                   className="p-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 text-xs font-bold"
                   title="Stampa etichetta o promemoria"
                 >

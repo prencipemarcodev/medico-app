@@ -21,13 +21,17 @@ import {
   Plus,
   Trash2,
   AlertTriangle,
+  AlertCircle,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 type Tab = 'generale' | 'orari' | 'lockup' | 'broadcast' | 'deleghe'
 
 export default function ImpostazioniPage() {
+  const { toast } = useToast()
   const [tabAttiva, setTabAttiva] = useState<Tab>('generale')
   const [salvato, setSalvato] = useState(false)
+  const [errors, setErrors] = useState<Record<string, string>>({})
 
   // 1. Generale
   const [nomeStudio, setNomeStudio] = useState('Studio Medico San Marco')
@@ -74,12 +78,26 @@ export default function ImpostazioniPage() {
   const [delegaCartella, setDelegaCartella] = useState(false)
 
   const handleSalva = () => {
+    const errs: Record<string, string> = {}
+    if (!nomeStudio.trim()) errs.nomeStudio = 'Il nome dello studio non può essere vuoto'
+    if (!nomeDottore.trim()) errs.nomeDottore = 'Il nome del medico titolare non può essere vuoto'
+
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs)
+      setTabAttiva('generale')
+      toast.error('Campi obbligatori mancanti', 'Correggi i campi evidenziati in rosso')
+      return
+    }
+
+    setErrors({})
     setSalvato(true)
+    toast.success('Impostazioni salvate', 'Parametri operativi dello studio aggiornati')
     setTimeout(() => setSalvato(false), 3000)
   }
 
   const handleDeleteTemplate = (id: string) => {
     setTemplates(templates.filter((t) => t.id !== id))
+    toast.info('Template eliminato', 'Il modello broadcast è stato rimosso')
   }
 
   const handleAddTemplate = () => {
@@ -89,6 +107,7 @@ export default function ImpostazioniPage() {
       testo: 'Inserisci qui il testo dell\'avviso per i tuoi pazienti...',
     }
     setTemplates([...templates, nuovo])
+    toast.success('Template aggiunto', 'Nuovo modello pronto per essere compilato')
   }
 
   return (
@@ -166,14 +185,24 @@ export default function ImpostazioniPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Nome Studio Medico
+                  Nome Studio Medico *
                 </label>
                 <input
                   type="text"
                   value={nomeStudio}
-                  onChange={(e) => setNomeStudio(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                  onChange={(e) => {
+                    setNomeStudio(e.target.value)
+                    if (errors.nomeStudio) setErrors((p) => ({ ...p, nomeStudio: '' }))
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                    errors.nomeStudio ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                 />
+                {errors.nomeStudio && (
+                  <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 inline" /> {errors.nomeStudio}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -214,14 +243,24 @@ export default function ImpostazioniPage() {
 
               <div className="sm:col-span-2">
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-                  Nome Medico Curante Titolare
+                  Nome Medico Curante Titolare *
                 </label>
                 <input
                   type="text"
                   value={nomeDottore}
-                  onChange={(e) => setNomeDottore(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none"
+                  onChange={(e) => {
+                    setNomeDottore(e.target.value)
+                    if (errors.nomeDottore) setErrors((p) => ({ ...p, nomeDottore: '' }))
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-800 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                    errors.nomeDottore ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                 />
+                {errors.nomeDottore && (
+                  <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 inline" /> {errors.nomeDottore}
+                  </p>
+                )}
               </div>
 
               <div className="sm:col-span-2">

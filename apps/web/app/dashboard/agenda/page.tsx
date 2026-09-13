@@ -22,6 +22,7 @@ import {
   Lock,
   Search,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 interface SlotItem {
   id: string
@@ -37,6 +38,7 @@ interface SlotItem {
 }
 
 export default function AgendaPage() {
+  const { toast } = useToast()
   const [filtro, setFiltro] = useState<'tutti' | 'libero' | 'prenotato' | 'bloccato'>('tutti')
   const [giornoSelezionato, setGiornoSelezionato] = useState(2) // Mercoledì 9 Settembre
 
@@ -271,21 +273,33 @@ export default function AgendaPage() {
             <div className="flex items-center gap-2 self-end md:self-center">
               {slot.stato === 'prenotato' && (
                 <>
-                  <button className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors">
+                  <button
+                    onClick={() => toast.info('Spostamento orario', `Seleziona un nuovo orario per ${slot.paziente}`)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
+                  >
                     Sposta Orario
                   </button>
-                  <button className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs">
+                  <button
+                    onClick={() => toast.success('Visita completata', `Visita di ${slot.paziente} registrata con successo`)}
+                    className="px-4 py-2 rounded-xl text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs"
+                  >
                     Completa Visita
                   </button>
                 </>
               )}
               {slot.stato === 'libero' && (
-                <button className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs">
+                <button
+                  onClick={() => toast.info('Assegna paziente', `Assegnazione manuale dello slot ${slot.oraInizio}`)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-colors shadow-xs"
+                >
                   Assegna Paziente Manualmente
                 </button>
               )}
               {slot.stato === 'bloccato' && (
-                <button className="px-4 py-2 rounded-xl text-xs font-bold text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors">
+                <button
+                  onClick={() => toast.success('Slot sbloccato', `Lo slot ${slot.oraInizio} è tornato disponibile`)}
+                  className="px-4 py-2 rounded-xl text-xs font-bold text-amber-800 hover:bg-amber-100 border border-amber-300 transition-colors"
+                >
                   Sblocca Forzatamente
                 </button>
               )}

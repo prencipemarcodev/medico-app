@@ -32,6 +32,8 @@ import {
   Wifi,
 } from 'lucide-react'
 import { getSupabaseClient } from '@/lib/supabase'
+import { useToast } from '@/components/ui/toast'
+import { Skeleton } from '@/components/ui/skeleton'
 
 interface Slot {
   id: string
@@ -134,6 +136,7 @@ export default function PrenotaVisitaPage() {
     generaCalendario30Giorni()
   )
 
+  const toast = useToast()
   const [dataSelezionata, setDataSelezionata] = useState<string>('2026-09-12')
   const [slotSelezionato, setSlotSelezionato] = useState<string | null>(null)
   const [lockToken, setLockToken] = useState<string | null>(null)
@@ -345,7 +348,10 @@ export default function PrenotaVisitaPage() {
     const timer = setInterval(() => {
       setSecondiRimanenti((prev) => {
         if (prev <= 1) {
-          alert('Tempo di prelazione di 10 minuti scaduto. Lo slot è tornato disponibile per altri pazienti.')
+          toast.warning(
+            'Tempo di prelazione scaduto',
+            'Lo slot di 10 minuti è scaduto ed è tornato disponibile per altri pazienti.'
+          )
           setSlotSelezionato(null)
           setLockToken(null)
           return 600
@@ -354,7 +360,7 @@ export default function PrenotaVisitaPage() {
       })
     }, 1000)
     return () => clearInterval(timer)
-  }, [slotSelezionato, secondiRimanenti])
+  }, [slotSelezionato, secondiRimanenti, toast])
 
   const formatTimer = (sec: number) => {
     const m = Math.floor(sec / 60)
@@ -477,6 +483,7 @@ export default function PrenotaVisitaPage() {
     e.preventDefault()
     if (!slotSelezionato || !lockToken) {
       setLockError('Seleziona prima un orario disponibile per procedere')
+      toast.warning('Orario non selezionato', 'Seleziona prima uno slot disponibile per procedere')
       return
     }
 
@@ -503,11 +510,14 @@ export default function PrenotaVisitaPage() {
       }
 
       setConfermato(true)
+      toast.success('Prenotazione Confermata!', 'Il tuo appuntamento è stato registrato con successo.')
       setTimeout(() => {
         router.push('/paziente')
       }, 2000)
     } catch (err: any) {
-      setLockError(err.message || 'Errore durante la prenotazione')
+      const msg = err.message || 'Errore durante la prenotazione'
+      setLockError(msg)
+      toast.error('Prenotazione fallita', msg)
     } finally {
       setSubmitting(false)
     }

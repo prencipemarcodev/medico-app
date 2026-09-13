@@ -9,12 +9,15 @@
  */
 
 import { useState } from 'react'
-import { Radio, AlertTriangle, Send, Bell, Smartphone, CheckCircle2 } from 'lucide-react'
+import { Radio, AlertTriangle, Send, Bell, Smartphone, CheckCircle2, AlertCircle } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 export default function BroadcastPage() {
+  const { toast } = useToast()
   const [dataTarget, setDataTarget] = useState('2026-09-09')
   const [testo, setTesto] = useState('Gentile paziente, a causa di una visita domiciliare urgente, le visite pomeridiane subiranno un ritardo di circa 30 minuti.')
   const [inviato, setInviato] = useState(false)
+  const [erroreTesto, setErroreTesto] = useState<string | null>(null)
 
   const maxChars = 160
   const charsLeft = maxChars - testo.length
@@ -35,7 +38,14 @@ export default function BroadcastPage() {
   ]
 
   const handleSend = () => {
+    if (!testo.trim()) {
+      setErroreTesto('Inserisci il testo dell\'avviso broadcast prima di inviare')
+      toast.error('Testo mancante', 'Il messaggio di notifica non può essere vuoto')
+      return
+    }
+    setErroreTesto(null)
     setInviato(true)
+    toast.success('Broadcast inviato!', 'Notifica push recapitata ai 7 pazienti prenotati')
     setTimeout(() => setInviato(false), 5000)
   }
 
@@ -106,10 +116,20 @@ export default function BroadcastPage() {
               rows={4}
               maxLength={maxChars}
               value={testo}
-              onChange={(e) => setTesto(e.target.value)}
-              className="w-full p-4 rounded-2xl border border-slate-200 text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-xs"
+              onChange={(e) => {
+                setTesto(e.target.value)
+                if (erroreTesto) setErroreTesto(null)
+              }}
+              className={`w-full p-4 rounded-2xl border text-sm font-medium text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none shadow-xs transition-all ${
+                erroreTesto ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+              }`}
               placeholder="Inserisci il testo dell'avviso da notificare..."
             />
+            {erroreTesto && (
+              <p className="text-[11px] text-rose-600 font-bold mt-1.5 flex items-center gap-1">
+                <AlertCircle className="h-3.5 w-3.5 inline" /> {erroreTesto}
+              </p>
+            )}
           </div>
 
           <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200 flex items-start gap-3">

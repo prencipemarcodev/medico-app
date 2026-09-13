@@ -47,7 +47,12 @@ import {
   ShieldCheck,
   ArrowUpDown,
   FileDown,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
+import { ConfirmModal } from '@/components/ui/confirm-modal'
+import { Skeleton, CardSkeleton, TableRowsSkeleton } from '@/components/ui/skeleton'
 
 interface Studio {
   id: string
@@ -106,6 +111,7 @@ export interface AuditLogItem {
 }
 
 export default function AdminPage() {
+  const toast = useToast()
   const [tabAttiva, setTabAttiva] = useState<'studi' | 'medici' | 'staff' | 'audit'>('studi')
 
   // Dati
@@ -113,6 +119,21 @@ export default function AdminPage() {
   const [mediciList, setMediciList] = useState<Medico[]>([])
   const [staffList, setStaffList] = useState<StaffItem[]>([])
   const [loading, setLoading] = useState(true)
+
+  // Conferma Eliminazione Non Bloccante
+  const [confirmDelete, setConfirmDelete] = useState<{
+    type: 'studio' | 'medico' | 'staff'
+    id: string
+    name: string
+    details?: string
+  } | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  // Stati Salvataggio Modali
+  const [savingStudio, setSavingStudio] = useState(false)
+  const [savingMedico, setSavingMedico] = useState(false)
+  const [savingStaff, setSavingStaff] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
 
   // Audit Logs
   const [auditLogs, setAuditLogs] = useState<AuditLogItem[]>([])
@@ -330,7 +351,7 @@ export default function AdminPage() {
   // Esportazione CSV
   const esportaAuditCsv = () => {
     if (auditLogsFiltrati.length === 0) {
-      alert('Nessun record da esportare con i filtri attuali.')
+      toast.warning('Nessun record', 'Nessun record da esportare con i filtri attuali.')
       return
     }
     const headers = 'ID,DataOra,Ruolo,AttoreEmail,Azione,Entita,EntitaId,IP,Dettagli\n'
@@ -349,6 +370,7 @@ export default function AdminPage() {
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
+    toast.success('Esportazione completata', `File scaricato: audit_logs_${new Date().toISOString().slice(0, 10)}.csv`)
   }
 
   // Sintesi leggibile dettagli per la riga della tabella
@@ -377,6 +399,7 @@ export default function AdminPage() {
   const copiaJsonLog = (log: AuditLogItem) => {
     navigator.clipboard.writeText(JSON.stringify(log, null, 2))
     setJsonCopiato(true)
+    toast.info('JSON copiato', 'Payload del log copiato negli appunti')
     setTimeout(() => setJsonCopiato(false), 2000)
   }
 
@@ -391,64 +414,65 @@ export default function AdminPage() {
     }
   }, [tabAttiva])
 
-  // Eliminazione Studio Medico
-  const handleEliminaStudio = async (studio: Studio) => {
-    const conferma = window.confirm(
-      `ATTENZIONE: Sei sicuro di voler eliminare definitivamente lo studio "${studio.nome}"?\n\nVerranno eliminati a cascata tutti i medici, i pazienti, le prenotazioni e gli slot associati!`
-    )
-    if (!conferma) return
-
+  // Esecuzione eliminazione confermata da modale
+  const handleConfermaEliminazione = async () => {
+    if (!confirmDelete) return
+    setDeleting(true)
     try {
-      const res = await fetch(`/api/admin/studi/${studio.id}`, { method: 'DELETE' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione dello studio')
-
-      alert(data.message || 'Studio eliminato con successo')
+      if (confirmDelete.type === 'studio') {
+        const res = await fetch(`/api/admin/studi/${confirmDelete.id}`, { method: 'DELETE' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione dello studio')
+        toast.success('Studio eliminato', data.message || `Studio "${confirmDelete.name}" rimosso con successo`)
+      } else if (confirmDelete.type === 'medico') {
+        const res = await fetch(`/api/admin/medici/${confirmDelete.id}`, { method: 'DELETE' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione del medico')
+        toast.success('Medico eliminato', data.message || `Medico "${confirmDelete.name}" rimosso con successo`)
+      } else if (confirmDelete.type === 'staff') {
+        const res = await fetch(`/api/admin/staff/${confirmDelete.id}`, { method: 'DELETE' })
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione dello staff')
+        toast.success('Operatore eliminato', data.message || `Operatore "${confirmDelete.name}" rimosso con successo`)
+      }
+      setConfirmDelete(null)
       caricaDati()
       caricaAuditLogs()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore eliminazione', err.message || 'Operazione fallita')
+    } finally {
+      setDeleting(false)
     }
   }
 
-  // Eliminazione Medico
-  const handleEliminaMedico = async (medico: Medico) => {
-    const conferma = window.confirm(
-      `Sei sicuro di voler eliminare il Dott. ${medico.nome} ${medico.cognome}?\n\nVerranno cancellati la sua agenda, le prenotazioni e i pazienti associati!`
-    )
-    if (!conferma) return
-
-    try {
-      const res = await fetch(`/api/admin/medici/${medico.id}`, { method: 'DELETE' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione del medico')
-
-      alert(data.message || 'Medico eliminato con successo')
-      caricaDati()
-      caricaAuditLogs()
-    } catch (err: any) {
-      alert(err.message)
-    }
+  // Eliminazione Studio Medico (apre modale)
+  const handleEliminaStudio = (studio: Studio) => {
+    setConfirmDelete({
+      type: 'studio',
+      id: studio.id,
+      name: studio.nome,
+      details: 'Verranno eliminati a cascata tutti i medici, i pazienti, le prenotazioni e gli slot associati a questo studio!',
+    })
   }
 
-  // Eliminazione Staff
-  const handleEliminaStaff = async (st: StaffItem) => {
-    const conferma = window.confirm(
-      `Sei sicuro di voler eliminare l'operatore ${st.nome} ${st.cognome}?`
-    )
-    if (!conferma) return
+  // Eliminazione Medico (apre modale)
+  const handleEliminaMedico = (medico: Medico) => {
+    setConfirmDelete({
+      type: 'medico',
+      id: medico.id,
+      name: `Dott. ${medico.nome} ${medico.cognome}`,
+      details: 'Verranno cancellati la sua agenda, le prenotazioni e i pazienti associati!',
+    })
+  }
 
-    try {
-      const res = await fetch(`/api/admin/staff/${st.id}`, { method: 'DELETE' })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Errore durante l\'eliminazione dello staff')
-
-      alert(data.message || 'Operatore eliminato con successo')
-      caricaDati()
-      caricaAuditLogs()
-    } catch (err: any) {
-      alert(err.message)
-    }
+  // Eliminazione Staff (apre modale)
+  const handleEliminaStaff = (st: StaffItem) => {
+    setConfirmDelete({
+      type: 'staff',
+      id: st.id,
+      name: `${st.nome} ${st.cognome}`,
+      details: 'L\'operatore perderà immediatamente l\'accesso alla segreteria dello studio.',
+    })
   }
 
   // Modifica Studio
@@ -492,12 +516,15 @@ export default function AdminPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore modifica studio')
+      toast.success('Studio aggiornato', `Le impostazioni di "${formEditStudio.nome}" sono state salvate`)
       setModalEditStudioOpen(false)
       setStudioInModifica(null)
       caricaDati()
       caricaAuditLogs()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore modifica studio', err.message || 'Impossibile salvare le modifiche')
+    } finally {
+      setSavingStudio(false)
     }
   }
 
@@ -517,6 +544,7 @@ export default function AdminPage() {
   const handleSalvaModificaMedico = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!medicoInModifica) return
+    setSavingMedico(true)
     try {
       const res = await fetch(`/api/admin/medici/${medicoInModifica.id}`, {
         method: 'PATCH',
@@ -525,12 +553,15 @@ export default function AdminPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore modifica medico')
+      toast.success('Medico aggiornato', `Dati di Dott. ${formEditMedico.nome} ${formEditMedico.cognome} salvati`)
       setModalEditMedicoOpen(false)
       setMedicoInModifica(null)
       caricaDati()
       caricaAuditLogs()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore modifica medico', err.message || 'Impossibile salvare le modifiche')
+    } finally {
+      setSavingMedico(false)
     }
   }
 
@@ -564,6 +595,7 @@ export default function AdminPage() {
   const handleSalvaModificaStaff = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!staffInModifica) return
+    setSavingStaff(true)
     try {
       const res = await fetch(`/api/admin/staff/${staffInModifica.id}`, {
         method: 'PATCH',
@@ -572,18 +604,22 @@ export default function AdminPage() {
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore modifica operatore staff')
+      toast.success('Staff aggiornato', `Dati di ${formEditStaff.nome} ${formEditStaff.cognome} salvati`)
       setModalEditStaffOpen(false)
       setStaffInModifica(null)
       caricaDati()
       caricaAuditLogs()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore modifica staff', err.message || 'Impossibile salvare le modifiche')
+    } finally {
+      setSavingStaff(false)
     }
   }
 
   // Azione Crea Studio
   const handleCreaStudio = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSavingStudio(true)
     try {
       const res = await fetch('/api/admin/studi', {
         method: 'POST',
@@ -593,6 +629,7 @@ export default function AdminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore creazione studio')
 
+      toast.success('Studio creato!', `Studio "${formStudio.nome}" registrato con successo`)
       setModalStudioOpen(false)
       setFormStudio({
         nome: '',
@@ -614,13 +651,16 @@ export default function AdminPage() {
       caricaDati()
       caricaAuditLogs()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore creazione studio', err.message || 'Impossibile creare lo studio')
+    } finally {
+      setSavingStudio(false)
     }
   }
 
   // Azione Crea Medico
   const handleCreaMedico = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSavingMedico(true)
     try {
       const res = await fetch('/api/admin/medici', {
         method: 'POST',
@@ -630,17 +670,21 @@ export default function AdminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore creazione medico')
 
+      toast.success('Medico aggiunto!', `Dott. ${formMedico.nome} ${formMedico.cognome} creato con successo`)
       setModalMedicoOpen(false)
       setFormMedico({ studioId: '', nome: '', cognome: '', email: '', telefono: '', password: '' })
       caricaDati()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore creazione medico', err.message || 'Impossibile creare il medico')
+    } finally {
+      setSavingMedico(false)
     }
   }
 
   // Azione Crea Staff
   const handleCreaStaff = async (e: React.FormEvent) => {
     e.preventDefault()
+    setSavingStaff(true)
     try {
       const res = await fetch('/api/admin/staff', {
         method: 'POST',
@@ -650,11 +694,14 @@ export default function AdminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore creazione operatore segreteria')
 
+      toast.success('Operatore creato!', `Account di ${formStaff.nome} ${formStaff.cognome} creato con successo`)
       setModalStaffOpen(false)
       setFormStaff({ studioId: '', nome: '', cognome: '', email: '', password: '', mediciIds: [] })
       caricaDati()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore creazione staff', err.message || 'Impossibile creare l\'operatore')
+    } finally {
+      setSavingStaff(false)
     }
   }
 
@@ -769,7 +816,7 @@ export default function AdminPage() {
     if (!medicoTargetCsv) return
     const validi = anteprimaPazienti.filter((p) => p.valido)
     if (validi.length === 0) {
-      alert('Nessun paziente valido da importare')
+      toast.warning('Nessun record valido', 'Nessun paziente valido trovato nel file CSV da importare')
       return
     }
 
@@ -788,11 +835,15 @@ export default function AdminPage() {
       const data = await res.json()
       if (!res.ok) throw new Error(data.error || 'Errore durante l\'importazione')
 
+      toast.success(
+        'Importazione completata!',
+        `${data.credenziali?.length || validi.length} pazienti importati con credenziali generate.`
+      )
       setCredenzialiGenerate(data.credenziali || [])
       setImportCompletato(true)
       caricaDati()
     } catch (err: any) {
-      alert(err.message)
+      toast.error('Errore importazione CSV', err.message || 'Impossibile completare l\'importazione')
     } finally {
       setImportInCorso(false)
     }
@@ -946,7 +997,9 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {studiList.length === 0 ? (
+          {loading ? (
+            <CardSkeleton count={3} />
+          ) : studiList.length === 0 ? (
             <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
               <Building2 className="h-10 w-10 text-slate-600 mx-auto" />
               <p className="text-sm font-bold text-slate-300">Nessuno studio medico registrato</p>
@@ -1086,7 +1139,7 @@ export default function AdminPage() {
               <button
                 onClick={() => {
                   if (studiList.length === 0) {
-                    alert('Devi prima creare almeno uno Studio Medico!')
+                    toast.warning('Studio richiesto', 'Devi prima creare almeno uno Studio Medico!')
                     return
                   }
                   setFormMedico({ ...formMedico, studioId: studiList[0]?.id || '' })
@@ -1100,7 +1153,9 @@ export default function AdminPage() {
             </div>
           </div>
 
-          {mediciList.length === 0 ? (
+          {loading ? (
+            <CardSkeleton count={3} />
+          ) : mediciList.length === 0 ? (
             <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
               <Stethoscope className="h-10 w-10 text-slate-600 mx-auto" />
               <p className="text-sm font-bold text-slate-300">Nessun medico registrato</p>
@@ -1204,7 +1259,7 @@ export default function AdminPage() {
             <button
               onClick={() => {
                 if (studiList.length === 0) {
-                  alert('Devi prima creare almeno uno Studio Medico!')
+                  toast.warning('Studio richiesto', 'Devi prima creare almeno uno Studio Medico!')
                   return
                 }
                 setFormStaff({
@@ -1221,7 +1276,9 @@ export default function AdminPage() {
             </button>
           </div>
 
-          {staffList.length === 0 ? (
+          {loading ? (
+            <CardSkeleton count={3} />
+          ) : staffList.length === 0 ? (
             <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
               <UserCheck className="h-10 w-10 text-slate-600 mx-auto" />
               <p className="text-sm font-bold text-slate-300">Nessun account di segreteria creato</p>
@@ -1464,14 +1521,7 @@ export default function AdminPage() {
               </thead>
               <tbody className="divide-y divide-slate-800/60 font-normal">
                 {loadingAudit ? (
-                  <tr>
-                    <td colSpan={8} className="py-12 text-center text-slate-500">
-                      <div className="flex flex-col items-center justify-center gap-2">
-                        <RefreshCw className="h-5 w-5 animate-spin text-indigo-400" />
-                        <span>Caricamento registri di audit...</span>
-                      </div>
-                    </td>
-                  </tr>
+                  <TableRowsSkeleton rows={8} cols={8} />
                 ) : auditLogsPaginati.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-500">
@@ -3020,6 +3070,25 @@ export default function AdminPage() {
           </div>
         </div>
       )}
+
+      {/* Modal Conferma Eliminazione Non Bloccante */}
+      <ConfirmModal
+        isOpen={!!confirmDelete}
+        title={
+          confirmDelete?.type === 'studio'
+            ? 'Eliminare lo Studio Medico?'
+            : confirmDelete?.type === 'medico'
+            ? 'Eliminare il Medico Curante?'
+            : 'Eliminare l\'Operatore di Segreteria?'
+        }
+        description={`Sei sicuro di voler eliminare definitivamente "${confirmDelete?.name}"? ${confirmDelete?.details || ''}`}
+        confirmText="Elimina definitivamente"
+        cancelText="Annulla"
+        isDestructive={true}
+        loading={deleting}
+        onConfirm={handleConfermaEliminazione}
+        onClose={() => setConfirmDelete(null)}
+      />
     </div>
   )
 }

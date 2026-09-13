@@ -22,36 +22,71 @@ import {
   Users,
 } from 'lucide-react'
 import { AppLogo } from '@/components/AppLogo'
+import { useToast } from '@/components/ui/toast'
 
 export default function LoginPage() {
   const router = useRouter()
+  const toast = useToast()
   const [identifier, setIdentifier] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<{ identifier?: string; password?: string }>({})
+
+  const validateForm = () => {
+    const errors: { identifier?: string; password?: string } = {}
+    const cleanId = identifier.trim()
+    if (!cleanId) {
+      errors.identifier = 'Inserisci il tuo Codice Fiscale o la tua Email'
+    } else if (!cleanId.includes('@') && cleanId.length !== 16) {
+      errors.identifier = 'Il Codice Fiscale deve essere di 16 caratteri (oppure inserisci una email valida)'
+    }
+
+    if (!password) {
+      errors.password = 'Inserisci la tua password di accesso'
+    } else if (password.length < 6) {
+      errors.password = 'La password deve contenere almeno 6 caratteri'
+    }
+
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
     setError(null)
+
+    if (!validateForm()) {
+      toast.warning('Dati non validi', 'Controlla i campi evidenziati in rosso')
+      return
+    }
+
     setLoading(true)
 
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password }),
+        body: JSON.stringify({ identifier: identifier.trim(), password }),
       })
 
       const data = await res.json()
 
       if (!res.ok) {
-        throw new Error(data.error || 'Credenziali non valide')
+        throw new Error(data.error || 'Credenziali non corrette o utente non trovato')
       }
 
+      toast.success('Accesso autorizzato', 'Caricamento della tua area riservata in corso...')
       // Reindirizzamento al portale associato al ruolo autenticato
       router.push(data.redirectUrl || '/dashboard')
     } catch (err: any) {
-      setError(err?.message || 'Errore durante l\'accesso')
+      const msg = err?.message || 'Errore durante l\'accesso'
+      setError(msg)
+      toast.error('Errore di autenticazione', msg)
+      setFieldErrors({
+        identifier: 'Verifica Codice Fiscale o Email',
+        password: 'Password errata o non corrispondente',
+      })
     } finally {
       setLoading(false)
     }
@@ -59,13 +94,13 @@ export default function LoginPage() {
 
   return (
     <main className="flex min-h-[100dvh] items-center justify-center bg-[#090d16] p-4 sm:p-6 font-sans pt-safe pb-safe">
-      <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 space-y-7">
+      <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 space-y-7">
         {/* Brand header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-1">
             <AppLogo size={68} />
           </div>
-          <h1 className="text-2xl font-black text-slate-900 tracking-tight">Portale Studio Medico</h1>
+          <h1 className="text-2xl font-bold text-slate-900 tracking-tight">Portale Studio Medico</h1>
           <p className="text-xs text-slate-500 font-medium">
             Accesso sicuro per Pazienti, Medici, Segreteria e Amministrazione
           </p>
@@ -73,17 +108,17 @@ export default function LoginPage() {
 
         {/* Error notification */}
         {error && (
-          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5">
+          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5">
             <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
         )}
 
         {/* Credentials Form */}
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleLogin} className="space-y-4" noValidate>
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-1.5">
-              Codice Fiscale o Email
+              Codice Fiscale o Email *
             </label>
             <div className="relative">
               <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
@@ -92,22 +127,37 @@ export default function LoginPage() {
               <input
                 type="text"
                 value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
+                onChange={(e) => {
+                  setIdentifier(e.target.value)
+                  if (fieldErrors.identifier) {
+                    setFieldErrors((prev) => ({ ...prev, identifier: undefined }))
+                  }
+                }}
                 placeholder="Es. Codice Fiscale (16 car.) o email@studio.it"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                required
+                className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                  fieldErrors.identifier
+                    ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                    : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                }`}
                 autoComplete="username"
               />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              I pazienti accedono con il proprio <b>Codice Fiscale</b>, il personale con l'email.
-            </p>
+            {fieldErrors.identifier ? (
+              <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-semibold">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{fieldErrors.identifier}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">
+                I pazienti accedono con il proprio <b>Codice Fiscale</b>, il personale con l'email.
+              </p>
+            )}
           </div>
 
           <div>
             <div className="flex items-center justify-between mb-1.5">
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
-                Password
+                Password *
               </label>
             </div>
             <div className="relative">
@@ -117,22 +167,37 @@ export default function LoginPage() {
               <input
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value)
+                  if (fieldErrors.password) {
+                    setFieldErrors((prev) => ({ ...prev, password: undefined }))
+                  }
+                }}
                 placeholder="Password personale o codice a 6 caratteri"
-                className="w-full pl-10 pr-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50"
-                required
+                className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
+                  fieldErrors.password
+                    ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
+                    : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                }`}
                 autoComplete="current-password"
               />
             </div>
-            <p className="text-[11px] text-slate-400 mt-1">
-              Per i pazienti: inserisci la password provvisoria di 6 caratteri ricevuta dallo studio.
-            </p>
+            {fieldErrors.password ? (
+              <p className="text-xs text-rose-600 mt-1.5 flex items-center gap-1 font-semibold">
+                <AlertCircle className="h-3.5 w-3.5 flex-shrink-0" />
+                <span>{fieldErrors.password}</span>
+              </p>
+            ) : (
+              <p className="text-[11px] text-slate-400 mt-1">
+                Per i pazienti: inserisci la password provvisoria di 6 caratteri ricevuta dallo studio.
+              </p>
+            )}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 hover:shadow-blue-500/35 transition-all"
+            className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
           >
             {loading ? (
               <>

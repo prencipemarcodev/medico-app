@@ -22,10 +22,14 @@ import {
   Lock,
   Radio,
   UserCheck,
+  AlertCircle,
+  Loader2,
 } from 'lucide-react'
+import { useToast } from '@/components/ui/toast'
 
 export default function OnboardingPage() {
   const router = useRouter()
+  const { toast } = useToast()
   const [step, setStep] = useState(1)
 
   // Form states (inizializzati vuoti per reale inserimento dati)
@@ -49,10 +53,23 @@ export default function OnboardingPage() {
   const [caricamento, setCaricamento] = useState(false)
   const [salvato, setSalvato] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  const validateStep1 = () => {
+    const errs: Record<string, string> = {}
+    if (!nomeStudio.trim()) errs.nomeStudio = 'Il nome dello studio è obbligatorio'
+    if (!nomeDottore.trim()) errs.nomeDottore = 'Il nome del medico è obbligatorio'
+    if (!cognomeDottore.trim()) errs.cognomeDottore = 'Il cognome del medico è obbligatorio'
+    setFieldErrors(errs)
+    if (Object.keys(errs).length > 0) {
+      toast.warning('Dati mancanti', 'Compila tutti i campi contrassegnati in rosso.')
+      return false
+    }
+    return true
+  }
 
   const handleFinish = async () => {
-    if (!nomeStudio.trim() || !nomeDottore.trim() || !cognomeDottore.trim()) {
-      setErrore('Compila il nome dello studio, nome e cognome del medico curante al Passo 1.')
+    if (!validateStep1()) {
       setStep(1)
       return
     }
@@ -172,11 +189,21 @@ export default function OnboardingPage() {
                 <input
                   type="text"
                   value={nomeStudio}
-                  onChange={(e) => setNomeStudio(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  onChange={(e) => {
+                    setNomeStudio(e.target.value)
+                    if (fieldErrors.nomeStudio) setFieldErrors((p) => ({ ...p, nomeStudio: '' }))
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                    fieldErrors.nomeStudio ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                   placeholder="es. Studio Medico Dott. Rossi"
                   required
                 />
+                {fieldErrors.nomeStudio && (
+                  <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 inline" /> {fieldErrors.nomeStudio}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -225,11 +252,21 @@ export default function OnboardingPage() {
                 <input
                   type="text"
                   value={nomeDottore}
-                  onChange={(e) => setNomeDottore(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  onChange={(e) => {
+                    setNomeDottore(e.target.value)
+                    if (fieldErrors.nomeDottore) setFieldErrors((p) => ({ ...p, nomeDottore: '' }))
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                    fieldErrors.nomeDottore ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                   placeholder="es. Mario"
                   required
                 />
+                {fieldErrors.nomeDottore && (
+                  <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 inline" /> {fieldErrors.nomeDottore}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -239,11 +276,21 @@ export default function OnboardingPage() {
                 <input
                   type="text"
                   value={cognomeDottore}
-                  onChange={(e) => setCognomeDottore(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  onChange={(e) => {
+                    setCognomeDottore(e.target.value)
+                    if (fieldErrors.cognomeDottore) setFieldErrors((p) => ({ ...p, cognomeDottore: '' }))
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                    fieldErrors.cognomeDottore ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
+                  }`}
                   placeholder="es. Rossi"
                   required
                 />
+                {fieldErrors.cognomeDottore && (
+                  <p className="text-[11px] text-rose-600 font-bold mt-1 flex items-center gap-1">
+                    <AlertCircle className="h-3 w-3 inline" /> {fieldErrors.cognomeDottore}
+                  </p>
+                )}
               </div>
 
               <div className="sm:col-span-2">
@@ -439,8 +486,7 @@ export default function OnboardingPage() {
             <button
               type="button"
               onClick={() => {
-                if (step === 1 && (!nomeStudio.trim() || !nomeDottore.trim() || !cognomeDottore.trim())) {
-                  setErrore('Compila i campi obbligatori (Nome studio, Nome e Cognome medico).')
+                if (step === 1 && !validateStep1()) {
                   return
                 }
                 setErrore(null)

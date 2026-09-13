@@ -10,7 +10,7 @@
  * @version     0.4.0
  */
 
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import {
@@ -27,13 +27,20 @@ import {
   Info,
   Calendar,
   MoveHorizontal,
+  Loader2,
+  Radio,
+  Wifi,
 } from 'lucide-react'
+import { getSupabaseClient } from '@/lib/supabase'
 
 interface Slot {
   id: string
   ora: string
   durata: string
   fascia: 'mattina' | 'pomeriggio'
+  stato?: 'libero' | 'bloccato' | 'prenotato' | 'chiuso'
+  lockedBy?: string | null
+  lockedUntil?: string | null
 }
 
 interface GiornoCalendario {
@@ -129,6 +136,12 @@ export default function PrenotaVisitaPage() {
 
   const [dataSelezionata, setDataSelezionata] = useState<string>('2026-09-12')
   const [slotSelezionato, setSlotSelezionato] = useState<string | null>(null)
+  const [lockToken, setLockToken] = useState<string | null>(null)
+  const [lockLoading, setLockLoading] = useState<string | null>(null)
+  const [lockError, setLockError] = useState<string | null>(null)
+  const [submitting, setSubmitting] = useState(false)
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null)
+  const [realtimeConnected, setRealtimeConnected] = useState(false)
 
   // Countdown timer 10 minuti (600 secondi)
   const [secondiRimanenti, setSecondiRimanenti] = useState(600)
@@ -156,6 +169,37 @@ export default function PrenotaVisitaPage() {
   const [scrollLeftPos, setScrollLeftPos] = useState(0)
   const [hasDragged, setHasDragged] = useState(false)
 
+  // Caricamento slot dal database PostgreSQL
+  const caricaSlotData = useCallback(async (dataTarget: string) => {
+    try {
+      const res = await fetch(`/api/slot?data=${dataTarget}`)
+      if (!res.ok) return
+      const data = await res.json()
+      if (data.currentUserId) {
+        setCurrentUserId(data.currentUserId)
+      }
+      if (Array.isArray(data.slots) && data.slots.length > 0) {
+        setCalendarioGiorni((prev) =>
+          prev.map((g) => {
+            if (g.data !== dataTarget) return g
+            const mappedSlots: Slot[] = data.slots.map((s: any) => ({
+              id: s.id,
+              ora: `${s.oraInizio.slice(0, 5)} - ${s.oraFine.slice(0, 5)}`,
+              durata: `${s.durataMin} min`,
+              fascia: s.oraInizio < '13:00' ? 'mattina' : 'pomeriggio',
+              stato: s.stato,
+              lockedBy: s.lockedBy,
+              lockedUntil: s.lockedUntil,
+            }))
+            return { ...g, slots: mappedSlots }
+          })
+        )
+      }
+    } catch (err) {
+      console.error('Errore nel recupero slot:', err)
+    }
+  }, [])
+
   // Aggiornamento con la data reale client-side
   useEffect(() => {
     const reale = generaCalendario30Giorni(new Date())
@@ -163,8 +207,80 @@ export default function PrenotaVisitaPage() {
     const primoConSlot = reale.find((g) => !g.isChiuso && g.slots.length > 0)
     if (primoConSlot) {
       setDataSelezionata(primoConSlot.data)
+      caricaSlotData(primoConSlot.data)
     }
-  }, [])
+  }, [caricaSlotData])
+
+  // Ricarica slot al cambio data
+  useEffect(() => {
+    if (dataSelezionata) {
+      caricaSlotData(dataSelezionata)
+    }
+  }, [dataSelezionata, caricaSlotData])
+
+  // Auto-refresh fallback silenzioso in background ogni 15 secondi
+  useEffect(() => {
+    const timer = setInterval(() => {
+      if (dataSelezionata) {
+        caricaSlotData(dataSelezionata)
+      }
+    }, 15000)
+    return () => clearInterval(timer)
+  }, [dataSelezionata, caricaSlotData])
+
+  // Connessione WebSocket in tempo reale con Supabase Realtime
+  useEffect(() => {
+    const supabase = getSupabaseClient()
+    if (!supabase) return
+
+    setRealtimeConnected(true)
+
+    const channel = supabase
+      .channel(`realtime:slot_agenda:${dataSelezionata}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'slot_agenda',
+        },
+        (payload) => {
+          const updated = payload.new as any
+          if (!updated) return
+
+          if (updated.data === dataSelezionata) {
+            setCalendarioGiorni((prev) =>
+              prev.map((g) => {
+                if (g.data !== dataSelezionata) return g
+                const newSlots = g.slots.map((s) => {
+                  if (s.id === updated.id) {
+                    return {
+                      ...s,
+                      stato: updated.stato,
+                      lockedBy: updated.locked_by ?? updated.lockedBy,
+                      lockedUntil: updated.locked_until ?? updated.lockedUntil,
+                    }
+                  }
+                  return s
+                })
+                return { ...g, slots: newSlots }
+              })
+            )
+
+            // Se lo slot attualmente bloccato dall'utente è stato confermato o rilasciato altrove
+            if (updated.id === slotSelezionato && updated.stato === 'prenotato') {
+              setSlotSelezionato(null)
+              setLockToken(null)
+            }
+          }
+        }
+      )
+      .subscribe()
+
+    return () => {
+      supabase.removeChannel(channel)
+    }
+  }, [dataSelezionata, slotSelezionato])
 
   // Auto-scroll del carousel sulla data selezionata
   useEffect(() => {
@@ -223,14 +339,15 @@ export default function PrenotaVisitaPage() {
     }
   }, [slotSelezionato])
 
-  // Countdown tick
+  // Countdown tick con avviso di scadenza
   useEffect(() => {
     if (!slotSelezionato || secondiRimanenti <= 0) return
     const timer = setInterval(() => {
       setSecondiRimanenti((prev) => {
         if (prev <= 1) {
-          alert('Tempo per confermare scaduto! Lo slot è stato liberato per altri utenti.')
+          alert('Tempo di prelazione di 10 minuti scaduto. Lo slot è tornato disponibile per altri pazienti.')
           setSlotSelezionato(null)
+          setLockToken(null)
           return 600
         }
         return prev - 1
@@ -245,17 +362,69 @@ export default function PrenotaVisitaPage() {
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`
   }
 
-  // Click su un orario disponibile
-  const handleSelectSlot = (id: string) => {
-    setSlotSelezionato(id)
-    setSecondiRimanenti(600) // 10 min TTL lock (ADR-002)
+  // Click su un orario: esegue la transazione di Lock atomico su PostgreSQL
+  const handleSelectSlot = async (slot: Slot) => {
+    if (slotSelezionato === slot.id) return
+
+    const isOccupato =
+      (slot.stato === 'bloccato' && (!currentUserId || slot.lockedBy !== currentUserId)) ||
+      slot.stato === 'prenotato' ||
+      slot.stato === 'chiuso'
+
+    if (isOccupato) {
+      setLockError('Questo orario è già stato prenotato o bloccato da un altro paziente.')
+      return
+    }
+
+    // Se c'era uno slot già bloccato in precedenza da questo utente, rilascialo prima
+    if (slotSelezionato && lockToken) {
+      fetch('/api/slot/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: slotSelezionato, lockToken }),
+      }).catch(() => {})
+    }
+
+    setLockLoading(slot.id)
+    setLockError(null)
+
+    try {
+      const res = await fetch('/api/slot/lock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: slot.id }),
+      })
+      const data = await res.json()
+
+      if (!res.ok) {
+        setLockError(data.error || 'Impossibile bloccare questo orario. Scegli un altro slot.')
+        // Aggiorna lo stato locale per renderlo subito disabilitato
+        setCalendarioGiorni((prev) =>
+          prev.map((g) => {
+            if (g.data !== dataSelezionata) return g
+            return {
+              ...g,
+              slots: g.slots.map((s) => (s.id === slot.id ? { ...s, stato: 'bloccato' } : s)),
+            }
+          })
+        )
+        return
+      }
+
+      setSlotSelezionato(slot.id)
+      setLockToken(data.lockToken)
+      setSecondiRimanenti(600)
+    } catch (err: any) {
+      setLockError('Errore di connessione durante la selezione dell\'orario.')
+    } finally {
+      setLockLoading(null)
+    }
   }
 
   // Richiesta cambio data da parte dell'utente
   const handleRichiestaCambioData = (targetData: string) => {
     if (targetData === dataSelezionata) return
 
-    // Se uno slot è attualmente bloccato, chiediamo conferma prima di sbloccarlo
     if (slotSelezionato) {
       setModalCambioData({
         aperta: true,
@@ -267,11 +436,19 @@ export default function PrenotaVisitaPage() {
   }
 
   // Conferma rilascio slot e cambio data
-  const confermaRilascioSlotECambiaData = () => {
+  const confermaRilascioSlotECambiaData = async () => {
+    if (slotSelezionato && lockToken) {
+      fetch('/api/slot/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: slotSelezionato, lockToken }),
+      }).catch(() => {})
+    }
     if (modalCambioData.targetData) {
       setDataSelezionata(modalCambioData.targetData)
     }
     setSlotSelezionato(null)
+    setLockToken(null)
     setSecondiRimanenti(600)
     setModalCambioData({ aperta: false, targetData: null })
   }
@@ -282,17 +459,58 @@ export default function PrenotaVisitaPage() {
   }
 
   // Sblocco manuale per tornare alla vista orizzontale
-  const handleSbloccaManualmente = () => {
+  const handleSbloccaManualmente = async () => {
+    if (slotSelezionato && lockToken) {
+      fetch('/api/slot/unlock', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slotId: slotSelezionato, lockToken }),
+      }).catch(() => {})
+    }
     setSlotSelezionato(null)
+    setLockToken(null)
     setSecondiRimanenti(600)
   }
 
-  const handleConferma = (e: React.FormEvent) => {
+  // Conferma finale della prenotazione
+  const handleConferma = async (e: React.FormEvent) => {
     e.preventDefault()
-    setConfermato(true)
-    setTimeout(() => {
-      router.push('/paziente')
-    }, 2000)
+    if (!slotSelezionato || !lockToken) {
+      setLockError('Seleziona prima un orario disponibile per procedere')
+      return
+    }
+
+    setSubmitting(true)
+    setLockError(null)
+
+    try {
+      const res = await fetch('/api/prenotazioni', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          slotId: slotSelezionato,
+          lockToken,
+          tipologiaVisita: tipoVisita,
+          motivoCategoria,
+          motivoNote,
+        }),
+      })
+
+      const data = await res.json()
+
+      if (!res.ok) {
+        throw new Error(data.error || 'Errore durante la conferma della prenotazione')
+      }
+
+      setConfermato(true)
+      setTimeout(() => {
+        router.push('/paziente')
+      }, 2000)
+    } catch (err: any) {
+      setLockError(err.message || 'Errore durante la prenotazione')
+    } finally {
+      setSubmitting(false)
+    }
   }
 
   const hasSelectedSlot = Boolean(slotSelezionato)
@@ -300,11 +518,17 @@ export default function PrenotaVisitaPage() {
   return (
     <div className="space-y-6 max-w-5xl mx-auto font-sans transition-all duration-500 pb-12">
       {/* Header */}
-      <div className="flex items-center justify-between bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm">
         <div>
-          <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-emerald-600 mb-1">
-            <CalendarDays className="h-4 w-4" />
-            Prenotazione Visita Medica
+          <div className="flex flex-wrap items-center gap-3 mb-1">
+            <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-600">
+              <CalendarDays className="h-4 w-4" />
+              Prenotazione Visita Medica
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+              <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
+              {realtimeConnected ? 'Disponibilità in tempo reale attiva' : 'Sincronizzazione orari attiva'}
+            </span>
           </div>
           <h1 className="text-2xl font-black text-slate-900 tracking-tight">
             Scegli Data e Orario con il Tuo Medico
@@ -314,11 +538,28 @@ export default function PrenotaVisitaPage() {
 
         <Link
           href="/paziente"
-          className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 transition-all"
+          className="px-4 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-1.5 transition-all self-start sm:self-auto"
         >
           <ArrowLeft className="h-4 w-4" /> Torna alla Home
         </Link>
       </div>
+
+      {/* Avviso Conflitto o Errore Lock */}
+      {lockError && (
+        <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-bold flex items-center justify-between gap-3 shadow-xs animate-in fade-in">
+          <div className="flex items-center gap-2.5">
+            <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
+            <span>{lockError}</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setLockError(null)}
+            className="text-rose-500 hover:text-rose-800 text-xs font-extrabold px-2 py-1"
+          >
+            ✕
+          </button>
+        </div>
+      )}
 
       {/* Lockup Banner with Smooth Entrance Animation */}
       <div
@@ -535,35 +776,108 @@ export default function PrenotaVisitaPage() {
           ) : (
             /* Griglia Orari Orizzontale a piena larghezza */
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-              {giornoCorrente.slots.map((slot) => (
-                <button
-                  key={slot.id}
-                  type="button"
-                  onClick={() => handleSelectSlot(slot.id)}
-                  className="group p-5 rounded-2xl border border-slate-200/90 bg-slate-50/50 hover:bg-blue-50 hover:border-blue-500 hover:ring-2 hover:ring-blue-500/20 text-left transition-all shadow-xs flex flex-col justify-between h-32"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="h-9 w-9 rounded-xl bg-white border border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-100/50 flex items-center justify-center text-slate-600 group-hover:text-blue-600 transition-colors">
-                      <Clock className="h-4 w-4" />
-                    </div>
-                    <span className="text-[11px] font-extrabold px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 group-hover:bg-blue-600 group-hover:text-white transition-colors">
-                      Disponibile
-                    </span>
-                  </div>
+              {giornoCorrente.slots.map((slot) => {
+                const isSelected = slotSelezionato === slot.id
+                const isLoadingThis = lockLoading === slot.id
+                const isPrenotato = slot.stato === 'prenotato'
+                const isBloccatoDaAltri =
+                  slot.stato === 'bloccato' &&
+                  (!currentUserId || slot.lockedBy !== currentUserId) &&
+                  !isSelected
+                const isDisabilitato = isPrenotato || isBloccatoDaAltri || isLoadingThis
 
-                  <div>
-                    <div className="font-black text-base text-slate-900 group-hover:text-blue-900 transition-colors">
-                      {slot.ora}
-                    </div>
-                    <div className="text-xs text-slate-400 font-medium flex items-center justify-between mt-0.5">
-                      <span>Durata: {slot.durata}</span>
-                      <span className="text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
-                        Blocca slot <ChevronRight className="h-3.5 w-3.5" />
+                return (
+                  <button
+                    key={slot.id}
+                    type="button"
+                    disabled={isDisabilitato}
+                    onClick={() => handleSelectSlot(slot)}
+                    className={`group p-5 rounded-2xl border text-left transition-all shadow-xs flex flex-col justify-between h-32 ${
+                      isSelected
+                        ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-500/20'
+                        : isPrenotato
+                        ? 'bg-slate-100/80 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'
+                        : isBloccatoDaAltri
+                        ? 'bg-amber-50/70 border-amber-200 text-slate-500 opacity-75 cursor-not-allowed'
+                        : 'border-slate-200/90 bg-slate-50/50 hover:bg-blue-50 hover:border-blue-500 hover:ring-2 hover:ring-blue-500/20'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div
+                        className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white border-blue-600'
+                            : isPrenotato
+                            ? 'bg-slate-200 text-slate-400 border-slate-300'
+                            : isBloccatoDaAltri
+                            ? 'bg-amber-100 text-amber-700 border-amber-300'
+                            : 'bg-white border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-100/50 text-slate-600 group-hover:text-blue-600'
+                        }`}
+                      >
+                        {isLoadingThis ? (
+                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        ) : isPrenotato ? (
+                          <CheckCircle2 className="h-4 w-4 text-slate-400" />
+                        ) : isBloccatoDaAltri ? (
+                          <Lock className="h-4 w-4 text-amber-600" />
+                        ) : (
+                          <Clock className="h-4 w-4" />
+                        )}
+                      </div>
+                      <span
+                        className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full transition-colors ${
+                          isSelected
+                            ? 'bg-blue-600 text-white'
+                            : isPrenotato
+                            ? 'bg-slate-200 text-slate-600'
+                            : isBloccatoDaAltri
+                            ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                            : 'bg-emerald-100 text-emerald-800 group-hover:bg-blue-600 group-hover:text-white'
+                        }`}
+                      >
+                        {isLoadingThis
+                          ? 'Blocco in corso...'
+                          : isSelected
+                          ? 'Selezionato'
+                          : isPrenotato
+                          ? 'Prenotato'
+                          : isBloccatoDaAltri
+                          ? 'In prenotazione'
+                          : 'Disponibile'}
                       </span>
                     </div>
-                  </div>
-                </button>
-              ))}
+
+                    <div>
+                      <div
+                        className={`font-black text-base transition-colors ${
+                          isSelected
+                            ? 'text-blue-900'
+                            : isPrenotato
+                            ? 'text-slate-400 line-through'
+                            : isBloccatoDaAltri
+                            ? 'text-slate-500'
+                            : 'text-slate-900 group-hover:text-blue-900'
+                        }`}
+                      >
+                        {slot.ora}
+                      </div>
+                      <div className="text-xs text-slate-400 font-medium flex items-center justify-between mt-0.5">
+                        <span>Durata: {slot.durata}</span>
+                        {!isDisabilitato && (
+                          <span className="text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                            Blocca slot <ChevronRight className="h-3.5 w-3.5" />
+                          </span>
+                        )}
+                        {isBloccatoDaAltri && (
+                          <span className="text-amber-600 font-semibold text-[11px]">
+                            Temporaneamente riservato
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </button>
+                )
+              })}
             </div>
           )}
 
@@ -603,26 +917,57 @@ export default function PrenotaVisitaPage() {
             <div className="space-y-2.5">
               {giornoCorrente.slots.map((slot) => {
                 const isSelected = slotSelezionato === slot.id
+                const isLoadingThis = lockLoading === slot.id
+                const isPrenotato = slot.stato === 'prenotato'
+                const isBloccatoDaAltri =
+                  slot.stato === 'bloccato' &&
+                  (!currentUserId || slot.lockedBy !== currentUserId) &&
+                  !isSelected
+                const isDisabilitato = isPrenotato || isBloccatoDaAltri || isLoadingThis
+
                 return (
                   <button
                     key={slot.id}
                     type="button"
-                    onClick={() => handleSelectSlot(slot.id)}
+                    disabled={isDisabilitato}
+                    onClick={() => handleSelectSlot(slot)}
                     className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
                       isSelected
                         ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                        : isPrenotato
+                        ? 'bg-slate-100/70 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'
+                        : isBloccatoDaAltri
+                        ? 'bg-amber-50/60 border-amber-200 text-slate-500 opacity-75 cursor-not-allowed'
                         : 'bg-slate-50/70 border-slate-200 hover:bg-white hover:border-slate-300'
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <Clock className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
-                      <span className="font-extrabold text-sm text-slate-900">{slot.ora}</span>
+                      {isLoadingThis ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                      ) : isPrenotato ? (
+                        <CheckCircle2 className="h-4 w-4 text-slate-400" />
+                      ) : isBloccatoDaAltri ? (
+                        <Lock className="h-4 w-4 text-amber-600" />
+                      ) : (
+                        <Clock className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                      )}
+                      <span
+                        className={`font-extrabold text-sm ${
+                          isPrenotato ? 'text-slate-400 line-through' : 'text-slate-900'
+                        }`}
+                      >
+                        {slot.ora}
+                      </span>
                       <span className="text-xs text-slate-400">({slot.durata})</span>
                     </div>
                     {isSelected ? (
                       <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-600 text-white shadow-xs">
                         Selezionato
                       </span>
+                    ) : isPrenotato ? (
+                      <span className="text-xs font-bold text-slate-400">Prenotato</span>
+                    ) : isBloccatoDaAltri ? (
+                      <span className="text-xs font-bold text-amber-600">In prenotazione</span>
                     ) : (
                       <span className="text-xs font-bold text-emerald-600">Disponibile</span>
                     )}
@@ -717,17 +1062,24 @@ export default function PrenotaVisitaPage() {
                 <div className="pt-2">
                   <button
                     type="submit"
-                    disabled={confermato}
+                    disabled={submitting || confermato}
                     className={`w-full py-3.5 rounded-2xl text-xs font-extrabold text-white flex items-center justify-center gap-2 shadow-md transition-all ${
                       confermato
                         ? 'bg-emerald-600'
-                        : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/20'
+                        : submitting
+                        ? 'bg-blue-500 opacity-80 cursor-wait'
+                        : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
                     }`}
                   >
-                    {confermato ? (
+                    {submitting ? (
                       <>
-                        <CheckCircle2 className="h-4 w-4" />
-                        Prenotazione Confermata! Reindirizzamento...
+                        <Loader2 className="h-4 w-4 animate-spin text-white" />
+                        <span>Conferma in corso...</span>
+                      </>
+                    ) : confermato ? (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 text-white" />
+                        <span>Prenotazione Confermata! Reindirizzamento...</span>
                       </>
                     ) : (
                       <>

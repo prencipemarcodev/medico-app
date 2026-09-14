@@ -49,6 +49,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Filter,
+  Zap,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -103,6 +104,7 @@ export default function SegreteriaPazientiPage() {
   const [tabellaFiltroMedico, setTabellaFiltroMedico] = useState<string>('tutti')
   const [tabellaPagina, setTabellaPagina] = useState(1)
   const tabellaRighePerPagina = 25
+  const [generandoMancanti, setGenerandoMancanti] = useState(false)
 
   // Conferma eliminazione documento non bloccante
   const [docToDelete, setDocToDelete] = useState<{ id: string; titolo: string } | null>(null)
@@ -776,6 +778,42 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
     }
   }
 
+  // Generazione massiva o puntuale delle password provvisorie mancanti (SOLO primo_accesso = true)
+  const handleGeneraPasswordMancanti = async (pazienteIdTarget?: string) => {
+    setGenerandoMancanti(true)
+    try {
+      const res = await fetch('/api/pazienti/genera-mancanti', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pazienteId: pazienteIdTarget || undefined,
+          medicoId: tabellaFiltroMedico !== 'tutti' ? tabellaFiltroMedico : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Impossibile generare le password mancanti')
+      }
+
+      if (data.totaleGenerati > 0) {
+        toast.success(
+          'Password Generate!',
+          `Generate ${data.totaleGenerati} credenziali di 1° accesso per gli assistiti allo sportello. Gli account attivi non sono stati modificati.`
+        )
+      } else {
+        toast.info(
+          'Nessuna operazione',
+          data.message || 'Tutti i pazienti in 1° accesso dispongono già di password provvisoria.'
+        )
+      }
+      await ricaricaPazienti()
+    } catch (err: any) {
+      toast.error('Errore Generazione Password', err.message || 'Errore durante la generazione')
+    } finally {
+      setGenerandoMancanti(false)
+    }
+  }
+
   const registrationUrl =
     typeof window !== 'undefined' && codiceStudio
       ? `${window.location.origin}/registrazione-paziente?codiceStudio=${encodeURIComponent(codiceStudio)}`
@@ -1411,6 +1449,29 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   ))}
                 </select>
               )}
+
+              <button
+                type="button"
+                onClick={() => handleGeneraPasswordMancanti()}
+                disabled={generandoMancanti}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50 ${
+                  pazienti.filter((p) => p.primoAccesso && !p.passwordIniziale).length > 0
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-500/20 ring-1 ring-amber-400/40'
+                    : 'bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50'
+                }`}
+                title="Genera password provvisorie solo per i pazienti in 1° accesso che ne sono sprovvisti (senza toccare chi ha già la password personale)"
+              >
+                {generandoMancanti ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-white" />
+                ) : (
+                  <Zap className="h-3.5 w-3.5 text-amber-400" />
+                )}
+                <span>
+                  {pazienti.filter((p) => p.primoAccesso && !p.passwordIniziale).length > 0
+                    ? `Crea Password Mancanti (${pazienti.filter((p) => p.primoAccesso && !p.passwordIniziale).length})`
+                    : 'Crea Password Mancanti'}
+                </span>
+              </button>
             </div>
           </div>
 
@@ -1516,24 +1577,24 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                         <td className="px-4 py-3.5 whitespace-nowrap">
                           {paz.primoAccesso ? (
-                            <div className="inline-flex items-center gap-1.5">
-                              <span className="font-mono font-black text-amber-900 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded text-xs">
-                                {isVisibile ? paz.passwordIniziale || 'Non salvata' : '••••••'}
-                              </span>
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setTabellaPasswordVisibili((prev) => ({
-                                    ...prev,
-                                    [paz.id]: !prev[paz.id],
-                                  }))
-                                }
-                                className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
-                                title={isVisibile ? 'Nascondi password' : 'Mostra password temporanea in chiaro'}
-                              >
-                                {isVisibile ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                              </button>
-                              {paz.passwordIniziale && (
+                            paz.passwordIniziale ? (
+                              <div className="inline-flex items-center gap-1.5">
+                                <span className="font-mono font-black text-amber-900 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded text-xs">
+                                  {isVisibile ? paz.passwordIniziale : '••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setTabellaPasswordVisibili((prev) => ({
+                                      ...prev,
+                                      [paz.id]: !prev[paz.id],
+                                    }))
+                                  }
+                                  className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                                  title={isVisibile ? 'Nascondi password' : 'Mostra password temporanea in chiaro'}
+                                >
+                                  {isVisibile ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                                </button>
                                 <button
                                   type="button"
                                   onClick={() => {
@@ -1545,8 +1606,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                                 >
                                   <Copy className="h-3.5 w-3.5" />
                                 </button>
-                              )}
-                            </div>
+                              </div>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-50 text-rose-700 border border-rose-200 text-[10px] font-bold">
+                                <AlertTriangle className="h-3 w-3 text-rose-500" />
+                                Non generata
+                              </span>
+                            )
                           ) : (
                             <span className="text-[11px] text-slate-400 italic">
                               Riservata (impostata dall'utente)
@@ -1556,24 +1622,37 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                         <td className="px-5 py-3.5 whitespace-nowrap text-right">
                           <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                const pwd =
-                                  paz.passwordIniziale ||
-                                  (paz.primoAccesso
-                                    ? 'Da comunicare (In attesa 1° accesso)'
-                                    : '[Password personale impostata]')
-                                const testo = `PROMEMORIA ACCESSO - STUDIO MEDICO\nPaziente: ${paz.cognome} ${paz.nome}\nUsername (CF): ${paz.codiceFiscale}\nPassword provvisoria: ${pwd}\nPortale Studio: ${registrationUrl || window.location.origin}`
-                                navigator.clipboard.writeText(testo)
-                                toast.success('Ricevuta Copiata', `Credenziali di ${paz.cognome} ${paz.nome}`)
-                              }}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs"
-                              title="Copia promemoria completo con CF e password provvisoria"
-                            >
-                              <Copy className="h-3 w-3 text-slate-400" />
-                              <span>Copia</span>
-                            </button>
+                            {paz.primoAccesso && !paz.passwordIniziale ? (
+                              <button
+                                type="button"
+                                onClick={() => handleGeneraPasswordMancanti(paz.id)}
+                                disabled={generandoMancanti}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-amber-300 bg-amber-500 hover:bg-amber-600 text-[11px] font-bold text-white transition-all shadow-xs active:scale-95 disabled:opacity-50"
+                                title="Genera subito la password provvisoria per questo paziente"
+                              >
+                                <Zap className="h-3 w-3" />
+                                <span>Crea Password</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const pwd =
+                                    paz.passwordIniziale ||
+                                    (paz.primoAccesso
+                                      ? 'Da comunicare (In attesa 1° accesso)'
+                                      : '[Password personale impostata]')
+                                  const testo = `PROMEMORIA ACCESSO - STUDIO MEDICO\nPaziente: ${paz.cognome} ${paz.nome}\nUsername (CF): ${paz.codiceFiscale}\nPassword provvisoria: ${pwd}\nPortale Studio: ${registrationUrl || window.location.origin}`
+                                  navigator.clipboard.writeText(testo)
+                                  toast.success('Ricevuta Copiata', `Credenziali di ${paz.cognome} ${paz.nome}`)
+                                }}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs"
+                                title="Copia promemoria completo con CF e password provvisoria"
+                              >
+                                <Copy className="h-3 w-3 text-slate-400" />
+                                <span>Copia</span>
+                              </button>
+                            )}
 
                             <button
                               type="button"

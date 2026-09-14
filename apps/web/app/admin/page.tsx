@@ -43,6 +43,7 @@ import {
   EyeOff,
   ChevronLeft,
   ChevronRight,
+  Zap,
   Filter,
   ShieldAlert,
   ShieldCheck,
@@ -177,6 +178,7 @@ export default function AdminPage() {
   const [passwordVisibili, setPasswordVisibili] = useState<Record<string, boolean>>({})
   const [pazienteDaReimpostare, setPazienteDaReimpostare] = useState<PazienteItem | null>(null)
   const [reimpostandoPassword, setReimpostandoPassword] = useState(false)
+  const [generandoMancanti, setGenerandoMancanti] = useState(false)
   const [pazienteDettaglio, setPazienteDettaglio] = useState<PazienteItem | null>(null)
 
   // Modali Creazione
@@ -549,6 +551,42 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
       toast.error('Errore Reset', err.message || 'Impossibile reimpostare la password')
     } finally {
       setReimpostandoPassword(false)
+    }
+  }
+
+  // Generazione massiva o puntuale delle password provvisorie mancanti (SOLO primo_accesso = true)
+  const handleGeneraPasswordMancanti = async (pazienteIdTarget?: string) => {
+    setGenerandoMancanti(true)
+    try {
+      const res = await fetch('/api/pazienti/genera-mancanti', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pazienteId: pazienteIdTarget || undefined,
+          medicoId: pazientiFiltroMedico !== 'tutti' ? pazientiFiltroMedico : undefined,
+        }),
+      })
+      const data = await res.json()
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || 'Impossibile generare le password mancanti')
+      }
+
+      if (data.totaleGenerati > 0) {
+        toast.success(
+          'Password Generate!',
+          `Generate ${data.totaleGenerati} credenziali di 1° accesso. Gli utenti con password personale non sono stati modificati.`
+        )
+      } else {
+        toast.info(
+          'Nessuna operazione',
+          data.message || 'Tutti i pazienti in 1° accesso dispongono già di password provvisoria.'
+        )
+      }
+      await caricaPazienti()
+    } catch (err: any) {
+      toast.error('Errore Generazione Password', err.message || 'Errore durante la generazione')
+    } finally {
+      setGenerandoMancanti(false)
     }
   }
 
@@ -1652,6 +1690,28 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               </button>
               <button
                 type="button"
+                onClick={() => handleGeneraPasswordMancanti()}
+                disabled={generandoMancanti}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 ${
+                  pazientiList.filter((p) => p.primoAccesso && !p.passwordIniziale).length > 0
+                    ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-950/40 ring-1 ring-amber-400/30'
+                    : 'bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                }`}
+                title="Genera password temporanee solo per i pazienti in 1° accesso che ne sono sprovvisti (senza toccare chi ha già la password personale)"
+              >
+                {generandoMancanti ? (
+                  <RefreshCw className="h-3.5 w-3.5 animate-spin text-white" />
+                ) : (
+                  <Zap className="h-3.5 w-3.5 text-amber-300" />
+                )}
+                <span>
+                  {pazientiList.filter((p) => p.primoAccesso && !p.passwordIniziale).length > 0
+                    ? `Genera Password Mancanti (${pazientiList.filter((p) => p.primoAccesso && !p.passwordIniziale).length})`
+                    : 'Genera Password Mancanti'}
+                </span>
+              </button>
+              <button
+                type="button"
                 onClick={esportaPazientiCsv}
                 className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
                 title="Esporta in formato CSV i pazienti attualmente filtrati con relative credenziali"
@@ -1900,30 +1960,30 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         {/* Password 1° Accesso / Credenziali */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
                           {paz.primoAccesso ? (
-                            <div className="flex flex-col gap-1">
-                              <div className="flex items-center gap-1.5">
-                                <span className="font-mono font-black text-xs px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80 shadow-inner">
-                                  {isVisible
-                                    ? paz.passwordIniziale || 'Non registrata'
-                                    : '••••••'}
-                                </span>
-                                <button
-                                  type="button"
-                                  onClick={() => toggleVisibilitaPassword(paz.id)}
-                                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-                                  title={
-                                    isVisible
-                                      ? 'Nascondi password'
-                                      : 'Mostra password temporanea in chiaro'
-                                  }
-                                >
-                                  {isVisible ? (
-                                    <EyeOff className="h-3.5 w-3.5 text-amber-400" />
-                                  ) : (
-                                    <Eye className="h-3.5 w-3.5" />
-                                  )}
-                                </button>
-                                {paz.passwordIniziale && (
+                            paz.passwordIniziale ? (
+                              <div className="flex flex-col gap-1">
+                                <div className="flex items-center gap-1.5">
+                                  <span className="font-mono font-black text-xs px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80 shadow-inner">
+                                    {isVisible
+                                      ? paz.passwordIniziale
+                                      : '••••••'}
+                                  </span>
+                                  <button
+                                    type="button"
+                                    onClick={() => toggleVisibilitaPassword(paz.id)}
+                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                    title={
+                                      isVisible
+                                        ? 'Nascondi password'
+                                        : 'Mostra password temporanea in chiaro'
+                                    }
+                                  >
+                                    {isVisible ? (
+                                      <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                                    ) : (
+                                      <Eye className="h-3.5 w-3.5" />
+                                    )}
+                                  </button>
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -1937,13 +1997,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                                   >
                                     <Copy className="h-3.5 w-3.5" />
                                   </button>
-                                )}
+                                </div>
+                                <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-1">
+                                  <Key className="h-2.5 w-2.5 text-amber-400" />
+                                  Provvisoria da comunicare
+                                </span>
                               </div>
-                              <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-1">
-                                <Key className="h-2.5 w-2.5 text-amber-400" />
-                                Provvisoria da comunicare
-                              </span>
-                            </div>
+                            ) : (
+                              <div className="flex flex-col gap-1">
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-950/70 border border-rose-800/80 text-[10px] font-bold text-rose-300 w-fit">
+                                  <AlertTriangle className="h-3 w-3 text-rose-400" />
+                                  Password non generata
+                                </span>
+                                <span className="text-[10px] text-slate-500">In attesa di primo accesso</span>
+                              </div>
+                            )
                           ) : (
                             <div className="flex flex-col gap-0.5">
                               <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800/80 text-[10px] font-bold text-emerald-400 w-fit">
@@ -1986,15 +2054,28 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         {/* Azioni */}
                         <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => copiaCredenzialiPaziente(paz)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-800/80 text-indigo-300 hover:text-white hover:bg-indigo-900/80 text-[11px] font-bold transition-all shadow-xs"
-                              title="Copia messaggio completo con credenziali per SMS/Email"
-                            >
-                              <Copy className="h-3 w-3" />
-                              <span>Copia Credenziali</span>
-                            </button>
+                            {paz.primoAccesso && !paz.passwordIniziale ? (
+                              <button
+                                type="button"
+                                onClick={() => handleGeneraPasswordMancanti(paz.id)}
+                                disabled={generandoMancanti}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50"
+                                title="Genera subito la password provvisoria per questo paziente"
+                              >
+                                <Zap className="h-3 w-3" />
+                                <span>Crea Password</span>
+                              </button>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => copiaCredenzialiPaziente(paz)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-800/80 text-indigo-300 hover:text-white hover:bg-indigo-900/80 text-[11px] font-bold transition-all shadow-xs"
+                                title="Copia messaggio completo con credenziali per SMS/Email"
+                              >
+                                <Copy className="h-3 w-3" />
+                                <span>Copia Credenziali</span>
+                              </button>
+                            )}
 
                             <button
                               type="button"

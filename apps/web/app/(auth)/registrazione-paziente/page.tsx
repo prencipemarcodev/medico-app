@@ -206,14 +206,14 @@ function RegistrazionePazienteForm() {
           Il tuo profilo sanitario è stato creato con successo. Accesso in corso al tuo portale paziente...
         </p>
         <div className="flex justify-center pt-2">
-          <Loader2 className="h-6 w-6 animate-spin text-blue-600" />
+          <Loader2 className="h-6 w-6 animate-spin text-sky-600" />
         </div>
       </div>
     )
   }
 
   return (
-    <div className="w-full max-w-xl bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 space-y-6">
+    <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-slate-200/80 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
         <div className="flex justify-center mb-1">
@@ -254,7 +254,7 @@ function RegistrazionePazienteForm() {
                 className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.nome
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
                 }`}
               />
             </div>
@@ -283,7 +283,7 @@ function RegistrazionePazienteForm() {
                 className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.cognome
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
                 }`}
               />
             </div>
@@ -312,7 +312,7 @@ function RegistrazionePazienteForm() {
               className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-mono font-bold uppercase transition-all ${
                 fieldErrors.codiceFiscale
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                  : 'border-slate-200 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
               }`}
             />
           </div>
@@ -343,7 +343,7 @@ function RegistrazionePazienteForm() {
                 className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.telefono
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
                 }`}
               />
             </div>
@@ -372,7 +372,7 @@ function RegistrazionePazienteForm() {
                 className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.email
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
                 }`}
               />
             </div>
@@ -396,7 +396,7 @@ function RegistrazionePazienteForm() {
               type="date"
               value={dataNascita}
               onChange={(e) => setDataNascita(e.target.value)}
-              className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50"
+              className="w-full pl-10 pr-3 py-2.5 rounded-xl border border-slate-200 text-sm font-semibold text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50"
             />
           </div>
         </div>
@@ -420,7 +420,7 @@ function RegistrazionePazienteForm() {
                 className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.password
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
                 }`}
               />
             </div>
@@ -449,7 +449,7 @@ function RegistrazionePazienteForm() {
                 className={`w-full pl-10 pr-3 py-2.5 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.confermaPassword
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-600 bg-slate-50/50'
                 }`}
               />
             </div>
@@ -476,7 +476,7 @@ function RegistrazionePazienteForm() {
                 setAccettaPrivacy(e.target.checked)
                 clearFieldError('privacy')
               }}
-              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500 flex-shrink-0 cursor-pointer"
+              className="mt-0.5 h-4 w-4 rounded border-slate-300 text-sky-600 focus:ring-sky-500 flex-shrink-0 cursor-pointer"
             />
             <span className="text-xs text-slate-600 leading-relaxed font-medium">
               Dichiaro di aver preso visione dell'informativa privacy e acconsento al trattamento dei dati sanitari e personali ai sensi del Regolamento UE 2016/679 (GDPR).
@@ -494,7 +494,7 @@ function RegistrazionePazienteForm() {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+          className="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm shadow-sky-600/20 transition-all cursor-pointer"
         >
           {loading ? (
             <>
@@ -514,7 +514,7 @@ function RegistrazionePazienteForm() {
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
         <Link
           href="/login"
-          className="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+          className="font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Hai già un account? Accedi
         </Link>
@@ -529,7 +529,7 @@ function RegistrazionePazienteForm() {
 
 export default function RegistrazionePazientePage() {
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-[#090d16] p-4 sm:p-6 font-sans pt-safe pb-safe">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4 sm:p-6 font-sans pt-safe pb-safe">
       <Suspense fallback={<div className="p-8 text-center text-slate-400 text-xs">Caricamento modulo...</div>}>
         <RegistrazionePazienteForm />
       </Suspense>

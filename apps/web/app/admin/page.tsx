@@ -1177,77 +1177,85 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-sans">
-      {/* Top Banner */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-slate-950 p-5 rounded-xl border border-slate-800 shadow-sm">
+      {/* Top Banner - Professional Healthcare Console */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-xs">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-indigo-400 mb-1">
-            <Shield className="h-4 w-4" />
-            <span>Amministrazione & Gestione Rete Multi-Tenant</span>
+          <div className="flex items-center gap-2 text-xs font-bold text-sky-700 mb-1">
+            <Shield className="h-4 w-4 text-sky-600" />
+            <span>Amministrazione & Rete Sanitaria Multi-Tenant</span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-bold text-white tracking-tight">
+          <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
             Pannello di Controllo Generale
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Configurazione studi medici, medici curanti (MMG), dataset assistiti con credenziali e segreteria.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Configurazione integrata studi medici, medici curanti (MMG), dataset assistiti con credenziali e segreteria.
           </p>
         </div>
 
         <div className="flex items-center gap-3">
           <button
             onClick={caricaDati}
-            className="p-2 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl bg-slate-100 border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-200 transition-colors"
             title="Aggiorna Dati"
           >
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
-          <span className="px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-mono font-semibold text-emerald-400 flex items-center gap-1.5">
+          <span className="px-3.5 py-1.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs font-semibold text-emerald-800 flex items-center gap-2 shadow-2xs">
             <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
-            Postgres Connesso
+            PostgreSQL Connesso
           </span>
         </div>
       </div>
 
-      {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-400">Studi Medici</span>
-            <Building2 className="h-4 w-4 text-indigo-400" />
+      {/* KPI Cards - Clinical Medical Statistics */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5 sm:gap-4">
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-2 hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Studi Medici</span>
+            <div className="p-2 rounded-xl bg-sky-50 text-sky-700 border border-sky-100">
+              <Building2 className="h-4 w-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{studiList.length}</div>
-          <p className="text-xs text-slate-500 font-medium">Istanze attive su rete</p>
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums font-mono">{studiList.length}</div>
+          <p className="text-xs text-slate-400 font-medium">Istanze attive su rete</p>
         </div>
 
-        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-400">Medici Curanti (MMG)</span>
-            <Stethoscope className="h-4 w-4 text-blue-400" />
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-2 hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Medici Curanti</span>
+            <div className="p-2 rounded-xl bg-blue-50 text-blue-700 border border-blue-100">
+              <Stethoscope className="h-4 w-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{totaleMediciTotali}</div>
-          <p className="text-xs text-slate-500 font-medium">Slot agenda attivi</p>
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums font-mono">{totaleMediciTotali}</div>
+          <p className="text-xs text-slate-400 font-medium">Slot agenda attivi</p>
         </div>
 
-        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-400">Pazienti Registrati</span>
-            <Users className="h-4 w-4 text-emerald-400" />
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-2 hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Pazienti Registrati</span>
+            <div className="p-2 rounded-xl bg-emerald-50 text-emerald-700 border border-emerald-100">
+              <Users className="h-4 w-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{totalePazientiTotali}</div>
-          <p className="text-xs text-slate-500 font-medium">Accessi CF & credenziali</p>
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums font-mono">{totalePazientiTotali}</div>
+          <p className="text-xs text-slate-400 font-medium">Accessi CF & credenziali</p>
         </div>
 
-        <div className="bg-slate-950 p-4 sm:p-5 rounded-xl border border-slate-800 shadow-sm space-y-1.5">
-          <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium text-slate-400">Personale Segreteria</span>
-            <UserCheck className="h-4 w-4 text-amber-400" />
+        <div className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-xs space-y-2 hover:border-slate-300 transition-all">
+          <div className="flex items-center justify-between text-slate-500">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Personale Segreteria</span>
+            <div className="p-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-100">
+              <UserCheck className="h-4 w-4" />
+            </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-bold text-white tabular-nums font-mono">{staffList.length}</div>
-          <p className="text-xs text-slate-500 font-medium">Deleghe multi-medico</p>
+          <div className="text-2xl sm:text-3xl font-black text-slate-900 tabular-nums font-mono">{staffList.length}</div>
+          <p className="text-xs text-slate-400 font-medium">Deleghe multi-medico</p>
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 shadow-sm w-full sm:w-fit">
+      {/* Navigation Tabs - Modern Clinical Pill Bar */}
+      <div className="flex flex-wrap items-center gap-1.5 bg-white p-1.5 rounded-2xl border border-slate-200 shadow-xs w-full sm:w-fit">
         {[
           { id: 'studi', label: 'Studi Medici', icon: Building2 },
           { id: 'medici', label: 'Medici Curanti', icon: Stethoscope },
@@ -1261,10 +1269,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             <button
               key={tab.id}
               onClick={() => setTabAttiva(tab.id as any)}
-              className={`flex items-center justify-center gap-2 px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex-1 sm:flex-initial text-center ${
+              className={`flex items-center justify-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all flex-1 sm:flex-initial text-center ${
                 isActive
-                  ? 'bg-indigo-600 text-white shadow-md shadow-indigo-600/20'
-                  : 'text-slate-400 hover:text-white hover:bg-slate-900'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
               }`}
             >
               <Icon className="h-4 w-4 flex-shrink-0" />
@@ -1279,12 +1287,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Istanze Studi Medici Accreditati</h2>
-              <p className="text-xs text-slate-400">Strutture sanitarie configurate sulla piattaforma con isolamento dati</p>
+              <h2 className="text-lg font-black text-slate-900 tracking-tight">Istanze Studi Medici Accreditati</h2>
+              <p className="text-xs text-slate-500">Strutture sanitarie configurate sulla piattaforma con isolamento dati multi-tenant</p>
             </div>
             <button
               onClick={() => setModalStudioOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-2 active:scale-95"
             >
               <Plus className="h-4 w-4" />
               <span>Nuovo Studio Medico</span>
@@ -1294,9 +1302,9 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           {loading ? (
             <CardSkeleton count={3} />
           ) : studiList.length === 0 ? (
-            <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
-              <Building2 className="h-10 w-10 text-slate-600 mx-auto" />
-              <p className="text-sm font-bold text-slate-300">Nessuno studio medico registrato</p>
+            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300 space-y-3 shadow-xs">
+              <Building2 className="h-10 w-10 text-slate-400 mx-auto" />
+              <p className="text-sm font-bold text-slate-800">Nessuno studio medico registrato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Inizia creando il primo studio medico della tua rete tramite il pulsante in alto.
               </p>
@@ -1306,43 +1314,43 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               {studiList.map((studio) => (
                 <div
                   key={studio.id}
-                  className="bg-slate-950 rounded-xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
+                  className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4 hover:border-slate-300 transition-all flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="min-w-0 flex-1 pr-2">
-                        <h3 className="font-extrabold text-white text-base truncate">{studio.nome}</h3>
-                        <p className="text-xs text-slate-400 flex items-center gap-1 mt-1 break-words">
-                          <MapPin className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                        <h3 className="font-black text-slate-900 text-base truncate">{studio.nome}</h3>
+                        <p className="text-xs text-slate-500 flex items-center gap-1.5 mt-1 break-words">
+                          <MapPin className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                           <span className="truncate">{studio.indirizzo || 'Indirizzo non specificato'}</span>
                         </p>
                       </div>
-                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-950 text-emerald-400 border border-emerald-800 flex-shrink-0">
+                      <span className="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 flex-shrink-0">
                         Attivo
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-800 text-xs">
+                    <div className="grid grid-cols-2 gap-3 py-3 border-y border-slate-100 text-xs">
                       <div>
-                        <span className="text-slate-500 block">Medici assegnati:</span>
-                        <span className="text-white font-bold text-sm">{studio.totaleMedici} MMG</span>
+                        <span className="text-slate-400 font-medium block">Medici assegnati:</span>
+                        <span className="text-slate-900 font-extrabold text-sm">{studio.totaleMedici} MMG</span>
                       </div>
                       <div>
-                        <span className="text-slate-500 block">Pazienti assistiti:</span>
-                        <span className="text-white font-bold text-sm">{studio.totalePazienti}</span>
+                        <span className="text-slate-400 font-medium block">Pazienti assistiti:</span>
+                        <span className="text-slate-900 font-extrabold text-sm">{studio.totalePazienti}</span>
                       </div>
                     </div>
 
-                    <div className="space-y-1 text-xs text-slate-400 break-words">
+                    <div className="space-y-1.5 text-xs text-slate-600 break-words">
                       {studio.telefono && (
                         <p className="flex items-center gap-1.5 truncate">
-                          <PhoneCall className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                          <PhoneCall className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                           <span className="truncate">{studio.telefono}</span>
                         </p>
                       )}
                       {studio.email && (
                         <p className="flex items-center gap-1.5 truncate">
-                          <Mail className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
+                          <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
                           <span className="truncate">{studio.email}</span>
                         </p>
                       )}
@@ -1350,25 +1358,25 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                     {/* Codice Studio per Onboarding */}
                     {studio.codiceStudio && (
-                      <div className="p-2.5 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-center justify-between gap-2">
+                      <div className="p-3 rounded-2xl bg-sky-50/80 border border-sky-100 flex items-center justify-between gap-2">
                         <div className="min-w-0">
-                          <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
-                            Codice Studio Invito
+                          <span className="text-[10px] uppercase font-bold text-sky-700 block tracking-wider">
+                            Codice Invito Studio
                           </span>
-                          <span className="font-mono text-xs font-black text-white truncate block">
+                          <span className="font-mono text-xs font-black text-slate-900 truncate block">
                             {studio.codiceStudio}
                           </span>
                         </div>
                         <button
                           type="button"
                           onClick={() => copiaTesto(studio.codiceStudio!, studio.id)}
-                          className="px-2.5 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 text-[11px] font-semibold flex items-center gap-1.5 transition-all flex-shrink-0"
+                          className="px-2.5 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-sky-200 text-sky-800 text-[11px] font-bold flex items-center gap-1.5 transition-all shadow-2xs flex-shrink-0"
                           title="Copia codice invito per auto-registrazione"
                         >
                           {copiatoId === studio.id ? (
                             <>
-                              <Check className="h-3.5 w-3.5 text-emerald-400" />
-                              <span className="text-emerald-300">Copiato</span>
+                              <Check className="h-3.5 w-3.5 text-emerald-600" />
+                              <span className="text-emerald-700 font-bold">Copiato</span>
                             </>
                           ) : (
                             <>
@@ -1381,15 +1389,15 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     )}
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500 font-mono truncate">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-mono truncate">
                       ID: {studio.id.slice(0, 8)}...
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         type="button"
                         onClick={() => handleApriModificaStudio(studio)}
-                        className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition-all"
+                        className="p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
                         title="Modifica impostazioni studio"
                       >
                         <Settings className="h-4 w-4" />
@@ -1397,7 +1405,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       <button
                         type="button"
                         onClick={() => handleEliminaStudio(studio)}
-                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 border border-rose-900/60 transition-all"
+                        className="p-2 rounded-xl text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all"
                         title="Elimina studio e tutti i dati correlati a cascata"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1416,18 +1424,18 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Medici Curanti e Import Pazienti</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-lg font-black text-slate-900">Medici Curanti e Import Pazienti</h2>
+              <p className="text-xs text-slate-500">
                 Aggiungi medici ai rispettivi studi e carica il dataset pazienti tramite file CSV con generazione automatica credenziali.
               </p>
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <button
                 onClick={downloadTemplateCsv}
-                className="px-3.5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 font-bold text-xs transition-all flex items-center gap-2"
+                className="px-3.5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-bold text-xs shadow-2xs transition-all flex items-center gap-2"
                 title="Scarica file modello CSV per compilazione"
               >
-                <Download className="h-4 w-4 text-emerald-400" />
+                <Download className="h-4 w-4 text-emerald-600" />
                 <span>Scarica Modello CSV</span>
               </button>
               <button
@@ -1439,7 +1447,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   setFormMedico({ ...formMedico, studioId: studiList[0]?.id || '' })
                   setModalMedicoOpen(true)
                 }}
-                className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2"
+                className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center gap-2"
               >
                 <Plus className="h-4 w-4" />
                 <span>Aggiungi Medico</span>
@@ -1450,9 +1458,9 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           {loading ? (
             <CardSkeleton count={3} />
           ) : mediciList.length === 0 ? (
-            <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
-              <Stethoscope className="h-10 w-10 text-slate-600 mx-auto" />
-              <p className="text-sm font-bold text-slate-300">Nessun medico registrato</p>
+            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 space-y-3 shadow-xs">
+              <Stethoscope className="h-10 w-10 text-slate-400 mx-auto" />
+              <p className="text-sm font-bold text-slate-800">Nessun medico registrato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Crea il primo medico per abilitare l'agenda e il caricamento del dataset pazienti.
               </p>
@@ -1462,44 +1470,44 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               {mediciList.map((medico) => (
                 <div
                   key={medico.id}
-                  className="bg-slate-950 rounded-xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
+                  className="bg-white rounded-3xl p-6 border border-slate-200/90 space-y-4 hover:border-sky-300 transition-all shadow-xs flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-11 w-11 rounded-2xl bg-blue-950 border border-blue-800 text-blue-400 font-bold flex items-center justify-center flex-shrink-0">
+                        <div className="h-11 w-11 rounded-2xl bg-sky-50 border border-sky-200 text-sky-700 font-bold flex items-center justify-center flex-shrink-0">
                           {medico.nome[0]}
                           {medico.cognome[0]}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-extrabold text-white text-base truncate">
+                          <h3 className="font-extrabold text-slate-900 text-base truncate">
                             Dott. {medico.nome} {medico.cognome}
                           </h3>
-                          <p className="text-xs text-indigo-400 truncate">{medico.nomeStudio || 'Studio Medico'}</p>
+                          <p className="text-xs text-sky-700 font-semibold truncate">{medico.nomeStudio || 'Studio Medico'}</p>
                         </div>
                       </div>
                     </div>
 
-                    <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs space-y-1.5">
-                      <p className="text-slate-400 flex items-center gap-1.5 truncate">
-                        <Mail className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
-                        <span className="font-mono text-slate-300 truncate">{medico.email}</span>
+                    <div className="p-3 bg-slate-50 rounded-2xl border border-slate-100 text-xs space-y-1.5">
+                      <p className="text-slate-500 flex items-center gap-1.5 truncate">
+                        <Mail className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                        <span className="font-mono text-slate-700 truncate">{medico.email}</span>
                       </p>
-                      <p className="text-slate-400 flex items-center gap-1.5 truncate">
-                        <PhoneCall className="h-3.5 w-3.5 text-slate-500 flex-shrink-0" />
-                        <span className="text-slate-300 truncate">{medico.telefonoPrimario}</span>
+                      <p className="text-slate-500 flex items-center gap-1.5 truncate">
+                        <PhoneCall className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                        <span className="text-slate-700 truncate">{medico.telefonoPrimario}</span>
                       </p>
                     </div>
 
                     <div className="flex items-center justify-between text-xs pt-1">
-                      <span className="text-slate-400 font-medium">Pazienti in carico:</span>
-                      <span className="text-white font-extrabold px-2.5 py-0.5 rounded-lg bg-slate-900 border border-slate-700">
+                      <span className="text-slate-500 font-medium">Pazienti in carico:</span>
+                      <span className="text-slate-800 font-bold px-2.5 py-0.5 rounded-lg bg-slate-100 border border-slate-200">
                         {medico.totalePazienti} assistiti
                       </span>
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800/80 flex items-center gap-2">
+                  <div className="pt-3 border-t border-slate-100 flex items-center gap-2">
                     <button
                       onClick={() => {
                         setMedicoTargetCsv(medico)
@@ -1509,16 +1517,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         setImportCompletato(false)
                         setModalCsvOpen(true)
                       }}
-                      className="flex-1 py-2.5 rounded-xl bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 font-bold text-xs transition-all flex items-center justify-center gap-2 min-w-0"
+                      className="flex-1 py-2.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-800 font-bold text-xs transition-all flex items-center justify-center gap-2 min-w-0"
                     >
-                      <FileSpreadsheet className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+                      <FileSpreadsheet className="h-4 w-4 text-emerald-600 flex-shrink-0" />
                       <span className="truncate">Importa Pazienti CSV</span>
                     </button>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         type="button"
                         onClick={() => handleApriModificaMedico(medico)}
-                        className="p-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white transition-all flex-shrink-0"
+                        className="p-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 border border-slate-200 text-slate-600 hover:text-slate-900 transition-all flex-shrink-0"
                         title="Modifica dati medico"
                       >
                         <Settings className="h-4 w-4" />
@@ -1526,7 +1534,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       <button
                         type="button"
                         onClick={() => handleEliminaMedico(medico)}
-                        className="p-2.5 rounded-xl bg-rose-950/40 hover:bg-rose-900/40 border border-rose-900/60 text-rose-400 transition-all flex-shrink-0"
+                        className="p-2.5 rounded-xl bg-rose-50 hover:bg-rose-100 border border-rose-200 text-rose-600 hover:text-rose-700 transition-all flex-shrink-0"
                         title="Elimina medico e la sua agenda"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1545,8 +1553,8 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-white">Operatori di Segreteria e Front-Desk</h2>
-              <p className="text-xs text-slate-400">
+              <h2 className="text-lg font-black text-slate-900">Operatori di Segreteria e Front-Desk</h2>
+              <p className="text-xs text-slate-500">
                 Configura gli account segreteria e assegna ciascun operatore a 1 o più medici dello studio.
               </p>
             </div>
@@ -1563,7 +1571,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 })
                 setModalStaffOpen(true)
               }}
-              className="px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-md shadow-indigo-600/20 transition-all flex items-center justify-center gap-2"
+              className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all flex items-center justify-center gap-2"
             >
               <Plus className="h-4 w-4" />
               <span>Nuovo Operatore Segreteria</span>
@@ -1573,9 +1581,9 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           {loading ? (
             <CardSkeleton count={3} />
           ) : staffList.length === 0 ? (
-            <div className="p-12 text-center bg-slate-950 rounded-xl border border-dashed border-slate-800 space-y-3">
-              <UserCheck className="h-10 w-10 text-slate-600 mx-auto" />
-              <p className="text-sm font-bold text-slate-300">Nessun account di segreteria creato</p>
+            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 space-y-3 shadow-xs">
+              <UserCheck className="h-10 w-10 text-slate-400 mx-auto" />
+              <p className="text-sm font-bold text-slate-800">Nessun account di segreteria creato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 Crea un operatore di segreteria e assegnalo a uno o più medici curanti per gestire sala d'attesa e ricette.
               </p>
@@ -1585,40 +1593,40 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               {staffList.map((st) => (
                 <div
                   key={st.id}
-                  className="bg-slate-950 rounded-xl p-6 border border-slate-800 space-y-4 hover:border-slate-700 transition-all shadow-sm flex flex-col justify-between"
+                  className="bg-white rounded-3xl p-6 border border-slate-200/90 space-y-4 hover:border-sky-300 transition-all shadow-xs flex flex-col justify-between"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3 min-w-0">
-                        <div className="h-11 w-11 rounded-2xl bg-amber-950 border border-amber-800 text-amber-400 font-bold flex items-center justify-center flex-shrink-0">
+                        <div className="h-11 w-11 rounded-2xl bg-amber-50 border border-amber-200 text-amber-700 font-bold flex items-center justify-center flex-shrink-0">
                           {st.nome[0]}
                           {st.cognome[0]}
                         </div>
                         <div className="min-w-0">
-                          <h3 className="font-extrabold text-white text-base truncate">
+                          <h3 className="font-extrabold text-slate-900 text-base truncate">
                             {st.nome} {st.cognome}
                           </h3>
-                          <p className="text-xs text-amber-400 truncate">{st.nomeStudio || 'Studio Medico'}</p>
+                          <p className="text-xs text-amber-700 font-semibold truncate">{st.nomeStudio || 'Studio Medico'}</p>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-400 font-mono bg-slate-900/80 p-2.5 rounded-xl border border-slate-800 truncate">
-                      Email: {st.email}
+                    <p className="text-xs text-slate-600 font-mono bg-slate-50 p-2.5 rounded-xl border border-slate-100 truncate">
+                      Email: <span className="text-slate-800">{st.email}</span>
                     </p>
 
                     <div className="space-y-1.5">
-                      <span className="text-xs font-bold text-slate-400 block uppercase tracking-wider">
+                      <span className="text-xs font-bold text-slate-500 block uppercase tracking-wider">
                         Medici Gestiti ({st.mediciAssegnati.length}):
                       </span>
                       <div className="flex flex-wrap gap-1.5">
                         {st.mediciAssegnati.length === 0 ? (
-                          <span className="text-[11px] text-slate-500 italic">Nessun medico assegnato</span>
+                          <span className="text-[11px] text-slate-400 italic">Nessun medico assegnato</span>
                         ) : (
                           st.mediciAssegnati.map((m) => (
                             <span
                               key={m.id}
-                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-950/80 text-blue-300 border border-blue-800 truncate"
+                              className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200 truncate"
                             >
                               Dott. {m.nome} {m.cognome}
                             </span>
@@ -1628,15 +1636,15 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     </div>
                   </div>
 
-                  <div className="pt-3 border-t border-slate-800 flex items-center justify-between gap-2">
-                    <span className="text-[10px] text-slate-500 font-mono truncate">
+                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400 font-mono truncate">
                       ID: {st.id.slice(0, 8)}...
                     </span>
                     <div className="flex items-center gap-1.5 flex-shrink-0">
                       <button
                         type="button"
                         onClick={() => handleApriModificaStaff(st)}
-                        className="p-2 rounded-xl text-slate-300 hover:text-white hover:bg-slate-800 border border-slate-700 transition-all"
+                        className="p-2 rounded-xl text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-all"
                         title="Modifica operatore segreteria"
                       >
                         <Settings className="h-4 w-4" />
@@ -1644,7 +1652,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       <button
                         type="button"
                         onClick={() => handleEliminaStaff(st)}
-                        className="p-2 rounded-xl text-rose-400 hover:text-rose-300 hover:bg-rose-950/50 border border-rose-900/60 transition-all"
+                        className="p-2 rounded-xl text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-all"
                         title="Elimina operatore segreteria"
                       >
                         <Trash2 className="h-4 w-4" />
@@ -1660,20 +1668,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* TAB 4: PAZIENTI & CREDENZIALI 1° ACCESSO (STILE LOG / ERP COMPATTO) */}
       {tabAttiva === 'pazienti' && (
-        <div className="w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm flex flex-col">
+        <div className="w-full bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col">
           {/* Header Bar */}
-          <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white">
             <div>
               <div className="flex items-center gap-2.5">
-                <Users className="h-5 w-5 text-indigo-400 flex-shrink-0" />
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                <Users className="h-5 w-5 text-sky-600 flex-shrink-0" />
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                   Registro Anagrafica Pazienti & Credenziali 1° Accesso
                 </h2>
-                <span className="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-800/80 text-[10px] font-mono font-semibold text-indigo-300">
+                <span className="px-2 py-0.5 rounded-md bg-sky-50 border border-sky-200 text-[10px] font-mono font-bold text-sky-800">
                   GDPR Art. 9
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Visualizzazione trasparente per gli operatori: ricerca rapida per nome o CF, consultazione credenziali temporanee per il paziente e reset password.
               </p>
             </div>
@@ -1682,7 +1690,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               <button
                 type="button"
                 onClick={() => caricaPazienti()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs transition-colors"
                 title="Ricarica elenco pazienti dal database"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${loadingPazienti ? 'animate-spin' : ''}`} />
@@ -1692,17 +1700,17 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 type="button"
                 onClick={() => handleGeneraPasswordMancanti()}
                 disabled={generandoMancanti}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all shadow-sm active:scale-95 disabled:opacity-50 ${
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50 ${
                   pazientiList.filter((p) => p.primoAccesso && !p.passwordIniziale).length > 0
-                    ? 'bg-amber-600 hover:bg-amber-500 text-white shadow-amber-950/40 ring-1 ring-amber-400/30'
-                    : 'bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800'
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white shadow-amber-600/20'
+                    : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-50'
                 }`}
                 title="Genera password temporanee solo per i pazienti in 1° accesso che ne sono sprovvisti (senza toccare chi ha già la password personale)"
               >
                 {generandoMancanti ? (
                   <RefreshCw className="h-3.5 w-3.5 animate-spin text-white" />
                 ) : (
-                  <Zap className="h-3.5 w-3.5 text-amber-300" />
+                  <Zap className="h-3.5 w-3.5 text-amber-500" />
                 )}
                 <span>
                   {pazientiList.filter((p) => p.primoAccesso && !p.passwordIniziale).length > 0
@@ -1713,10 +1721,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               <button
                 type="button"
                 onClick={esportaPazientiCsv}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs transition-colors"
                 title="Esporta in formato CSV i pazienti attualmente filtrati con relative credenziali"
               >
-                <FileDown className="h-3.5 w-3.5 text-indigo-400" />
+                <FileDown className="h-3.5 w-3.5 text-sky-600" />
                 <span>Esporta CSV</span>
               </button>
               <button
@@ -1733,7 +1741,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     toast.warning('Nessun medico', 'Crea prima un medico curante a cui assegnare i pazienti da importare.')
                   }
                 }}
-                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-sm transition-colors"
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-sm transition-colors"
                 title="Carica un nuovo dataset CSV di assistiti (es. 500 pazienti)"
               >
                 <Upload className="h-3.5 w-3.5 text-white" />
@@ -1743,11 +1751,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </div>
 
           {/* Sticky Filter Toolbar */}
-          <div className="p-3 sm:p-4 bg-slate-900/60 border-b border-slate-800 flex flex-col gap-3">
+          <div className="p-3 sm:p-4 bg-slate-50/80 border-b border-slate-200/80 flex flex-col gap-3">
             {/* Top Row: Search input and count */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
               <div className="relative flex-1 max-w-xl">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={pazientiQuery}
@@ -1756,7 +1764,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     setPazientiPagina(1)
                   }}
                   placeholder="Cerca per cognome, nome, codice fiscale (CF), email o telefono..."
-                  className="w-full pl-9 pr-8 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors shadow-2xs"
                 />
                 {pazientiQuery && (
                   <button
@@ -1765,7 +1773,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       setPazientiQuery('')
                       setPazientiPagina(1)
                     }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
                     title="Cancella filtro di ricerca"
                   >
                     ✕
@@ -1773,21 +1781,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 )}
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-400">
-                <span className="font-semibold text-slate-200 tabular-nums font-mono">
+              <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-500">
+                <span className="font-bold text-slate-800 tabular-nums font-mono">
                   {pazientiFiltrati.length}
                 </span>
                 <span>{pazientiFiltrati.length === 1 ? 'paziente trovato' : 'pazienti trovati'}</span>
                 {pazientiFiltrati.length !== pazientiList.length && (
-                  <span className="text-slate-500 text-[11px]">(su {pazientiList.length} totali)</span>
+                  <span className="text-slate-400 text-[11px]">(su {pazientiList.length} totali)</span>
                 )}
               </div>
             </div>
 
             {/* Bottom Row: Quick filters by Doctor & Account/Password Status */}
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
-                <Filter className="h-3.5 w-3.5 text-slate-500" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mr-1">
+                <Filter className="h-3.5 w-3.5 text-slate-400" />
                 <span>Stato Credenziali:</span>
               </div>
               {[
@@ -1802,20 +1810,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     setPazientiFiltroStato(st.id as any)
                     setPazientiPagina(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold transition-colors ${
                     pazientiFiltroStato === st.id
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-sky-600 text-white shadow-2xs'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
                   {st.label}
                 </button>
               ))}
 
-              <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+              <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
 
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
-                <Stethoscope className="h-3.5 w-3.5 text-slate-500" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mr-1">
+                <Stethoscope className="h-3.5 w-3.5 text-slate-400" />
                 <span>Medico:</span>
               </div>
               <select
@@ -1824,7 +1832,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   setPazientiFiltroMedico(e.target.value)
                   setPazientiPagina(1)
                 }}
-                className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer max-w-[220px] truncate"
+                className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer max-w-[220px] truncate shadow-2xs"
               >
                 <option value="tutti">Tutti i medici curanti</option>
                 {mediciList.map((m) => (
@@ -1835,7 +1843,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               </select>
 
               {/* Righe per pagina */}
-              <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
+              <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-500">
                 <span>Mostra:</span>
                 <select
                   value={pazientiRighePerPagina}
@@ -1843,7 +1851,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     setPazientiRighePerPagina(Number(e.target.value))
                     setPazientiPagina(1)
                   }}
-                  className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-xs text-slate-700 focus:outline-none cursor-pointer shadow-2xs"
                 >
                   <option value={15}>15</option>
                   <option value={25}>25</option>
@@ -1858,7 +1866,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="sticky top-0 bg-slate-900/95 border-b border-slate-800 text-slate-400 font-semibold text-[11px] backdrop-blur z-10">
+                <tr className="sticky top-0 bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[11px] backdrop-blur z-10">
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Paziente (Cognome & Nome)</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Codice Fiscale (Username)</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Contatti</th>
@@ -1869,16 +1877,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Azioni & Consegna</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-normal">
+              <tbody className="divide-y divide-slate-100 font-normal">
                 {loadingPazienti ? (
                   <TableRowsSkeleton rows={8} cols={8} />
                 ) : pazientiPaginati.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-1.5">
-                        <Users className="h-6 w-6 text-slate-600 mb-1" />
-                        <p className="text-sm font-semibold text-slate-400">Nessun paziente trovato</p>
-                        <p className="text-xs text-slate-600">
+                        <Users className="h-6 w-6 text-slate-400 mb-1" />
+                        <p className="text-sm font-bold text-slate-800">Nessun paziente trovato</p>
+                        <p className="text-xs text-slate-500">
                           {pazientiQuery
                             ? 'Nessun risultato corrispondente ai criteri di ricerca.'
                             : 'Non ci sono ancora pazienti registrati. Importa un CSV o crea assistiti.'}
@@ -1892,16 +1900,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     return (
                       <tr
                         key={paz.id}
-                        className={`hover:bg-indigo-950/20 transition-colors ${
-                          idx % 2 === 1 ? 'bg-slate-900/30' : 'bg-transparent'
+                        className={`hover:bg-sky-50/40 transition-colors ${
+                          idx % 2 === 1 ? 'bg-slate-50/40' : 'bg-white'
                         }`}
                       >
                         {/* Paziente */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
-                          <div className="font-bold text-white text-xs">
+                          <div className="font-bold text-slate-900 text-xs">
                             {paz.cognome} {paz.nome}
                           </div>
-                          <div className="text-[11px] text-slate-400 font-mono">
+                          <div className="text-[11px] text-slate-500 font-mono">
                             Nato/a il: {paz.dataNascita || '—'}
                           </div>
                         </td>
@@ -1909,13 +1917,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         {/* Codice Fiscale */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
                           <div className="inline-flex items-center gap-1.5">
-                            <span className="font-mono text-xs font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/80 px-2 py-0.5 rounded">
+                            <span className="font-mono text-xs font-bold text-sky-800 bg-sky-50 border border-sky-200 px-2 py-0.5 rounded-md">
                               {paz.codiceFiscale}
                             </span>
                             <button
                               type="button"
                               onClick={() => copiaValore(paz.codiceFiscale, 'Codice Fiscale')}
-                              className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                              className="p-1 text-slate-400 hover:text-slate-700 rounded hover:bg-slate-100 transition-colors"
                               title="Copia Codice Fiscale"
                             >
                               <Copy className="h-3 w-3" />
@@ -1927,16 +1935,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
                           <div className="space-y-0.5 text-xs">
                             {paz.email ? (
-                              <div className="flex items-center gap-1.5 text-slate-300 text-[11px] max-w-[180px] truncate">
-                                <Mail className="h-3 w-3 text-slate-500 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-slate-700 text-[11px] max-w-[180px] truncate">
+                                <Mail className="h-3 w-3 text-slate-400 shrink-0" />
                                 <span className="truncate">{paz.email}</span>
                               </div>
                             ) : (
-                              <span className="text-slate-600 text-[11px] italic">Email assente</span>
+                              <span className="text-slate-400 text-[11px] italic">Email assente</span>
                             )}
                             {paz.telefono && (
-                              <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
-                                <PhoneCall className="h-3 w-3 text-slate-500 shrink-0" />
+                              <div className="flex items-center gap-1.5 text-slate-600 text-[11px]">
+                                <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
                                 <span>{paz.telefono}</span>
                               </div>
                             )}
@@ -1946,12 +1954,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         {/* Medico & Studio */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
                           <div className="space-y-0.5">
-                            <div className="text-xs font-semibold text-blue-300">
+                            <div className="text-xs font-bold text-sky-700">
                               {paz.cognomeMedico
                                 ? `Dott. ${paz.nomeMedico} ${paz.cognomeMedico}`
                                 : 'Non assegnato'}
                             </div>
-                            <div className="text-[10px] text-slate-400 truncate max-w-[160px]">
+                            <div className="text-[10px] text-slate-500 truncate max-w-[160px]">
                               {paz.nomeStudio || 'Studio Medico'}
                             </div>
                           </div>
@@ -1963,7 +1971,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                             paz.passwordIniziale ? (
                               <div className="flex flex-col gap-1">
                                 <div className="flex items-center gap-1.5">
-                                  <span className="font-mono font-black text-xs px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80 shadow-inner">
+                                  <span className="font-mono font-black text-xs px-2 py-0.5 rounded-md bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
                                     {isVisible
                                       ? paz.passwordIniziale
                                       : '••••••'}
@@ -1971,7 +1979,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                                   <button
                                     type="button"
                                     onClick={() => toggleVisibilitaPassword(paz.id)}
-                                    className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                    className="p-1 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
                                     title={
                                       isVisible
                                         ? 'Nascondi password'
@@ -1979,7 +1987,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                                     }
                                   >
                                     {isVisible ? (
-                                      <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                                      <EyeOff className="h-3.5 w-3.5 text-amber-600" />
                                     ) : (
                                       <Eye className="h-3.5 w-3.5" />
                                     )}
@@ -1992,21 +2000,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                                         'Password provvisoria'
                                       )
                                     }
-                                    className="p-1 rounded text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors"
+                                    className="p-1 rounded text-slate-400 hover:text-amber-700 hover:bg-amber-50 transition-colors"
                                     title="Copia solo password temporanea"
                                   >
                                     <Copy className="h-3.5 w-3.5" />
                                   </button>
                                 </div>
-                                <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-1">
-                                  <Key className="h-2.5 w-2.5 text-amber-400" />
+                                <span className="text-[10px] text-amber-700 font-semibold flex items-center gap-1">
+                                  <Key className="h-2.5 w-2.5 text-amber-600" />
                                   Provvisoria da comunicare
                                 </span>
                               </div>
                             ) : (
                               <div className="flex flex-col gap-1">
-                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-rose-950/70 border border-rose-800/80 text-[10px] font-bold text-rose-300 w-fit">
-                                  <AlertTriangle className="h-3 w-3 text-rose-400" />
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-rose-50 border border-rose-200 text-[10px] font-bold text-rose-700 w-fit">
+                                  <AlertTriangle className="h-3 w-3 text-rose-600" />
                                   Password non generata
                                 </span>
                                 <span className="text-[10px] text-slate-500">In attesa di primo accesso</span>
@@ -2014,7 +2022,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                             )
                           ) : (
                             <div className="flex flex-col gap-0.5">
-                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800/80 text-[10px] font-bold text-emerald-400 w-fit">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[10px] font-bold text-emerald-800 w-fit">
                                 <ShieldCheck className="h-3 w-3" />
                                 Password Personale
                               </span>
@@ -2028,20 +2036,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         {/* Stato Account */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
                           {paz.primoAccesso ? (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200 inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
                               1° Accesso in attesa
                             </span>
                           ) : (
-                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1.5">
-                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                               Attivo
                             </span>
                           )}
                         </td>
 
                         {/* Data Registrazione */}
-                        <td className="py-2.5 px-3.5 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                        <td className="py-2.5 px-3.5 whitespace-nowrap text-slate-500 font-mono text-[11px]">
                           {paz.createdAt
                             ? new Date(paz.createdAt).toLocaleDateString('it-IT', {
                                 day: '2-digit',
@@ -2059,7 +2067,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                                 type="button"
                                 onClick={() => handleGeneraPasswordMancanti(paz.id)}
                                 disabled={generandoMancanti}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-[11px] font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold transition-all shadow-xs active:scale-95 disabled:opacity-50"
                                 title="Genera subito la password provvisoria per questo paziente"
                               >
                                 <Zap className="h-3 w-3" />
@@ -2069,7 +2077,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                               <button
                                 type="button"
                                 onClick={() => copiaCredenzialiPaziente(paz)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-800/80 text-indigo-300 hover:text-white hover:bg-indigo-900/80 text-[11px] font-bold transition-all shadow-xs"
+                                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-sky-50 border border-sky-200 text-sky-800 hover:bg-sky-100 text-[11px] font-bold transition-all shadow-2xs"
                                 title="Copia messaggio completo con credenziali per SMS/Email"
                               >
                                 <Copy className="h-3 w-3" />
@@ -2080,7 +2088,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                             <button
                               type="button"
                               onClick={() => setPazienteDaReimpostare(paz)}
-                              className="p-1.5 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-950/60 border border-amber-900/60 transition-all"
+                              className="p-1.5 rounded-lg text-amber-700 hover:bg-amber-50 border border-amber-200 transition-all"
                               title="Rigenera nuova password temporanea di 6 caratteri"
                             >
                               <RefreshCw className="h-3.5 w-3.5" />
@@ -2089,7 +2097,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                             <button
                               type="button"
                               onClick={() => setPazienteDettaglio(paz)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition-all"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-900 hover:bg-slate-100 border border-slate-200 transition-all"
                               title="Visualizza scheda paziente e ricevuta"
                             >
                               <Eye className="h-3.5 w-3.5" />
@@ -2105,18 +2113,18 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </div>
 
           {/* Footer Bar & Pagination */}
-          <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          <div className="p-3 sm:p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
             <div className="flex items-center gap-2">
               <span>
                 Visualizzati{' '}
-                <strong className="text-white font-mono">
+                <strong className="text-slate-800 font-mono">
                   {pazientiFiltrati.length === 0 ? 0 : indiceInizioPazienti + 1}
                 </strong>
                 -
-                <strong className="text-white font-mono">
+                <strong className="text-slate-800 font-mono">
                   {Math.min(indiceInizioPazienti + pazientiRighePerPagina, pazientiFiltrati.length)}
                 </strong>{' '}
-                di <strong className="text-white font-mono">{pazientiFiltrati.length}</strong> pazienti
+                di <strong className="text-slate-800 font-mono">{pazientiFiltrati.length}</strong> pazienti
               </span>
             </div>
 
@@ -2125,13 +2133,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 type="button"
                 disabled={pazientiPagina <= 1}
                 onClick={() => setPazientiPagina((p) => Math.max(1, p - 1))}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span>Precedente</span>
               </button>
 
-              <span className="px-2 text-xs font-mono text-slate-300">
+              <span className="px-2 text-xs font-mono text-slate-700">
                 {pazientiPagina} / {totalePaginePazienti}
               </span>
 
@@ -2139,7 +2147,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 type="button"
                 disabled={pazientiPagina >= totalePaginePazienti}
                 onClick={() => setPazientiPagina((p) => Math.min(totalePaginePazienti, p + 1))}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors"
               >
                 <span>Successivo</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -2151,20 +2159,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* TAB 5: AUDIT LOG & SICUREZZA DB */}
       {tabAttiva === 'audit' && (
-        <div className="w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm flex flex-col">
+        <div className="w-full bg-white rounded-3xl border border-slate-200/90 overflow-hidden shadow-xs flex flex-col">
           {/* Header Bar */}
-          <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950">
+          <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white">
             <div>
               <div className="flex items-center gap-2.5">
-                <FileSpreadsheet className="h-5 w-5 text-emerald-400 flex-shrink-0" />
-                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                <FileSpreadsheet className="h-5 w-5 text-emerald-600 flex-shrink-0" />
+                <h2 className="text-base sm:text-lg font-black text-slate-900 tracking-tight">
                   Registro Audit di Sistema (PostgreSQL audit_logs)
                 </h2>
-                <span className="px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800/80 text-[10px] font-mono font-semibold text-emerald-400">
+                <span className="px-2 py-0.5 rounded-md bg-emerald-50 border border-emerald-200 text-[10px] font-mono font-bold text-emerald-800">
                   GDPR Art. 30
                 </span>
               </div>
-              <p className="text-xs text-slate-400 mt-1">
+              <p className="text-xs text-slate-500 mt-1">
                 Tracciamento immutabile di accessi, creazioni, eliminazioni e consultazione cartelle cliniche.
               </p>
             </div>
@@ -2173,7 +2181,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               <button
                 type="button"
                 onClick={() => caricaAuditLogs()}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs transition-colors"
                 title="Ricarica registri dal database"
               >
                 <RefreshCw className={`h-3.5 w-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
@@ -2182,30 +2190,30 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               <button
                 type="button"
                 onClick={esportaAuditCsv}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-slate-200 text-xs font-semibold text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs transition-colors"
                 title="Esporta in formato CSV i log attualmente filtrati"
               >
-                <FileDown className="h-3.5 w-3.5 text-indigo-400" />
+                <FileDown className="h-3.5 w-3.5 text-sky-600" />
                 <span>Esporta CSV</span>
               </button>
               <button
                 type="button"
                 onClick={() => setModalEmergencyOpen(true)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-amber-500/10 border border-amber-600/40 hover:bg-amber-500/20 text-xs font-semibold text-amber-300 transition-colors"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 border border-amber-200 hover:bg-amber-100 text-xs font-semibold text-amber-800 shadow-2xs transition-colors"
                 title="Accesso di emergenza operatore (ADR-006)"
               >
-                <Key className="h-3.5 w-3.5 text-amber-400" />
+                <Key className="h-3.5 w-3.5 text-amber-600" />
                 <span>Accesso di Emergenza</span>
               </button>
             </div>
           </div>
 
           {/* Sticky Filter Toolbar */}
-          <div className="p-3 sm:p-4 bg-slate-900/60 border-b border-slate-800 flex flex-col gap-3">
+          <div className="p-3 sm:p-4 bg-slate-50/80 border-b border-slate-200/80 flex flex-col gap-3">
             {/* Top Row: Search input and count */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
               <div className="relative flex-1 max-w-xl">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
                   value={auditQuery}
@@ -2214,7 +2222,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     setAuditPagina(1)
                   }}
                   placeholder="Cerca per email, azione (LOGIN, ELIMINA, CREA), entità, IP o dettagli..."
-                  className="w-full pl-9 pr-8 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                  className="w-full pl-9 pr-8 py-2 rounded-xl bg-white border border-slate-200 text-xs text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 transition-colors shadow-2xs"
                 />
                 {auditQuery && (
                   <button
@@ -2223,7 +2231,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       setAuditQuery('')
                       setAuditPagina(1)
                     }}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
                     title="Cancella filtro di ricerca"
                   >
                     ✕
@@ -2231,21 +2239,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 )}
               </div>
 
-              <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-400">
-                <span className="font-semibold text-slate-200 tabular-nums font-mono">
+              <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-500">
+                <span className="font-bold text-slate-800 tabular-nums font-mono">
                   {auditLogsFiltrati.length}
                 </span>
                 <span>{auditLogsFiltrati.length === 1 ? 'evento trovato' : 'eventi trovati'}</span>
                 {auditLogsFiltrati.length !== auditLogs.length && (
-                  <span className="text-slate-500 text-[11px]">(su {auditLogs.length} totali)</span>
+                  <span className="text-slate-400 text-[11px]">(su {auditLogs.length} totali)</span>
                 )}
               </div>
             </div>
 
             {/* Bottom Row: Quick filters by Role & Category */}
             <div className="flex flex-wrap items-center gap-2 pt-0.5">
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
-                <Filter className="h-3.5 w-3.5 text-slate-500" />
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mr-1">
+                <Filter className="h-3.5 w-3.5 text-slate-400" />
                 <span>Ruolo:</span>
               </div>
               {(['tutti', 'admin', 'medico', 'segreteria', 'paziente'] as const).map((r) => (
@@ -2256,19 +2264,19 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     setAuditFiltroRuolo(r)
                     setAuditPagina(1)
                   }}
-                  className={`px-2.5 py-1 rounded-md text-xs font-semibold capitalize transition-colors ${
+                  className={`px-2.5 py-1 rounded-lg text-xs font-semibold capitalize transition-colors ${
                     auditFiltroRuolo === r
-                      ? 'bg-indigo-600 text-white'
-                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
+                      ? 'bg-sky-600 text-white shadow-2xs'
+                      : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-100 hover:text-slate-900'
                   }`}
                 >
                   {r === 'tutti' ? 'Tutti i ruoli' : r}
                 </button>
               ))}
 
-              <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+              <div className="h-4 w-px bg-slate-200 mx-1 hidden sm:block" />
 
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
+              <div className="flex items-center gap-1.5 text-xs text-slate-500 font-semibold mr-1">
                 <span>Azione:</span>
               </div>
               <select
@@ -2277,7 +2285,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   setAuditFiltroCategoria(e.target.value as any)
                   setAuditPagina(1)
                 }}
-                className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer"
+                className="px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer shadow-2xs"
               >
                 <option value="tutte">Tutte le azioni</option>
                 <option value="auth">Accessi & Autenticazione (LOGIN / LOGOUT)</option>
@@ -2293,7 +2301,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="sticky top-0 bg-slate-900/95 border-b border-slate-800 text-slate-400 font-semibold text-[11px] backdrop-blur z-10">
+                <tr className="sticky top-0 bg-slate-50 border-b border-slate-200 text-slate-500 font-bold text-[11px] backdrop-blur z-10">
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Data / Ora</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Attore</th>
                   <th className="py-2.5 px-3.5 whitespace-nowrap">Ruolo</th>
@@ -2304,16 +2312,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Ispezione</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-800/60 font-normal">
+              <tbody className="divide-y divide-slate-100 font-normal">
                 {loadingAudit ? (
                   <TableRowsSkeleton rows={8} cols={8} />
                 ) : auditLogsPaginati.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="py-12 text-center text-slate-500">
                       <div className="flex flex-col items-center justify-center gap-1.5">
-                        <ShieldAlert className="h-6 w-6 text-slate-600 mb-1" />
-                        <p className="text-sm font-semibold text-slate-400">Nessun evento registrato trovato</p>
-                        <p className="text-xs text-slate-600">Prova a modificare i filtri di ricerca o la categoria selezionata.</p>
+                        <ShieldAlert className="h-6 w-6 text-slate-400 mb-1" />
+                        <p className="text-sm font-bold text-slate-800">Nessun evento registrato trovato</p>
+                        <p className="text-xs text-slate-500">Prova a modificare i filtri di ricerca o la categoria selezionata.</p>
                       </div>
                     </td>
                   </tr>
@@ -2327,10 +2335,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     return (
                       <tr
                         key={log.id}
-                        className={`hover:bg-indigo-950/20 transition-colors ${idx % 2 === 1 ? 'bg-slate-900/30' : 'bg-transparent'}`}
+                        className={`hover:bg-sky-50/40 transition-colors ${idx % 2 === 1 ? 'bg-slate-50/40' : 'bg-white'}`}
                       >
                         {/* Data / Ora con tabular-nums font-mono */}
-                        <td className="py-2.5 px-3.5 text-slate-300 font-mono text-[11px] tabular-nums whitespace-nowrap">
+                        <td className="py-2.5 px-3.5 text-slate-600 font-mono text-[11px] tabular-nums whitespace-nowrap">
                           {new Date(log.createdAt).toLocaleString('it-IT', {
                             day: '2-digit',
                             month: '2-digit',
@@ -2343,20 +2351,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                         {/* Attore */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
-                          <span className="font-semibold text-white text-xs">{log.attoreEmail}</span>
+                          <span className="font-bold text-slate-900 text-xs">{log.attoreEmail}</span>
                         </td>
 
                         {/* Ruolo */}
                         <td className="py-2.5 px-3.5 whitespace-nowrap">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-semibold border ${
+                            className={`px-2 py-0.5 rounded text-[10px] font-mono uppercase font-bold border ${
                               log.ruolo === 'ADMIN'
-                                ? 'bg-purple-950/60 text-purple-300 border-purple-800/80'
+                                ? 'bg-purple-50 text-purple-700 border-purple-200'
                                 : log.ruolo === 'MEDICO'
-                                ? 'bg-blue-950/60 text-blue-300 border-blue-800/80'
+                                ? 'bg-sky-50 text-sky-700 border-sky-200'
                                 : log.ruolo === 'SEGRETERIA'
-                                ? 'bg-amber-950/60 text-amber-300 border-amber-800/80'
-                                : 'bg-emerald-950/60 text-emerald-300 border-emerald-800/80'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200'
                             }`}
                           >
                             {log.ruolo}
@@ -2368,12 +2376,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded text-[10px] font-bold border ${
                               isDanger
-                                ? 'bg-rose-950/70 text-rose-300 border-rose-800/80'
+                                ? 'bg-rose-50 text-rose-700 border-rose-200'
                                 : isSuccess
-                                ? 'bg-emerald-950/70 text-emerald-300 border-emerald-800/80'
+                                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                 : isWarning
-                                ? 'bg-amber-950/70 text-amber-300 border-amber-800/80'
-                                : 'bg-indigo-950/70 text-indigo-300 border-indigo-800/80'
+                                ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                : 'bg-sky-50 text-sky-700 border-sky-200'
                             }`}
                           >
                             {log.azione}
@@ -2381,11 +2389,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         </td>
 
                         {/* Entità & Target */}
-                        <td className="py-2.5 px-3.5 text-slate-300 text-xs whitespace-nowrap">
+                        <td className="py-2.5 px-3.5 text-slate-700 text-xs whitespace-nowrap">
                           <div className="flex items-center gap-1.5">
-                            <span className="font-semibold text-slate-200">{log.entita}</span>
+                            <span className="font-bold text-slate-800">{log.entita}</span>
                             {log.entitaId && (
-                              <span className="text-[10px] font-mono text-slate-500 bg-slate-900 px-1 rounded border border-slate-800" title={`ID Entità: ${log.entitaId}`}>
+                              <span className="text-[10px] font-mono text-slate-500 bg-slate-100 px-1 rounded border border-slate-200" title={`ID Entità: ${log.entitaId}`}>
                                 #{log.entitaId.slice(0, 8)}
                               </span>
                             )}
@@ -2393,12 +2401,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         </td>
 
                         {/* Indirizzo IP con tabular-nums font-mono */}
-                        <td className="py-2.5 px-3.5 text-slate-400 font-mono text-[11px] tabular-nums whitespace-nowrap">
+                        <td className="py-2.5 px-3.5 text-slate-500 font-mono text-[11px] tabular-nums whitespace-nowrap">
                           {log.ip || '—'}
                         </td>
 
                         {/* Dettagli sintetici leggibili */}
-                        <td className="py-2.5 px-3.5 text-slate-400 text-xs max-w-xs">
+                        <td className="py-2.5 px-3.5 text-slate-600 text-xs max-w-xs">
                           <span className="truncate block" title={typeof log.dettagli === 'object' ? JSON.stringify(log.dettagli) : String(log.dettagli || '')}>
                             {summary}
                           </span>
@@ -2409,9 +2417,9 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                           <button
                             type="button"
                             onClick={() => setSelectedAuditLog(log)}
-                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-700 text-slate-300 hover:text-white hover:bg-slate-800 hover:border-slate-600 transition-colors text-xs font-semibold"
+                            className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 shadow-2xs transition-colors text-xs font-semibold"
                           >
-                            <Eye className="h-3 w-3 text-indigo-400" />
+                            <Eye className="h-3 w-3 text-sky-600" />
                             <span>Dettagli</span>
                           </button>
                         </td>
@@ -2424,21 +2432,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </div>
 
           {/* Pagination Bar */}
-          <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+          <div className="p-3 sm:p-4 border-t border-slate-100 bg-white flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
             <div className="flex items-center gap-3">
               <span>
-                Mostrati <strong className="text-white font-mono">{auditLogsFiltrati.length === 0 ? 0 : indiceInizioAudit + 1}</strong> - <strong className="text-white font-mono">{Math.min(indiceInizioAudit + auditRighePerPagina, auditLogsFiltrati.length)}</strong> di <strong className="text-white font-mono">{auditLogsFiltrati.length}</strong>
+                Mostrati <strong className="text-slate-800 font-mono">{auditLogsFiltrati.length === 0 ? 0 : indiceInizioAudit + 1}</strong> - <strong className="text-slate-800 font-mono">{Math.min(indiceInizioAudit + auditRighePerPagina, auditLogsFiltrati.length)}</strong> di <strong className="text-slate-800 font-mono">{auditLogsFiltrati.length}</strong>
               </span>
 
               <div className="flex items-center gap-1.5 ml-2">
-                <span className="text-slate-500">Righe:</span>
+                <span className="text-slate-400">Righe:</span>
                 <select
                   value={auditRighePerPagina}
                   onChange={(e) => {
                     setAuditRighePerPagina(Number(e.target.value))
                     setAuditPagina(1)
                   }}
-                  className="px-2 py-0.5 rounded bg-slate-900 border border-slate-800 text-slate-300 font-mono text-xs focus:outline-none cursor-pointer"
+                  className="px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-700 font-mono text-xs focus:outline-none cursor-pointer shadow-2xs"
                 >
                   <option value={25}>25</option>
                   <option value={50}>50</option>
@@ -2452,21 +2460,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 type="button"
                 onClick={() => setAuditPagina((p) => Math.max(1, p - 1))}
                 disabled={auditPagina <= 1}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:hover:text-slate-300 disabled:cursor-not-allowed transition-colors font-medium"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors font-medium"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
                 <span>Precedente</span>
               </button>
 
-              <span className="px-2 py-1 font-mono text-slate-300">
-                Pag. <strong className="text-white">{auditPagina}</strong> / {totalePagineAudit}
+              <span className="px-2 py-1 font-mono text-slate-700">
+                Pag. <strong className="text-slate-900">{auditPagina}</strong> / {totalePagineAudit}
               </span>
 
               <button
                 type="button"
                 onClick={() => setAuditPagina((p) => Math.min(totalePagineAudit, p + 1))}
                 disabled={auditPagina >= totalePagineAudit}
-                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-slate-900 border border-slate-800 text-slate-300 hover:text-white disabled:opacity-40 disabled:hover:text-slate-300 disabled:cursor-not-allowed transition-colors font-medium"
+                className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-white border border-slate-200 text-slate-700 hover:text-slate-900 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed shadow-2xs transition-colors font-medium"
               >
                 <span>Successiva</span>
                 <ChevronRight className="h-3.5 w-3.5" />
@@ -2478,16 +2486,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: NUOVO STUDIO MEDICO */}
       {modalStudioOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Building2 className="h-5 w-5 text-indigo-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Building2 className="h-5 w-5 text-sky-600" />
                 Registra Nuovo Studio Medico
               </h3>
               <button
                 onClick={() => setModalStudioOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -2495,7 +2503,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
             <form onSubmit={handleCreaStudio} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Nome Studio Medico *
                 </label>
                 <input
@@ -2504,13 +2512,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. Studio Medico San Marco"
                   value={formStudio.nome}
                   onChange={(e) => setFormStudio({ ...formStudio, nome: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Città *
                   </label>
                   <input
@@ -2519,11 +2527,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. Milano"
                     value={formStudio.citta}
                     onChange={(e) => setFormStudio({ ...formStudio, citta: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Indirizzo
                   </label>
                   <input
@@ -2531,14 +2539,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. Via Roma 12"
                     value={formStudio.indirizzo}
                     onChange={(e) => setFormStudio({ ...formStudio, indirizzo: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Telefono
                   </label>
                   <input
@@ -2546,11 +2554,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. +39 02 1234567"
                     value={formStudio.telefono}
                     onChange={(e) => setFormStudio({ ...formStudio, telefono: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Email Studio
                   </label>
                   <input
@@ -2558,14 +2566,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. info@sanmarco.it"
                     value={formStudio.email}
                     onChange={(e) => setFormStudio({ ...formStudio, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Durata Visita (min)
                   </label>
                   <input
@@ -2574,11 +2582,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     max="120"
                     value={formStudio.durataVisita}
                     onChange={(e) => setFormStudio({ ...formStudio, durataVisita: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Lockup (min)
                   </label>
                   <input
@@ -2587,11 +2595,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     max="120"
                     value={formStudio.lockupMinutes}
                     onChange={(e) => setFormStudio({ ...formStudio, lockupMinutes: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Anticipo Max (gg)
                   </label>
                   <input
@@ -2600,15 +2608,15 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     max="180"
                     value={formStudio.anticipoMax}
                     onChange={(e) => setFormStudio({ ...formStudio, anticipoMax: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               {/* SEZIONE: MEDICO DI RIFERIMENTO CONTESTUALE */}
-              <div className="pt-3 border-t border-slate-800 space-y-3">
+              <div className="pt-3 border-t border-slate-100 space-y-3">
                 <div className="flex items-center justify-between">
-                  <label className="block font-bold text-indigo-400 uppercase tracking-wider">
+                  <label className="block font-bold text-sky-700 uppercase tracking-wider">
                     Medico di Riferimento dello Studio
                   </label>
                   <span className="text-[11px] text-slate-400">Opzionale o contestuale</span>
@@ -2620,12 +2628,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     onClick={() => setFormStudio({ ...formStudio, opzioneMedico: 'nessuno' })}
                     className={`p-2.5 rounded-xl border text-left transition-all ${
                       formStudio.opzioneMedico === 'nessuno'
-                        ? 'border-indigo-500 bg-indigo-950/40 text-white'
-                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                        ? 'border-sky-500 bg-sky-50 text-sky-950 font-bold'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     <span className="font-bold block text-xs">Invito / Codice</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Iscrizione autonoma</span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Iscrizione autonoma</span>
                   </button>
 
                   <button
@@ -2633,12 +2641,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     onClick={() => setFormStudio({ ...formStudio, opzioneMedico: 'nuovo' })}
                     className={`p-2.5 rounded-xl border text-left transition-all ${
                       formStudio.opzioneMedico === 'nuovo'
-                        ? 'border-indigo-500 bg-indigo-950/40 text-white'
-                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                        ? 'border-sky-500 bg-sky-50 text-sky-950 font-bold'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     <span className="font-bold block text-xs">Crea Medico</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Nuovo profilo + agenda</span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Nuovo profilo + agenda</span>
                   </button>
 
                   <button
@@ -2646,79 +2654,79 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     onClick={() => setFormStudio({ ...formStudio, opzioneMedico: 'esistente' })}
                     className={`p-2.5 rounded-xl border text-left transition-all ${
                       formStudio.opzioneMedico === 'esistente'
-                        ? 'border-indigo-500 bg-indigo-950/40 text-white'
-                        : 'border-slate-800 bg-slate-900/60 text-slate-400 hover:border-slate-700'
+                        ? 'border-sky-500 bg-sky-50 text-sky-950 font-bold'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100'
                     }`}
                   >
                     <span className="font-bold block text-xs">Assegna Esistente</span>
-                    <span className="text-[10px] text-slate-400 block mt-0.5">Da medici registrati</span>
+                    <span className="text-[10px] text-slate-500 block mt-0.5">Da medici registrati</span>
                   </button>
                 </div>
 
                 {/* Info auto-registrazione con Codice Studio */}
                 {formStudio.opzioneMedico === 'nessuno' && (
-                  <div className="p-3 rounded-xl bg-slate-900 border border-slate-800 text-[11px] text-slate-400">
+                  <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-[11px] text-slate-600">
                     💡 Lo studio riceverà un <b>Codice Studio univoco</b>. Medici e collaboratori potranno registrarsi in totale autonomia inserendo il codice nella pagina di registrazione.
                   </div>
                 )}
 
                 {/* Form creazione nuovo medico contestuale */}
                 {formStudio.opzioneMedico === 'nuovo' && (
-                  <div className="p-3.5 rounded-2xl bg-indigo-950/20 border border-indigo-900/40 space-y-3">
-                    <p className="text-[11px] text-indigo-300 font-medium">
+                  <div className="p-3.5 rounded-2xl bg-sky-50/50 border border-sky-100 space-y-3">
+                    <p className="text-[11px] text-sky-900 font-medium">
                       Inserisci i dettagli del medico: verrà creato l'account e generata l'agenda di disponibilità per i prossimi 30 giorni.
                     </p>
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Nome Medico *</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Nome Medico *</label>
                         <input
                           type="text"
                           required={formStudio.opzioneMedico === 'nuovo'}
                           placeholder="Es. Mario"
                           value={formStudio.nomeMedico}
                           onChange={(e) => setFormStudio({ ...formStudio, nomeMedico: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Cognome Medico *</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Cognome Medico *</label>
                         <input
                           type="text"
                           required={formStudio.opzioneMedico === 'nuovo'}
                           placeholder="Es. Rossi"
                           value={formStudio.cognomeMedico}
                           onChange={(e) => setFormStudio({ ...formStudio, cognomeMedico: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2.5">
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Email Medico *</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Email Medico *</label>
                         <input
                           type="email"
                           required={formStudio.opzioneMedico === 'nuovo'}
                           placeholder="Es. dott.rossi@studio.it"
                           value={formStudio.emailMedico}
                           onChange={(e) => setFormStudio({ ...formStudio, emailMedico: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                         />
                       </div>
                       <div>
-                        <label className="block text-[11px] font-bold text-slate-300 mb-1">Telefono Primario</label>
+                        <label className="block text-[11px] font-bold text-slate-700 mb-1">Telefono Primario</label>
                         <input
                           type="text"
                           placeholder="Es. +39 333 1234567"
                           value={formStudio.telefonoMedico}
                           onChange={(e) => setFormStudio({ ...formStudio, telefonoMedico: e.target.value })}
-                          className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                          className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="block text-[11px] font-bold text-slate-300 mb-1">
+                      <label className="block text-[11px] font-bold text-slate-700 mb-1">
                         Password Iniziale Medico (opzionale, default: Medico2026!)
                       </label>
                       <input
@@ -2726,7 +2734,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                         placeholder="Lascia vuoto per default: Medico2026!"
                         value={formStudio.passwordMedico}
                         onChange={(e) => setFormStudio({ ...formStudio, passwordMedico: e.target.value })}
-                        className="w-full px-3 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3 py-2 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                       />
                     </div>
                   </div>
@@ -2734,17 +2742,17 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                 {/* Selezione medico esistente */}
                 {formStudio.opzioneMedico === 'esistente' && (
-                  <div className="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 space-y-2">
-                    <label className="block text-[11px] font-bold text-slate-300">
+                  <div className="p-3.5 rounded-2xl bg-slate-50 border border-slate-200 space-y-2">
+                    <label className="block text-[11px] font-bold text-slate-700">
                       Seleziona Medico da associare allo studio:
                     </label>
                     {mediciList.length === 0 ? (
-                      <p className="text-[11px] text-amber-400">Nessun medico esistente disponibile nel sistema.</p>
+                      <p className="text-[11px] text-amber-700 font-medium">Nessun medico esistente disponibile nel sistema.</p>
                     ) : (
                       <select
                         value={formStudio.assegnaMedicoId}
                         onChange={(e) => setFormStudio({ ...formStudio, assegnaMedicoId: e.target.value })}
-                        className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                        className="w-full px-3.5 py-2.5 rounded-xl bg-white border border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
                       >
                         <option value="">-- Seleziona un medico --</option>
                         {mediciList.map((m) => (
@@ -2758,17 +2766,17 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 )}
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setModalStudioOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sm transition-all"
                 >
                   Crea Studio
                 </button>
@@ -2780,16 +2788,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: NUOVO MEDICO */}
       {modalMedicoOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Stethoscope className="h-5 w-5 text-blue-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Stethoscope className="h-5 w-5 text-sky-600" />
                 Aggiungi Medico di Famiglia (MMG)
               </h3>
               <button
                 onClick={() => setModalMedicoOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -2797,14 +2805,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
             <form onSubmit={handleCreaMedico} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Studio Medico di Appartenenza *
                 </label>
                 <select
                   required
                   value={formMedico.studioId}
                   onChange={(e) => setFormMedico({ ...formMedico, studioId: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
                 >
                   {studiList.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -2816,7 +2824,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Nome *
                   </label>
                   <input
@@ -2825,11 +2833,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. Mario"
                     value={formMedico.nome}
                     onChange={(e) => setFormMedico({ ...formMedico, nome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Cognome *
                   </label>
                   <input
@@ -2838,13 +2846,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. Verdi"
                     value={formMedico.cognome}
                     onChange={(e) => setFormMedico({ ...formMedico, cognome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Email (Username di Accesso) *
                 </label>
                 <input
@@ -2853,13 +2861,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. mario.verdi@studiomedico.it"
                   value={formMedico.email}
                   onChange={(e) => setFormMedico({ ...formMedico, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Telefono
                   </label>
                   <input
@@ -2867,11 +2875,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. +39 333 1234567"
                     value={formMedico.telefono}
                     onChange={(e) => setFormMedico({ ...formMedico, telefono: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Password Iniziale
                   </label>
                   <input
@@ -2879,7 +2887,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Min 6 caratteri"
                     value={formMedico.password}
                     onChange={(e) => setFormMedico({ ...formMedico, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
@@ -2888,17 +2896,17 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 La creazione del medico genererà automaticamente gli slot di disponibilità agenda per i prossimi 30 giorni.
               </p>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setModalMedicoOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold shadow-md shadow-blue-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sm transition-all"
                 >
                   Crea Medico
                 </button>
@@ -2910,16 +2918,16 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: NUOVO OPERATORE SEGRETERIA (MULTI-MEDICO) */}
       {modalStaffOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <UserCheck className="h-5 w-5 text-amber-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <UserCheck className="h-5 w-5 text-amber-600" />
                 Nuovo Operatore Segreteria (Multi-Medico)
               </h3>
               <button
                 onClick={() => setModalStaffOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -2927,7 +2935,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
             <form onSubmit={handleCreaStaff} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Studio di Appartenenza *
                 </label>
                 <select
@@ -2940,7 +2948,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       mediciIds: [],
                     })
                   }}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
                 >
                   {studiList.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -2952,7 +2960,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Nome *
                   </label>
                   <input
@@ -2961,11 +2969,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. Giulia"
                     value={formStaff.nome}
                     onChange={(e) => setFormStaff({ ...formStaff, nome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Cognome *
                   </label>
                   <input
@@ -2974,14 +2982,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. Colombo"
                     value={formStaff.cognome}
                     onChange={(e) => setFormStaff({ ...formStaff, cognome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Email di Accesso *
                   </label>
                   <input
@@ -2990,11 +2998,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Es. segreteria@studio.it"
                     value={formStaff.email}
                     onChange={(e) => setFormStaff({ ...formStaff, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Password Iniziale
                   </label>
                   <input
@@ -3002,17 +3010,17 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Min 6 caratteri"
                     value={formStaff.password}
                     onChange={(e) => setFormStaff({ ...formStaff, password: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               {/* Selezione Multi-Medico */}
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <label className="block font-bold text-slate-300 uppercase tracking-wider">
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider">
                   Assegna ai Medici Curanti dello Studio (Seleziona 1 o più):
                 </label>
-                <div className="p-3 bg-slate-900 rounded-xl border border-slate-800 space-y-2 max-h-40 overflow-y-auto">
+                <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 space-y-2 max-h-40 overflow-y-auto">
                   {mediciList
                     .filter((m) => m.studioId === formStaff.studioId)
                     .map((m) => {
@@ -3020,39 +3028,39 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       return (
                         <label
                           key={m.id}
-                          className="flex items-center gap-3 p-2 rounded-lg hover:bg-slate-800/80 cursor-pointer transition-colors"
+                          className="flex items-center gap-3 p-2 rounded-xl hover:bg-slate-100 cursor-pointer transition-colors"
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleMedicoStaff(m.id)}
-                            className="h-4 w-4 rounded border-slate-700 text-amber-600 focus:ring-amber-500"
+                            className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
                           />
-                          <span className="font-semibold text-slate-200">
+                          <span className="font-semibold text-slate-800">
                             Dott. {m.nome} {m.cognome}
                           </span>
                         </label>
                       )
                     })}
                   {mediciList.filter((m) => m.studioId === formStaff.studioId).length === 0 && (
-                    <p className="text-slate-500 text-[11px] italic">
+                    <p className="text-slate-400 text-[11px] italic">
                       Nessun medico presente in questo studio. Registra prima un medico.
                     </p>
                   )}
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setModalStaffOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-sm transition-all"
                 >
                   Salva Operatore
                 </button>
@@ -3064,21 +3072,21 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: IMPORTAZIONE DATASET PAZIENTI IN CSV */}
       {modalCsvOpen && medicoTargetCsv && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-2xl w-full space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-2xl w-full space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div>
-                <h3 className="text-base font-bold text-white flex items-center gap-2">
-                  <FileSpreadsheet className="h-5 w-5 text-emerald-400" />
+                <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <FileSpreadsheet className="h-5 w-5 text-emerald-600" />
                   Import Dataset Pazienti in CSV
                 </h3>
-                <p className="text-xs text-indigo-400 mt-0.5">
+                <p className="text-xs text-sky-700 font-semibold mt-0.5">
                   Assegnazione a: Dott. {medicoTargetCsv.nome} {medicoTargetCsv.cognome} • {medicoTargetCsv.nomeStudio}
                 </p>
               </div>
               <button
                 onClick={() => setModalCsvOpen(false)}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3087,17 +3095,17 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             {!importCompletato ? (
               <div className="space-y-4 text-xs">
                 {/* Info & Download Template */}
-                <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between gap-3">
+                <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 flex items-center justify-between gap-3">
                   <div>
-                    <p className="font-bold text-slate-200">Formato Colonne Richiesto:</p>
-                    <p className="text-slate-400 font-mono text-[11px] mt-0.5">
+                    <p className="font-bold text-slate-800">Formato Colonne Richiesto:</p>
+                    <p className="text-slate-500 font-mono text-[11px] mt-0.5">
                       nome, cognome, codice_fiscale, data_nascita, email, telefono
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={downloadTemplateCsv}
-                    className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-700 text-emerald-300 font-bold text-xs flex items-center gap-1.5 flex-shrink-0"
+                    className="px-3 py-1.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-emerald-700 font-bold text-xs flex items-center gap-1.5 flex-shrink-0 shadow-2xs"
                   >
                     <Download className="h-3.5 w-3.5" />
                     <span>Modello CSV</span>
@@ -3106,19 +3114,19 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                 {/* Upload or Paste */}
                 <div className="space-y-2">
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider">
                     1. Seleziona File CSV dal computer:
                   </label>
                   <input
                     type="file"
                     accept=".csv,text/csv"
                     onChange={handleFileUpload}
-                    className="w-full text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
+                    className="w-full text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-sky-600 file:text-white hover:file:bg-sky-700 cursor-pointer"
                   />
                 </div>
 
                 <div className="space-y-2">
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider">
                     Oppure Incolla Dati CSV:
                   </label>
                   <textarea
@@ -3126,49 +3134,49 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     value={csvRawText}
                     onChange={(e) => parseCsvContent(e.target.value)}
                     placeholder="Mario,Rossi,RSSMRA85M01H501Z,1985-08-01,mario@email.it,3401234567"
-                    className="w-full p-3 rounded-xl bg-slate-900 border border-slate-800 font-mono text-[11px] text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    className="w-full p-3 rounded-2xl bg-slate-50 border border-slate-200 font-mono text-[11px] text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                   />
                 </div>
 
                 {/* Anteprima Tabella */}
                 {anteprimaPazienti.length > 0 && (
-                  <div className="space-y-2 pt-2 border-t border-slate-800">
+                  <div className="space-y-2 pt-2 border-t border-slate-100">
                     <div className="flex items-center justify-between">
-                      <span className="font-bold text-slate-300">
+                      <span className="font-bold text-slate-700">
                         Anteprima Pazienti Rilevati ({anteprimaPazienti.length}):
                       </span>
-                      <span className="text-[11px] text-emerald-400 font-bold">
+                      <span className="text-[11px] text-emerald-700 font-bold">
                         {anteprimaPazienti.filter((p) => p.valido).length} Validi per l'importazione
                       </span>
                     </div>
 
-                    <div className="max-h-48 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900">
+                    <div className="max-h-48 overflow-y-auto rounded-2xl border border-slate-200 bg-white">
                       <table className="w-full text-left text-[11px]">
-                        <thead className="bg-slate-950 text-slate-400 sticky top-0">
+                        <thead className="bg-slate-50 text-slate-500 sticky top-0 border-b border-slate-200">
                           <tr>
-                            <th className="p-2">Stato</th>
-                            <th className="p-2">Nome e Cognome</th>
-                            <th className="p-2">Codice Fiscale (Username)</th>
-                            <th className="p-2">Password Auto-Generata</th>
+                            <th className="p-2.5 font-bold">Stato</th>
+                            <th className="p-2.5 font-bold">Nome e Cognome</th>
+                            <th className="p-2.5 font-bold">Codice Fiscale (Username)</th>
+                            <th className="p-2.5 font-bold">Password Auto-Generata</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-slate-800">
+                        <tbody className="divide-y divide-slate-100">
                           {anteprimaPazienti.map((p, idx) => (
-                            <tr key={idx} className={p.valido ? 'hover:bg-slate-800/40' : 'bg-rose-950/20'}>
-                              <td className="p-2">
+                            <tr key={idx} className={p.valido ? 'hover:bg-slate-50' : 'bg-rose-50/60'}>
+                              <td className="p-2.5">
                                 {p.valido ? (
-                                  <span className="text-emerald-400 font-bold">✓ OK</span>
+                                  <span className="text-emerald-700 font-bold">✓ OK</span>
                                 ) : (
-                                  <span className="text-rose-400 font-bold text-[10px]" title={p.motivoErrore}>
+                                  <span className="text-rose-700 font-bold text-[10px]" title={p.motivoErrore}>
                                     ✕ {p.motivoErrore}
                                   </span>
                                 )}
                               </td>
-                              <td className="p-2 text-white font-semibold">
+                              <td className="p-2.5 text-slate-900 font-semibold">
                                 {p.nome} {p.cognome}
                               </td>
-                              <td className="p-2 font-mono text-slate-300 font-bold">{p.codiceFiscale}</td>
-                              <td className="p-2 font-mono text-indigo-300">6 caratteri casuali</td>
+                              <td className="p-2.5 font-mono text-slate-700 font-bold">{p.codiceFiscale}</td>
+                              <td className="p-2.5 font-mono text-sky-700">6 caratteri casuali</td>
                             </tr>
                           ))}
                         </tbody>
@@ -3179,45 +3187,45 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                 {/* Barra di Caricamento Avanzamento Reale (Batching) */}
                 {importInCorso && (
-                  <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-3 animate-in fade-in duration-200 shadow-md">
+                  <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-200 shadow-xs">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <Loader2 className="h-4 w-4 animate-spin text-emerald-400 shrink-0" />
-                        <span className="font-bold text-white">Importazione e Generazione Account...</span>
-                        <span className="text-slate-400 font-medium">
+                        <Loader2 className="h-4 w-4 animate-spin text-emerald-600 shrink-0" />
+                        <span className="font-bold text-slate-900">Importazione e Generazione Account...</span>
+                        <span className="text-slate-500 font-medium">
                           ({importProcessedCount} di {importTotalCount} pazienti)
                         </span>
                       </div>
-                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 font-mono font-bold text-xs border border-emerald-500/20">
+                      <span className="px-2.5 py-0.5 rounded-md bg-emerald-50 text-emerald-800 font-mono font-bold text-xs border border-emerald-200">
                         {importProgress}%
                       </span>
                     </div>
 
                     {/* Progress Track */}
-                    <div className="w-full bg-slate-950 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-800 shadow-inner">
+                    <div className="w-full bg-slate-200 rounded-full h-3.5 overflow-hidden p-0.5 shadow-inner">
                       <div
-                        className="bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500 h-full rounded-full transition-all duration-300 ease-out shadow-sm shadow-emerald-500/40"
+                        className="bg-emerald-600 h-full rounded-full transition-all duration-300 ease-out shadow-xs"
                         style={{ width: `${Math.max(importProgress, 3)}%` }}
                       />
                     </div>
 
-                    <div className="flex items-center justify-between text-[11px] text-slate-400">
-                      <span className="font-medium text-slate-300 flex items-center gap-1.5 truncate">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+                    <div className="flex items-center justify-between text-[11px] text-slate-500">
+                      <span className="font-medium text-slate-700 flex items-center gap-1.5 truncate">
+                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-ping shrink-0" />
                         {importStatusText || 'Elaborazione record e crittografia password...'}
                       </span>
-                      <span className="font-mono text-slate-400 shrink-0 ml-2">
+                      <span className="font-mono text-slate-500 shrink-0 ml-2">
                         Blocco {importCurrentBatch} di {importTotalBatches}
                       </span>
                     </div>
                   </div>
                 )}
 
-                <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-800">
-                  <div className="text-[11px] text-slate-400">
+                <div className="flex items-center justify-between gap-3 pt-3 border-t border-slate-100">
+                  <div className="text-[11px] text-slate-500">
                     {importInCorso ? (
-                      <span className="text-amber-400 flex items-center gap-1.5 font-semibold">
-                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-400" />
+                      <span className="text-amber-700 flex items-center gap-1.5 font-semibold">
+                        <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
                         Non chiudere questa finestra durante l'elaborazione del dataset
                       </span>
                     ) : (
@@ -3230,7 +3238,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       type="button"
                       disabled={importInCorso}
                       onClick={() => setModalCsvOpen(false)}
-                      className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                      className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
                     >
                       Annulla
                     </button>
@@ -3238,7 +3246,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       type="button"
                       disabled={importInCorso || anteprimaPazienti.filter((p) => p.valido).length === 0}
                       onClick={handleImportCsv}
-                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-800 text-white font-bold shadow-md shadow-emerald-600/20 flex items-center gap-2 disabled:cursor-not-allowed transition-all"
+                      className="px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 disabled:bg-slate-200 disabled:text-slate-400 text-white font-bold shadow-sm flex items-center gap-2 disabled:cursor-not-allowed transition-all"
                     >
                       {importInCorso ? (
                         <>
@@ -3260,66 +3268,66 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             ) : (
               /* RISULTATO IMPORTAZIONE CON CREDENZIALI SCARICABILI */
               <div className="space-y-5 text-xs">
-                <div className="p-4 rounded-2xl bg-emerald-950/40 border border-emerald-800 text-emerald-300 space-y-1">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900 space-y-1">
                   <p className="text-sm font-bold flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-emerald-400" />
+                    <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                     Importazione completata con successo!
                   </p>
-                  <p className="text-xs text-emerald-400/90">
+                  <p className="text-xs text-emerald-800">
                     Sono stati generati <b>{credenzialiGenerate.length} nuovi account paziente</b>. Ogni paziente potrà accedere inserendo il proprio <b>Codice Fiscale</b> e la <b>password provvisoria di 6 caratteri</b>.
                   </p>
                 </div>
 
                 {/* Box Informativo: Sicurezza & Comunicazione Credenziali ai Pazienti */}
-                <div className="p-4 rounded-xl bg-slate-900 border border-slate-800 space-y-2">
-                  <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs">
-                    <ShieldCheck className="h-4 w-4 text-indigo-400 shrink-0" />
+                <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-100 space-y-2">
+                  <div className="flex items-center gap-2 text-sky-900 font-bold text-xs">
+                    <ShieldCheck className="h-4 w-4 text-sky-600 shrink-0" />
                     <span>Chi può vedere la password e come comunicarla ai pazienti (GDPR Art. 9)</span>
                   </div>
-                  <p className="text-[11px] text-slate-300 leading-relaxed">
+                  <p className="text-[11px] text-slate-700 leading-relaxed">
                     Le password temporanee generate sono visibili <b>esclusivamente in questa schermata e nel file CSV scaricabile</b> al termine dell'importazione. Nel database vengono salvati solo hash crittografici non reversibili (PBKDF2/SHA-512).
                   </p>
-                  <div className="text-[11px] text-slate-400 space-y-1.5 pl-1 border-t border-slate-800/80 pt-2 mt-2">
+                  <div className="text-[11px] text-slate-600 space-y-1.5 pl-1 border-t border-sky-100 pt-2 mt-2">
                     <p>• <b>Come comunicare la password al paziente:</b> scarica il file CSV tramite il pulsante sottostante per distribuire le credenziali via SMS/Email di studio, oppure stampare la ricevuta cartacea da consegnare al paziente allo sportello.</p>
                     <p>• <b>Primo Accesso:</b> al primo login con Codice Fiscale e password provvisoria, il paziente è <b>obbligato a scegliere una nuova password personale e riservata</b>. Da quel momento, nessuno (nemmeno l'amministratore o il medico) potrà mai vedere la sua password definitiva.</p>
                   </div>
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-300">
+                  <span className="font-bold text-slate-800">
                     Elenco Credenziali Create per i Pazienti:
                   </span>
                   <button
                     type="button"
                     onClick={downloadCredenzialiCsv}
-                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-md shadow-emerald-600/20"
+                    className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs flex items-center gap-2 shadow-sm transition-all"
                   >
                     <Download className="h-4 w-4" />
                     <span>Scarica Elenco Credenziali (CSV)</span>
                   </button>
                 </div>
 
-                <div className="max-h-64 overflow-y-auto rounded-xl border border-slate-800 bg-slate-900">
+                <div className="max-h-64 overflow-y-auto rounded-2xl border border-slate-200 bg-white">
                   <table className="w-full text-left text-[11px]">
-                    <thead className="bg-slate-950 text-slate-400 sticky top-0">
+                    <thead className="bg-slate-50 text-slate-500 sticky top-0 border-b border-slate-200">
                       <tr>
-                        <th className="p-2.5">Paziente</th>
-                        <th className="p-2.5">Username (Codice Fiscale)</th>
-                        <th className="p-2.5">Password (6 car.)</th>
-                        <th className="p-2.5">Recapiti</th>
+                        <th className="p-2.5 font-bold">Paziente</th>
+                        <th className="p-2.5 font-bold">Username (Codice Fiscale)</th>
+                        <th className="p-2.5 font-bold">Password (6 car.)</th>
+                        <th className="p-2.5 font-bold">Recapiti</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 font-medium">
+                    <tbody className="divide-y divide-slate-100 font-medium">
                       {credenzialiGenerate.map((c) => (
-                        <tr key={c.id} className="hover:bg-slate-800/40">
-                          <td className="p-2.5 text-white font-bold">
+                        <tr key={c.id} className="hover:bg-slate-50">
+                          <td className="p-2.5 text-slate-900 font-bold">
                             {c.nome} {c.cognome}
                           </td>
-                          <td className="p-2.5 font-mono text-indigo-300 font-bold">{c.codiceFiscale}</td>
-                          <td className="p-2.5 font-mono text-emerald-400 font-black bg-slate-950 px-2 rounded">
+                          <td className="p-2.5 font-mono text-sky-800 font-bold">{c.codiceFiscale}</td>
+                          <td className="p-2.5 font-mono text-emerald-800 font-black bg-emerald-50 border border-emerald-200 px-2 rounded-md">
                             {c.passwordTemporanea}
                           </td>
-                          <td className="p-2.5 text-slate-400">
+                          <td className="p-2.5 text-slate-500">
                             {c.telefono !== '—' ? c.telefono : c.email}
                           </td>
                         </tr>
@@ -3328,7 +3336,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   </table>
                 </div>
 
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => {
@@ -3336,7 +3344,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       setTabAttiva('pazienti')
                       caricaPazienti()
                     }}
-                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs shadow-sm transition-all"
                   >
                     <Users className="h-4 w-4" />
                     <span>Visualizza in Tabella Pazienti & Credenziali</span>
@@ -3344,7 +3352,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   <button
                     type="button"
                     onClick={() => setModalCsvOpen(false)}
-                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 hover:text-slate-900 font-bold text-xs transition-colors shadow-2xs"
                   >
                     Chiudi Finestra
                   </button>
@@ -3357,11 +3365,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: MODIFICA STUDIO MEDICO */}
       {modalEditStudioOpen && studioInModifica && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Settings className="h-5 w-5 text-indigo-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Settings className="h-5 w-5 text-sky-600" />
                 Modifica Studio Medico
               </h3>
               <button
@@ -3369,7 +3377,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   setModalEditStudioOpen(false)
                   setStudioInModifica(null)
                 }}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3378,24 +3386,24 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             <form onSubmit={handleSalvaModificaStudio} className="space-y-4 text-xs">
               {/* Badge Codice Studio */}
               {studioInModifica.codiceStudio && (
-                <div className="p-3 rounded-2xl bg-indigo-950/40 border border-indigo-800/60 flex items-center justify-between gap-3">
+                <div className="p-3 rounded-2xl bg-sky-50 border border-sky-200 flex items-center justify-between gap-3">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-indigo-400 block tracking-wider">
+                    <span className="text-[10px] uppercase font-bold text-sky-800 block tracking-wider">
                       Codice Invito Studio
                     </span>
-                    <span className="font-mono text-xs font-black text-white">
+                    <span className="font-mono text-xs font-black text-slate-900">
                       {studioInModifica.codiceStudio}
                     </span>
                   </div>
                   <button
                     type="button"
                     onClick={() => copiaTesto(studioInModifica.codiceStudio!, 'edit-studio-code')}
-                    className="px-2.5 py-1.5 rounded-lg bg-indigo-900/60 hover:bg-indigo-800 border border-indigo-700/60 text-indigo-200 text-[11px] font-semibold flex items-center gap-1.5 transition-all"
+                    className="px-2.5 py-1.5 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-[11px] font-semibold flex items-center gap-1.5 transition-all shadow-2xs"
                   >
                     {copiatoId === 'edit-studio-code' ? (
                       <>
-                        <Check className="h-3.5 w-3.5 text-emerald-400" />
-                        <span className="text-emerald-300">Copiato</span>
+                        <Check className="h-3.5 w-3.5 text-emerald-600" />
+                        <span className="text-emerald-700">Copiato</span>
                       </>
                     ) : (
                       <>
@@ -3408,7 +3416,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               )}
 
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Nome Studio Medico *
                 </label>
                 <input
@@ -3416,13 +3424,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   required
                   value={formEditStudio.nome}
                   onChange={(e) => setFormEditStudio({ ...formEditStudio, nome: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Città *
                   </label>
                   <input
@@ -3430,50 +3438,50 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     required
                     value={formEditStudio.citta}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, citta: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Indirizzo
                   </label>
                   <input
                     type="text"
                     value={formEditStudio.indirizzo}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, indirizzo: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Telefono
                   </label>
                   <input
                     type="text"
                     value={formEditStudio.telefono}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, telefono: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Email Studio
                   </label>
                   <input
                     type="email"
                     value={formEditStudio.email}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-3 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Durata Visita (min)
                   </label>
                   <input
@@ -3482,11 +3490,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     max="120"
                     value={formEditStudio.durataVisita}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, durataVisita: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Lockup (min)
                   </label>
                   <input
@@ -3495,11 +3503,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     max="120"
                     value={formEditStudio.lockupMinutes}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, lockupMinutes: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Anticipo Max (gg)
                   </label>
                   <input
@@ -3508,25 +3516,25 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     max="180"
                     value={formEditStudio.anticipoMax}
                     onChange={(e) => setFormEditStudio({ ...formEditStudio, anticipoMax: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
                     setModalEditStudioOpen(false)
                     setStudioInModifica(null)
                   }}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sm transition-all"
                 >
                   Salva Modifiche
                 </button>
@@ -3538,11 +3546,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: MODIFICA MEDICO */}
       {modalEditMedicoOpen && medicoInModifica && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Settings className="h-5 w-5 text-indigo-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-lg w-full space-y-5 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Settings className="h-5 w-5 text-sky-600" />
                 Modifica Dati Medico
               </h3>
               <button
@@ -3550,7 +3558,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   setModalEditMedicoOpen(false)
                   setMedicoInModifica(null)
                 }}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3558,14 +3566,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
             <form onSubmit={handleSalvaModificaMedico} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Studio Medico di Appartenenza *
                 </label>
                 <select
                   required
                   value={formEditMedico.studioId}
                   onChange={(e) => setFormEditMedico({ ...formEditMedico, studioId: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500 cursor-pointer"
                 >
                   {studiList.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -3577,7 +3585,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Nome *
                   </label>
                   <input
@@ -3585,11 +3593,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     required
                     value={formEditMedico.nome}
                     onChange={(e) => setFormEditMedico({ ...formEditMedico, nome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Cognome *
                   </label>
                   <input
@@ -3597,14 +3605,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     required
                     value={formEditMedico.cognome}
                     onChange={(e) => setFormEditMedico({ ...formEditMedico, cognome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Email Professionale *
                   </label>
                   <input
@@ -3612,36 +3620,36 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     required
                     value={formEditMedico.email}
                     onChange={(e) => setFormEditMedico({ ...formEditMedico, email: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Telefono Primario
                   </label>
                   <input
                     type="text"
                     value={formEditMedico.telefono}
                     onChange={(e) => setFormEditMedico({ ...formEditMedico, telefono: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
                   />
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
                     setModalEditMedicoOpen(false)
                     setMedicoInModifica(null)
                   }}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold shadow-md shadow-indigo-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold shadow-sm transition-all"
                 >
                   Salva Modifiche
                 </button>
@@ -3653,11 +3661,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: MODIFICA OPERATORE STAFF */}
       {modalEditStaffOpen && staffInModifica && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-6 max-w-lg w-full space-y-5 max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Settings className="h-5 w-5 text-amber-400" />
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-lg w-full space-y-5 max-h-[90vh] overflow-y-auto shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
+                <Settings className="h-5 w-5 text-amber-600" />
                 Modifica Operatore Segreteria
               </h3>
               <button
@@ -3665,7 +3673,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   setModalEditStaffOpen(false)
                   setStaffInModifica(null)
                 }}
-                className="text-slate-400 hover:text-white"
+                className="text-slate-400 hover:text-slate-600 hover:bg-slate-100 p-1.5 rounded-xl transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3673,14 +3681,14 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
             <form onSubmit={handleSalvaModificaStaff} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Studio Medico *
                 </label>
                 <select
                   required
                   value={formEditStaff.studioId}
                   onChange={(e) => setFormEditStaff({ ...formEditStaff, studioId: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500 cursor-pointer"
                 >
                   {studiList.map((s) => (
                     <option key={s.id} value={s.id}>
@@ -3692,7 +3700,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Nome *
                   </label>
                   <input
@@ -3700,11 +3708,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     required
                     value={formEditStaff.nome}
                     onChange={(e) => setFormEditStaff({ ...formEditStaff, nome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                     Cognome *
                   </label>
                   <input
@@ -3712,13 +3720,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     required
                     value={formEditStaff.cognome}
                     onChange={(e) => setFormEditStaff({ ...formEditStaff, cognome: e.target.value })}
-                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block font-bold text-slate-300 uppercase tracking-wider mb-1">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
                   Email Operatore *
                 </label>
                 <input
@@ -3726,20 +3734,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   required
                   value={formEditStaff.email}
                   onChange={(e) => setFormEditStaff({ ...formEditStaff, email: e.target.value })}
-                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-900 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500/20 focus:border-amber-500"
                 />
               </div>
 
               {/* Selezione Multi-medico per lo staff */}
-              <div className="space-y-2 pt-2 border-t border-slate-800">
-                <label className="block font-bold text-slate-300 uppercase tracking-wider">
+              <div className="space-y-2 pt-2 border-t border-slate-100">
+                <label className="block font-bold text-slate-700 uppercase tracking-wider">
                   Medici Assegnati a questo operatore:
                 </label>
-                <p className="text-[11px] text-slate-400">
+                <p className="text-[11px] text-slate-500">
                   L'operatore potrà accedere alla sala d'attesa, messaggi e ricette solo dei medici selezionati.
                 </p>
 
-                <div className="space-y-1.5 max-h-36 overflow-y-auto p-2 bg-slate-900 rounded-xl border border-slate-800">
+                <div className="space-y-1.5 max-h-36 overflow-y-auto p-2 bg-slate-50 rounded-2xl border border-slate-200">
                   {mediciList
                     .filter((m) => !formEditStaff.studioId || m.studioId === formEditStaff.studioId)
                     .map((m) => {
@@ -3747,15 +3755,15 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       return (
                         <label
                           key={m.id}
-                          className={`flex items-center gap-2.5 p-2 rounded-lg cursor-pointer transition-all ${
-                            isChecked ? 'bg-indigo-950/60 border border-indigo-700/60 text-white' : 'hover:bg-slate-800/60 text-slate-300'
+                          className={`flex items-center gap-2.5 p-2 rounded-xl cursor-pointer transition-all ${
+                            isChecked ? 'bg-amber-50 border border-amber-200 text-slate-900' : 'hover:bg-slate-100 text-slate-700'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => toggleMedicoEditStaff(m.id)}
-                            className="h-4 w-4 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-950"
+                            className="h-4 w-4 rounded border-slate-300 text-amber-600 focus:ring-amber-500"
                           />
                           <span className="font-semibold text-xs truncate">
                             Dott. {m.nome} {m.cognome} ({m.email})
@@ -3766,20 +3774,20 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 </div>
               </div>
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
                     setModalEditStaffOpen(false)
                     setStaffInModifica(null)
                   }}
-                  className="px-4 py-2.5 rounded-xl text-slate-400 hover:text-white font-bold"
+                  className="px-4 py-2.5 rounded-xl text-slate-600 hover:bg-slate-100 font-bold transition-all"
                 >
                   Annulla
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-md shadow-amber-600/20"
+                  className="px-5 py-2.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold shadow-sm transition-all"
                 >
                   Salva Modifiche
                 </button>
@@ -3791,19 +3799,19 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: DETTAGLI AUDIT LOG */}
       {selectedAuditLog && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 sm:p-6 max-w-2xl w-full space-y-4 max-h-[90vh] flex flex-col shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-2xl w-full space-y-4 max-h-[90vh] flex flex-col shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2">
-                <Eye className="h-5 w-5 text-indigo-400" />
-                <h3 className="text-base font-bold text-white">
+                <Eye className="h-5 w-5 text-sky-600" />
+                <h3 className="text-base font-bold text-slate-900">
                   Dettaglio Evento Audit #{selectedAuditLog.id.slice(0, 8)}
                 </h3>
               </div>
               <button
                 type="button"
                 onClick={() => setSelectedAuditLog(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition-colors"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3811,10 +3819,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
             <div className="space-y-4 overflow-y-auto pr-1">
               {/* Griglia Metadati */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/60 p-3.5 rounded-lg border border-slate-800 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200/80 text-xs">
                 <div>
                   <span className="text-slate-500 block font-medium">Data & Ora Registrazione</span>
-                  <span className="font-mono text-slate-200 tabular-nums font-semibold">
+                  <span className="font-mono text-slate-900 tabular-nums font-semibold">
                     {new Date(selectedAuditLog.createdAt).toLocaleString('it-IT', {
                       dateStyle: 'full',
                       timeStyle: 'medium',
@@ -3824,29 +3832,29 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
                 <div>
                   <span className="text-slate-500 block font-medium">Indirizzo IP Connessione</span>
-                  <span className="font-mono text-slate-200 tabular-nums">
+                  <span className="font-mono text-slate-900 tabular-nums">
                     {selectedAuditLog.ip || 'Non rilevato'}
                   </span>
                 </div>
 
                 <div>
                   <span className="text-slate-500 block font-medium">Attore Operazione</span>
-                  <span className="text-white font-semibold">{selectedAuditLog.attoreEmail}</span>
+                  <span className="text-slate-900 font-semibold">{selectedAuditLog.attoreEmail}</span>
                 </div>
 
                 <div>
                   <span className="text-slate-500 block font-medium">Ruolo e Privilegi</span>
-                  <span className="font-mono text-indigo-300 font-bold uppercase">{selectedAuditLog.ruolo}</span>
+                  <span className="font-mono text-sky-700 font-bold uppercase">{selectedAuditLog.ruolo}</span>
                 </div>
 
                 <div>
                   <span className="text-slate-500 block font-medium">Azione Eseguita</span>
-                  <span className="font-mono text-white font-bold">{selectedAuditLog.azione}</span>
+                  <span className="font-mono text-slate-900 font-bold">{selectedAuditLog.azione}</span>
                 </div>
 
                 <div>
                   <span className="text-slate-500 block font-medium">Entità Coinvolta</span>
-                  <span className="text-slate-200 font-medium">
+                  <span className="text-slate-800 font-medium">
                     {selectedAuditLog.entita} {selectedAuditLog.entitaId ? `(ID: ${selectedAuditLog.entitaId})` : ''}
                   </span>
                 </div>
@@ -3855,27 +3863,27 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               {/* Payload JSON */}
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-semibold text-slate-300">Payload Dati Evento (JSON)</span>
+                  <span className="text-xs font-bold text-slate-700">Payload Dati Evento (JSON)</span>
                   <button
                     type="button"
                     onClick={() => copiaJsonLog(selectedAuditLog)}
-                    className="px-2 py-1 rounded bg-slate-900 hover:bg-slate-800 border border-slate-700 text-[11px] text-slate-300 font-semibold transition-colors"
+                    className="px-2.5 py-1 rounded-lg bg-white hover:bg-slate-50 border border-slate-200 text-[11px] text-slate-700 font-semibold shadow-2xs transition-colors"
                   >
                     {jsonCopiato ? '✓ Copiato negli appunti' : 'Copia JSON'}
                   </button>
                 </div>
 
-                <pre className="p-3 bg-slate-900 rounded-lg border border-slate-800 font-mono text-[11px] text-slate-300 overflow-x-auto max-h-64 whitespace-pre-wrap leading-relaxed">
+                <pre className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 font-mono text-[11px] text-slate-800 overflow-x-auto max-h-64 whitespace-pre-wrap leading-relaxed">
                   {selectedAuditLog.dettagli ? JSON.stringify(selectedAuditLog.dettagli, null, 2) : '{\n  "messaggio": "Nessun payload aggiuntivo"\n}'}
                 </pre>
               </div>
             </div>
 
-            <div className="flex justify-end pt-3 border-t border-slate-800">
+            <div className="flex justify-end pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setSelectedAuditLog(null)}
-                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-white transition-colors"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
               >
                 Chiudi
               </button>
@@ -3886,51 +3894,51 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: ACCESSO DI EMERGENZA (ADR-006) */}
       {modalEmergencyOpen && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 rounded-xl border border-slate-800 p-5 sm:p-6 max-w-md w-full space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-              <div className="flex items-center gap-2 text-amber-400 font-bold text-sm">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl border border-slate-200 p-6 max-w-md w-full space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div className="flex items-center gap-2 text-amber-600 font-bold text-sm">
                 <Key className="h-5 w-5" />
-                <h3 className="text-base font-bold text-white">Accesso di Emergenza (ADR-006)</h3>
+                <h3 className="text-base font-bold text-slate-900">Accesso di Emergenza (ADR-006)</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setModalEmergencyOpen(false)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-900 transition-colors"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="space-y-3">
-              <p className="text-xs text-slate-300 leading-relaxed">
+              <p className="text-xs text-slate-600 leading-relaxed">
                 Genera un codice monouso valido per 1 ora per ripristinare l'accesso ai sistemi in caso di guasto o indisponibilità dell'operatore autorizzato.
               </p>
-              <div className="p-3 rounded-lg bg-amber-950/30 border border-amber-800/60 text-xs text-amber-200">
+              <div className="p-3.5 rounded-2xl bg-amber-50 border border-amber-200 text-xs text-amber-800 font-medium">
                 Tutti i codici di emergenza generati e utilizzati vengono registrati in modo permanente nel log di audit.
               </div>
 
               {emergencyCode && (
-                <div className="p-4 rounded-lg bg-amber-950/40 border border-amber-800 text-center space-y-1">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-400">Codice Monouso Generato</p>
-                  <p className="font-mono text-lg font-black text-white tracking-widest select-all">{emergencyCode}</p>
-                  <p className="text-[10px] text-slate-400">Valido per 60 minuti dalla generazione</p>
+                <div className="p-4 rounded-2xl bg-amber-50/80 border border-amber-200 text-center space-y-1">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Codice Monouso Generato</p>
+                  <p className="font-mono text-xl font-black text-slate-900 tracking-widest select-all">{emergencyCode}</p>
+                  <p className="text-[10px] text-slate-500">Valido per 60 minuti dalla generazione</p>
                 </div>
               )}
             </div>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => setModalEmergencyOpen(false)}
-                className="px-4 py-2 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
               >
                 Chiudi
               </button>
               <button
                 type="button"
                 onClick={handleGenerateEmergencyCode}
-                className="px-4 py-2 rounded-lg bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 transition-all flex items-center justify-center gap-1.5"
+                className="px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs transition-all flex items-center justify-center gap-1.5"
               >
                 <Key className="h-4 w-4" />
                 <span>{generato ? 'Codice Registrato in Audit!' : 'Genera Recovery Code'}</span>
@@ -3942,92 +3950,92 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: DETTAGLI PAZIENTE & SCHEDA CREDENZIALI */}
       {pazienteDettaglio && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-white">
-            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-slate-900">
+            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <div className="flex items-center gap-2.5">
-                <Users className="h-5 w-5 text-indigo-400" />
-                <h3 className="text-base font-black text-white">
+                <Users className="h-5 w-5 text-sky-600" />
+                <h3 className="text-base font-black text-slate-900">
                   Scheda Assistito & Credenziali
                 </h3>
               </div>
               <button
                 onClick={() => setPazienteDettaglio(null)}
-                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
             <div className="space-y-4 text-xs">
-              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2.5">
                 <div className="flex items-center justify-between">
-                  <h4 className="text-base font-extrabold text-white">
+                  <h4 className="text-base font-extrabold text-slate-900">
                     {pazienteDettaglio.cognome} {pazienteDettaglio.nome}
                   </h4>
                   {pazienteDettaglio.primoAccesso ? (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
                       In attesa 1° accesso
                     </span>
                   ) : (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
                       Attivo
                     </span>
                   )}
                 </div>
-                <div className="grid grid-cols-2 gap-2 text-slate-400 pt-1">
-                  <div>Data Nascita: <span className="text-slate-200 font-mono">{pazienteDettaglio.dataNascita || '—'}</span></div>
-                  <div>Studio: <span className="text-slate-200">{pazienteDettaglio.nomeStudio || 'Studio Medico'}</span></div>
-                  <div>Medico: <span className="text-blue-400 font-semibold">{pazienteDettaglio.cognomeMedico ? `Dott. ${pazienteDettaglio.nomeMedico} ${pazienteDettaglio.cognomeMedico}` : '—'}</span></div>
-                  <div>Telefono: <span className="text-slate-200 font-mono">{pazienteDettaglio.telefono || '—'}</span></div>
-                  <div className="col-span-2">Email: <span className="text-slate-200">{pazienteDettaglio.email || 'Nessuna email registrata'}</span></div>
+                <div className="grid grid-cols-2 gap-2 text-slate-500 pt-1">
+                  <div>Data Nascita: <span className="text-slate-700 font-mono font-medium">{pazienteDettaglio.dataNascita || '—'}</span></div>
+                  <div>Studio: <span className="text-slate-700 font-medium">{pazienteDettaglio.nomeStudio || 'Studio Medico'}</span></div>
+                  <div>Medico: <span className="text-sky-700 font-semibold">{pazienteDettaglio.cognomeMedico ? `Dott. ${pazienteDettaglio.nomeMedico} ${pazienteDettaglio.cognomeMedico}` : '—'}</span></div>
+                  <div>Telefono: <span className="text-slate-700 font-mono font-medium">{pazienteDettaglio.telefono || '—'}</span></div>
+                  <div className="col-span-2">Email: <span className="text-slate-700 font-medium">{pazienteDettaglio.email || 'Nessuna email registrata'}</span></div>
                 </div>
               </div>
 
               {/* Box Tagliando Credenziali */}
-              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/80 space-y-3">
+              <div className="p-4 rounded-2xl bg-sky-50/60 border border-sky-200 space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="font-bold text-indigo-300 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
-                    <Key className="h-3.5 w-3.5 text-indigo-400" />
+                  <span className="font-bold text-sky-800 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Key className="h-3.5 w-3.5 text-sky-600" />
                     Tagliando Credenziali Portale Paziente
                   </span>
                   <button
                     type="button"
                     onClick={() => copiaCredenzialiPaziente(pazienteDettaglio)}
-                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 hover:text-white px-2 py-1 rounded bg-indigo-900/60 hover:bg-indigo-800/60 border border-indigo-700/60 transition-colors"
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-sky-700 hover:text-sky-900 px-2.5 py-1 rounded-lg bg-white hover:bg-sky-100/50 border border-sky-200 shadow-2xs transition-colors"
                   >
                     <Copy className="h-3 w-3" />
                     <span>Copia Tutto</span>
                   </button>
                 </div>
 
-                <div className="space-y-2 font-mono text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <div className="space-y-2 font-mono text-xs bg-white p-3.5 rounded-xl border border-sky-100 shadow-2xs">
                   <div className="flex items-center justify-between">
-                    <span className="text-slate-400 font-sans">Username (Codice Fiscale):</span>
-                    <span className="text-white font-bold">{pazienteDettaglio.codiceFiscale}</span>
+                    <span className="text-slate-500 font-sans font-medium">Username (Codice Fiscale):</span>
+                    <span className="text-slate-900 font-bold">{pazienteDettaglio.codiceFiscale}</span>
                   </div>
-                  <div className="flex items-center justify-between pt-1 border-t border-slate-800">
-                    <span className="text-slate-400 font-sans">Password Provvisoria:</span>
-                    <span className="text-amber-300 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60">
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                    <span className="text-slate-500 font-sans font-medium">Password Provvisoria:</span>
+                    <span className="text-amber-800 font-bold bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
                       {pazienteDettaglio.passwordIniziale || (pazienteDettaglio.primoAccesso ? 'Da comunicare' : '[Password Personale Riservata]')}
                     </span>
                   </div>
                 </div>
 
-                <p className="text-[11px] text-slate-400 italic">
+                <p className="text-[11px] text-slate-500 italic">
                   * Al primo accesso, il paziente dovrà inserire queste credenziali e impostare obbligatoriamente una nuova password riservata.
                 </p>
               </div>
             </div>
 
-            <div className="flex justify-between items-center pt-3 border-t border-slate-800">
+            <div className="flex justify-between items-center pt-3 border-t border-slate-100">
               <button
                 type="button"
                 onClick={() => {
                   setPazienteDaReimpostare(pazienteDettaglio)
                   setPazienteDettaglio(null)
                 }}
-                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-600/40 text-xs font-bold transition-all"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-50 hover:bg-amber-100/80 text-amber-800 border border-amber-200 text-xs font-bold shadow-2xs transition-all"
               >
                 <RefreshCw className="h-3.5 w-3.5" />
                 <span>Reimposta Password Temporanea</span>
@@ -4036,7 +4044,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
               <button
                 type="button"
                 onClick={() => setPazienteDettaglio(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs transition-colors"
               >
                 Chiudi
               </button>
@@ -4047,31 +4055,31 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: CONFERMA RIGENERAZIONE PASSWORD TEMPORANEA */}
       {pazienteDaReimpostare && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl text-white animate-in fade-in zoom-in-95 duration-150">
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl text-slate-900 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3">
-              <div className="h-10 w-10 rounded-2xl bg-amber-950/80 border border-amber-800/80 text-amber-400 flex items-center justify-center shrink-0">
+              <div className="h-10 w-10 rounded-2xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center shrink-0">
                 <Key className="h-5 w-5" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white">Rigenera Password Temporanea</h3>
-                <p className="text-xs text-slate-400">
+                <h3 className="text-base font-bold text-slate-900">Rigenera Password Temporanea</h3>
+                <p className="text-xs text-slate-500">
                   {pazienteDaReimpostare.cognome} {pazienteDaReimpostare.nome} ({pazienteDaReimpostare.codiceFiscale})
                 </p>
               </div>
             </div>
 
-            <p className="text-xs text-slate-300 leading-relaxed">
+            <p className="text-xs text-slate-600 leading-relaxed">
               Verrà creata una nuova password temporanea di 6 caratteri alfanumerici e l'account tornerà nello stato di <strong>"In attesa 1° accesso"</strong>.
               Potrai comunicare immediatamente la nuova password al paziente telefonicamente o tramite messaggio.
             </p>
 
-            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
               <button
                 type="button"
                 disabled={reimpostandoPassword}
                 onClick={() => setPazienteDaReimpostare(null)}
-                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-40 transition-colors"
+                className="px-4 py-2 rounded-xl bg-white hover:bg-slate-50 border border-slate-200 text-xs font-semibold text-slate-700 shadow-2xs hover:text-slate-900 disabled:opacity-40 transition-colors"
               >
                 Annulla
               </button>
@@ -4079,7 +4087,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 type="button"
                 disabled={reimpostandoPassword}
                 onClick={() => handleResetPasswordPaziente(pazienteDaReimpostare)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 disabled:opacity-50 transition-all"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-xs disabled:opacity-50 transition-all"
               >
                 {reimpostandoPassword ? (
                   <>

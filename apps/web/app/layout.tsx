@@ -18,7 +18,7 @@ export const viewport: Viewport = {
   maximumScale: 1,
   userScalable: false,
   viewportFit: 'cover',
-  themeColor: '#090d16',
+  themeColor: '#0284c7',
 }
 
 export const metadata: Metadata = {
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   manifest: '/manifest.webmanifest',
   appleWebApp: {
     capable: true,
-    statusBarStyle: 'black-translucent',
+    statusBarStyle: 'default',
     title: 'Studio Medico',
   },
   formatDetection: {
@@ -49,14 +49,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="it" className="dark bg-[#090d16]">
+    <html lang="it">
       <head>
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
-        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="default" />
         <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
       </head>
-      <body className="min-h-[100dvh] bg-[#090d16] text-slate-100 antialiased selection:bg-blue-600 selection:text-white">
+      <body className="min-h-[100dvh] bg-slate-50 text-slate-900 antialiased selection:bg-sky-600 selection:text-white">
         <ToastProvider>
           {children}
         </ToastProvider>

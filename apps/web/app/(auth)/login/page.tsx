@@ -93,8 +93,8 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-[#090d16] p-4 sm:p-6 font-sans pt-safe pb-safe">
-      <div className="w-full max-w-lg bg-white rounded-2xl p-6 sm:p-8 shadow-2xl border border-slate-200/80 space-y-7">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4 sm:p-6 font-sans pt-safe pb-safe">
+      <div className="w-full max-w-lg bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-slate-200/80 space-y-7">
         {/* Brand header */}
         <div className="text-center space-y-2">
           <div className="flex justify-center mb-1">
@@ -108,7 +108,7 @@ export default function LoginPage() {
 
         {/* Error notification */}
         {error && (
-          <div className="p-4 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5">
+          <div className="p-4 rounded-2xl bg-rose-50 border border-rose-200 text-rose-700 text-xs font-semibold flex items-center gap-2.5">
             <AlertCircle className="h-4 w-4 flex-shrink-0 text-rose-600" />
             <span>{error}</span>
           </div>
@@ -137,7 +137,7 @@ export default function LoginPage() {
                 className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.identifier
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
                 }`}
                 autoComplete="username"
               />
@@ -177,7 +177,7 @@ export default function LoginPage() {
                 className={`w-full pl-10 pr-4 py-3 rounded-xl border text-sm font-semibold transition-all ${
                   fieldErrors.password
                     ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                    : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                    : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
                 }`}
                 autoComplete="current-password"
               />
@@ -197,7 +197,7 @@ export default function LoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+            className="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:bg-sky-400 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm shadow-sky-600/20 transition-all cursor-pointer"
           >
             {loading ? (
               <>
@@ -216,19 +216,19 @@ export default function LoginPage() {
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2.5">
             <Link
               href="/registrazione-paziente"
-              className="w-full py-3 px-4 rounded-2xl bg-blue-50 hover:bg-blue-100 text-blue-800 font-bold text-xs flex items-center justify-between transition-all border border-blue-200/80 group"
+              className="w-full py-3 px-4 rounded-2xl bg-sky-50 hover:bg-sky-100/80 text-sky-800 font-bold text-xs flex items-center justify-between transition-all border border-sky-200/80 group"
             >
               <span className="flex items-center gap-2">
-                <Users className="h-4 w-4 text-blue-600" />
+                <Users className="h-4 w-4 text-sky-600" />
                 <span>Sei un nuovo Paziente? Registrati online</span>
               </span>
-              <ArrowRight className="h-3.5 w-3.5 text-blue-600 group-hover:translate-x-0.5 transition-transform" />
+              <ArrowRight className="h-3.5 w-3.5 text-sky-600 group-hover:translate-x-0.5 transition-transform" />
             </Link>
 
             <div className="text-center">
               <Link
                 href="/registrazione-medico"
-                className="text-[11px] font-semibold text-slate-500 hover:text-indigo-600 transition-colors inline-flex items-center gap-1"
+                className="text-[11px] font-semibold text-slate-500 hover:text-sky-700 transition-colors inline-flex items-center gap-1"
               >
                 <span>Sei un Medico o Collaboratore? Registrati con Codice Studio</span>
                 <ArrowRight className="h-3 w-3" />

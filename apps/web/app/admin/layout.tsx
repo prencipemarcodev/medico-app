@@ -37,30 +37,30 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
   }
 
   return (
-    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-[#090d16] text-slate-100 font-sans">
+    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-slate-50 text-slate-900 font-sans">
       {/* Overlay mobile */}
       {mobileMenuAperto && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs md:hidden"
+          className="fixed inset-0 z-40 bg-slate-950/60 backdrop-blur-xs md:hidden"
           onClick={() => setMobileMenuAperto(false)}
         />
       )}
 
-      {/* Sidebar Admin Responsive */}
+      {/* Sidebar Admin Responsive - Executive Deep Navy */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-800 bg-slate-950 shadow-2xl transition-transform duration-300 md:static md:translate-x-0 pt-safe pb-safe ${
+        className={`fixed inset-y-0 left-0 z-50 w-72 flex-shrink-0 flex flex-col border-r border-slate-800 bg-[#0f172a] text-slate-100 shadow-2xl transition-transform duration-300 md:static md:translate-x-0 pt-safe pb-safe ${
           mobileMenuAperto ? 'translate-x-0' : '-translate-x-full'
         }`}
       >
-        {/* Header */}
-        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800 bg-slate-900/60">
+        {/* Header Sidebar */}
+        <div className="h-20 flex items-center justify-between px-6 border-b border-slate-800/80 bg-slate-950/50">
           <div className="flex items-center gap-3">
             <AppLogo size={36} />
             <div>
               <h1 className="font-extrabold text-base leading-tight tracking-tight text-white">
                 Supervisione
               </h1>
-              <p className="text-xs text-indigo-400 font-medium">Console Amministrazione</p>
+              <p className="text-xs text-sky-400 font-medium">Console Amministrazione</p>
             </div>
           </div>
 
@@ -76,11 +76,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto px-4 py-6 space-y-1.5">
           <div className="px-3 pb-2 text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            Gestione Rete
+            Gestione Rete Sanitaria
           </div>
 
-          <div className="px-3.5 py-3 rounded-xl text-sm font-semibold bg-indigo-600 text-white shadow-md shadow-indigo-600/20 flex items-center gap-3">
-            <Building2 className="h-5 w-5" />
+          <div className="px-3.5 py-3 rounded-xl text-sm font-semibold bg-sky-600 text-white shadow-sm shadow-sky-950/30 flex items-center gap-3">
+            <Building2 className="h-5 w-5 text-white" />
             <span>Studi Medici Accreditati</span>
           </div>
 
@@ -88,12 +88,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Sicurezza & GDPR (Art. 9)
           </div>
 
-          <div className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-3">
+          <div className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 flex items-center gap-3 transition-colors cursor-pointer">
             <Key className="h-4 w-4 text-amber-400" />
             <span>Emergency Codes (ADR-006)</span>
           </div>
 
-          <div className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white flex items-center gap-3">
+          <div className="px-3.5 py-2.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-slate-800/50 flex items-center gap-3 transition-colors cursor-pointer">
             <FileSpreadsheet className="h-4 w-4 text-emerald-400" />
             <span>Audit Log Accessi Sanitari</span>
           </div>
@@ -102,28 +102,28 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
             Stato Infrastruttura
           </div>
 
-          <div className="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs space-y-2">
+          <div className="p-3.5 bg-slate-900/90 rounded-2xl border border-slate-800 text-xs space-y-2">
             <div className="flex items-center justify-between">
               <span className="text-slate-400">PostgreSQL 16:</span>
-              <span className="text-emerald-400 font-bold flex items-center gap-1">
-                <span className="h-2 w-2 rounded-full bg-emerald-500" /> Attivo
+              <span className="text-emerald-400 font-bold flex items-center gap-1.5">
+                <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" /> Attivo
               </span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Job Lock Cleanup:</span>
-              <span className="text-blue-400 font-mono text-[11px]">Ogni 60s (OK)</span>
+              <span className="text-sky-400 font-mono text-[11px]">Ogni 60s (OK)</span>
             </div>
             <div className="flex items-center justify-between">
               <span className="text-slate-400">Multi-tenant:</span>
-              <span className="text-slate-300 font-semibold">Isolato (UUID)</span>
+              <span className="text-slate-200 font-semibold">Isolato (UUID)</span>
             </div>
           </div>
         </div>
 
         {/* Footer profile */}
-        <div className="p-4 border-t border-slate-800 bg-slate-900/60 m-3 rounded-2xl border border-slate-800/80">
+        <div className="p-4 border-t border-slate-800/80 bg-slate-950/60 m-3 rounded-2xl border border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-xl bg-indigo-950 text-indigo-400 font-bold flex items-center justify-center border border-indigo-800">
+            <div className="h-10 w-10 rounded-xl bg-sky-950 text-sky-300 font-bold flex items-center justify-center border border-sky-800">
               AD
             </div>
             <div className="flex-1 min-w-0">
@@ -142,33 +142,33 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
       </aside>
 
-      {/* Main Content Area */}
-      <div className="flex flex-1 flex-col overflow-hidden bg-[#090d16] min-w-0">
-        <header className="h-16 md:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-800/80 bg-[#090d16]/95 backdrop-blur-md px-4 md:px-8 gap-3 pt-safe">
+      {/* Main Content Area - Clean Professional Medical Light */}
+      <div className="flex flex-1 flex-col overflow-hidden bg-slate-50 min-w-0">
+        <header className="h-16 md:h-20 flex-shrink-0 flex items-center justify-between border-b border-slate-200/80 bg-white/95 backdrop-blur-md px-4 md:px-8 gap-3 pt-safe">
           <div className="flex items-center gap-3 min-w-0">
             <button
               type="button"
               onClick={() => setMobileMenuAperto(true)}
-              className="md:hidden p-2 rounded-xl bg-slate-800 text-slate-200 hover:bg-slate-700"
+              className="md:hidden p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200"
               aria-label="Apri menu"
             >
               <Menu className="h-5 w-5" />
             </button>
-            <span className="inline-flex items-center gap-2 px-2.5 py-1 rounded-full text-[11px] md:text-xs font-bold bg-indigo-950 text-indigo-300 border border-indigo-800 truncate">
-              <Activity className="h-3 w-3 md:h-3.5 md:w-3.5 text-indigo-400 animate-pulse flex-shrink-0" />
+            <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-[11px] md:text-xs font-semibold bg-sky-50 text-sky-800 border border-sky-200 truncate">
+              <Activity className="h-3 w-3 md:h-3.5 md:w-3.5 text-sky-600 animate-pulse flex-shrink-0" />
               <span className="truncate">Produzione • Operativo</span>
             </span>
           </div>
 
           <div className="flex items-center gap-4 flex-shrink-0">
             <div className="text-right hidden sm:block">
-              <p className="text-[11px] md:text-xs font-bold text-slate-200">PostgreSQL 16</p>
-              <p className="text-[10px] md:text-[11px] text-emerald-400 font-medium">1.2 ms latenza</p>
+              <p className="text-[11px] md:text-xs font-bold text-slate-800">PostgreSQL 16</p>
+              <p className="text-[10px] md:text-[11px] text-emerald-600 font-semibold">1.2 ms latenza</p>
             </div>
             <button
               type="button"
               onClick={handleLogout}
-              className="px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-rose-950/50 border border-slate-700 hover:border-rose-800/80 text-slate-300 hover:text-rose-300 text-xs font-bold flex items-center gap-1.5 transition-all"
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-rose-50 border border-slate-200 hover:border-rose-200 text-slate-700 hover:text-rose-600 text-xs font-bold flex items-center gap-1.5 transition-all"
               title="Disconnetti e torna al Login"
             >
               <LogOut className="h-3.5 w-3.5" />

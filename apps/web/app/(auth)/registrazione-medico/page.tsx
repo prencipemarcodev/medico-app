@@ -207,12 +207,12 @@ function RegistrazioneMedicoForm() {
         </p>
         <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 text-left space-y-1">
           <p className="font-bold text-slate-800">Studio di appartenenza:</p>
-          <p className="text-indigo-700 font-semibold">{studioVerificato?.nome}</p>
+          <p className="text-sky-700 font-semibold">{studioVerificato?.nome}</p>
           <p className="text-slate-500">{studioVerificato?.indirizzo || ''}</p>
         </div>
         <button
           onClick={() => router.push('/login')}
-          className="w-full py-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-lg shadow-blue-500/25 transition-all"
+          className="w-full py-4 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm shadow-sky-600/20 transition-all"
         >
           <span>Accedi al Portale</span>
           <ArrowRight className="h-4 w-4" />
@@ -222,7 +222,7 @@ function RegistrazioneMedicoForm() {
   }
 
   return (
-    <div className="w-full max-w-xl bg-white rounded-2xl p-8 shadow-xl border border-slate-200/80 space-y-6">
+    <div className="w-full max-w-xl bg-white rounded-3xl p-6 sm:p-8 shadow-xl shadow-slate-200/50 border border-slate-200/80 space-y-6">
       {/* Brand Header */}
       <div className="text-center space-y-2">
         <div className="flex justify-center mb-1">
@@ -263,7 +263,7 @@ function RegistrazioneMedicoForm() {
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-sm font-mono font-bold uppercase focus:outline-none transition-all ${
                 fieldErrors.codiceStudio
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/60 text-rose-900 focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 focus:ring-2 focus:ring-blue-500 bg-white'
+                  : 'border-slate-200 text-slate-900 focus:ring-2 focus:ring-sky-500 bg-white'
               }`}
             />
           </div>
@@ -329,12 +329,12 @@ function RegistrazioneMedicoForm() {
               onClick={() => setRuolo('medico')}
               className={`p-3.5 rounded-xl border text-left transition-all ${
                 ruolo === 'medico'
-                  ? 'bg-blue-50 border-blue-500 ring-2 ring-blue-500/20 text-blue-950'
+                  ? 'bg-sky-50 border-sky-500 ring-2 ring-sky-500/20 text-sky-950'
                   : 'bg-white border-slate-200 hover:border-slate-300 text-slate-600'
               }`}
             >
               <div className="flex items-center gap-2 font-extrabold text-xs">
-                <Stethoscope className={`h-4 w-4 ${ruolo === 'medico' ? 'text-blue-600' : 'text-slate-400'}`} />
+                <Stethoscope className={`h-4 w-4 ${ruolo === 'medico' ? 'text-sky-600' : 'text-slate-400'}`} />
                 <span>Medico MMG</span>
               </div>
               <p className="text-[10px] text-slate-500 mt-1">
@@ -379,7 +379,7 @@ function RegistrazioneMedicoForm() {
               className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                 fieldErrors.nome
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
               }`}
             />
             {fieldErrors.nome && (
@@ -404,7 +404,7 @@ function RegistrazioneMedicoForm() {
               className={`w-full px-3.5 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                 fieldErrors.cognome
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
               }`}
             />
             {fieldErrors.cognome && (
@@ -435,7 +435,7 @@ function RegistrazioneMedicoForm() {
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                 fieldErrors.email
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
               }`}
             />
           </div>
@@ -466,7 +466,7 @@ function RegistrazioneMedicoForm() {
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                 fieldErrors.telefono
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
               }`}
             />
           </div>
@@ -497,7 +497,7 @@ function RegistrazioneMedicoForm() {
               className={`w-full pl-10 pr-4 py-2.5 rounded-xl border text-xs font-semibold transition-all ${
                 fieldErrors.password
                   ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/40 text-rose-900 focus:outline-none focus:border-rose-600'
-                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-slate-50/50'
+                  : 'border-slate-200 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-500 bg-slate-50/50'
               }`}
             />
           </div>
@@ -512,7 +512,7 @@ function RegistrazioneMedicoForm() {
         <button
           type="submit"
           disabled={loading || !studioVerificato}
-          className="w-full py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:bg-slate-300 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+          className="w-full py-3.5 rounded-xl bg-sky-600 hover:bg-sky-700 disabled:bg-slate-300 text-white font-extrabold text-sm flex items-center justify-center gap-2 shadow-sm shadow-sky-600/20 transition-all cursor-pointer"
         >
           {loading ? (
             <>
@@ -532,7 +532,7 @@ function RegistrazioneMedicoForm() {
       <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
         <Link
           href="/login"
-          className="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1"
+          className="font-bold text-sky-600 hover:text-sky-700 flex items-center gap-1"
         >
           <ArrowLeft className="h-3.5 w-3.5" /> Torna al Login
         </Link>
@@ -547,7 +547,7 @@ function RegistrazioneMedicoForm() {
 
 export default function RegistrazioneMedicoPage() {
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-[#090d16] p-4 sm:p-6 font-sans pt-safe pb-safe">
+    <main className="flex min-h-[100dvh] items-center justify-center bg-slate-50 p-4 sm:p-6 font-sans pt-safe pb-safe">
       <Suspense fallback={<div className="p-8 text-center text-slate-500 text-xs">Caricamento modulo...</div>}>
         <RegistrazioneMedicoForm />
       </Suspense>

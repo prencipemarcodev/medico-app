@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { db, hashPassword, generateTemporaryPassword, eq, and, sql, recordAuditLog } from '@medico/db'
+import { db, hashPassword, generateTemporaryPassword, eq, and, inArray, sql, recordAuditLog } from '@medico/db'
 import { pazienti, medici, studi } from '@medico/db/schema'
 import { checkAuth } from '@/lib/server-auth'
 
@@ -60,7 +60,7 @@ export async function POST(request: Request) {
 
     if (!studioId || !medicoId) {
       return NextResponse.json(
-        { error: 'Specificare lo studio medico e il medico curante di destinazione' },
+        { error: 'Specificare lo studio medico e il medico curante' },
         { status: 400 }
       )
     }
@@ -84,6 +84,20 @@ export async function POST(request: Request) {
     }> = []
 
     const errori: Array<{ riga: number; cf: string; errore: string }> = []
+
+    // Pre-caricamento in blocco dei codici fiscali già esistenti
+    const cfs = righe
+      .map((r: any) => r.codiceFiscale?.trim().toUpperCase())
+      .filter((c: string | undefined): c is string => Boolean(c && c.length === 16))
+
+    const existingRows = cfs.length > 0
+      ? await db
+          .select({ cf: sql<string>`upper(${pazienti.codiceFiscale})` })
+          .from(pazienti)
+          .where(inArray(sql`upper(${pazienti.codiceFiscale})`, cfs))
+      : []
+
+    const existingSet = new Set(existingRows.map((r) => r.cf))
 
     for (let i = 0; i < righe.length; i++) {
       const riga: PazienteCSVRow = righe[i]
@@ -114,17 +128,11 @@ export async function POST(request: Request) {
       }
 
       // Verifica se il paziente esiste già per CF
-      const [esistente] = await db
-        .select({ id: pazienti.id })
-        .from(pazienti)
-        .where(eq(sql`upper(${pazienti.codiceFiscale})`, cf))
-        .limit(1)
-
-      if (esistente) {
+      if (existingSet.has(cf)) {
         errori.push({
           riga: i + 1,
           cf,
-          errore: 'Paziente con questo Codice Fiscale già registrato',
+          errore: 'Paziente con questo Codice Fiscale già registrato o duplicato',
         })
         continue
       }
@@ -178,6 +186,7 @@ export async function POST(request: Request) {
         .returning()
 
       if (inserito) {
+        existingSet.add(cf)
         credenzialiGenerate.push({
           id: inserito.id,
           nome: inserito.nome,

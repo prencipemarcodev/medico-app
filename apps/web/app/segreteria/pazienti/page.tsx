@@ -40,6 +40,7 @@ import {
   ShieldCheck,
   Check,
   RefreshCw,
+  AlertTriangle,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -135,6 +136,12 @@ export default function SegreteriaPazientiPage() {
   const [importInCorso, setImportInCorso] = useState(false)
   const [importCompletato, setImportCompletato] = useState(false)
   const [credenzialiGenerateCsv, setCredenzialiGenerateCsv] = useState<any[]>([])
+  const [importProgress, setImportProgress] = useState(0)
+  const [importProcessedCount, setImportProcessedCount] = useState(0)
+  const [importTotalCount, setImportTotalCount] = useState(0)
+  const [importCurrentBatch, setImportCurrentBatch] = useState(0)
+  const [importTotalBatches, setImportTotalBatches] = useState(0)
+  const [importStatusText, setImportStatusText] = useState('')
 
   // 3. MODALE QR & LINK
   const [modalQrOpen, setModalQrOpen] = useState(false)
@@ -607,26 +614,73 @@ export default function SegreteriaPazientiPage() {
       return
     }
 
-    setImportInCorso(true)
-    try {
-      const res = await fetch('/api/pazienti/import', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          medicoId: csvMedicoId,
-          pazienti: validi,
-        }),
-      })
+    const BATCH_SIZE = 50
+    const totalBatches = Math.ceil(validi.length / BATCH_SIZE)
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error || 'Errore durante l\'importazione')
+    setImportTotalCount(validi.length)
+    setImportProcessedCount(0)
+    setImportProgress(0)
+    setImportCurrentBatch(1)
+    setImportTotalBatches(totalBatches)
+    setImportStatusText(`Avvio elaborazione: ${validi.length} pazienti in ${totalBatches} blocchi...`)
+    setImportInCorso(true)
+
+    const tutteCredenziali: any[] = []
+    const tuttiErrori: any[] = []
+
+    try {
+      for (let b = 0; b < totalBatches; b++) {
+        const chunk = validi.slice(b * BATCH_SIZE, (b + 1) * BATCH_SIZE)
+        const batchNum = b + 1
+        setImportCurrentBatch(batchNum)
+        setImportStatusText(
+          `Elaborazione blocco ${batchNum} di ${totalBatches} (pazienti ${b * BATCH_SIZE + 1}–${Math.min(
+            (b + 1) * BATCH_SIZE,
+            validi.length
+          )})...`
+        )
+
+        const res = await fetch('/api/pazienti/import', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            medicoId: csvMedicoId,
+            pazienti: chunk,
+          }),
+        })
+
+        const data = await res.json()
+        if (!res.ok) throw new Error(data.error || `Errore nel blocco ${batchNum}`)
+
+        if (Array.isArray(data.credenziali)) {
+          tutteCredenziali.push(...data.credenziali)
+        }
+        if (Array.isArray(data.errori)) {
+          tuttiErrori.push(...data.errori)
+        }
+
+        const processed = Math.min((b + 1) * BATCH_SIZE, validi.length)
+        setImportProcessedCount(processed)
+        const pct = Math.round((processed / validi.length) * 100)
+        setImportProgress(pct)
+      }
+
+      setImportProgress(100)
+      setImportStatusText('Finalizzazione importazione e aggiornamento database...')
+      setCredenzialiGenerateCsv(tutteCredenziali)
+      setImportCompletato(true)
 
       toast.success(
-        'Importazione completata!',
-        `${data.credenziali?.length || validi.length} pazienti importati con credenziali generate.`
+        'Importazione completata con successo!',
+        `${tutteCredenziali.length} assistiti importati con credenziali generate.`
       )
-      setCredenzialiGenerateCsv(data.credenziali || [])
-      setImportCompletato(true)
+      if (tuttiErrori.length > 0) {
+        toast.warning(
+          'Record duplicati o scartati',
+          `${tuttiErrori.length} righe presentavano errori o Codici Fiscali già registrati.`
+        )
+      }
+
       ricaricaPazienti()
     } catch (err: any) {
       toast.error('Errore importazione CSV', err.message || 'Impossibile completare l\'importazione')
@@ -1405,6 +1459,21 @@ export default function SegreteriaPazientiPage() {
                   </p>
                 </div>
 
+                {/* Box Informativo: Sicurezza & Comunicazione Credenziali ai Pazienti */}
+                <div className="p-3.5 rounded-2xl bg-indigo-50/70 border border-indigo-200/80 space-y-2 text-xs">
+                  <div className="flex items-center gap-2 text-indigo-900 font-bold">
+                    <ShieldCheck className="h-4 w-4 text-indigo-700 shrink-0" />
+                    <span>Comunicazione Password ai Pazienti & Privacy GDPR</span>
+                  </div>
+                  <p className="text-[11px] text-indigo-950 leading-relaxed">
+                    Le password provvisorie generate sono visibili <b>soltanto in questa schermata e nel file CSV scaricabile</b>. Nel database sono custoditi unicamente hash crittografici non decifrabili.
+                  </p>
+                  <div className="text-[11px] text-indigo-900 space-y-1 pl-1 border-t border-indigo-200/60 pt-1.5">
+                    <p>• <b>Consegna al paziente:</b> scarica il CSV per l'invio via SMS/Email o stampa il promemoria cartaceo da consegnare allo sportello.</p>
+                    <p>• <b>Primo Accesso:</b> al primo login con il Codice Fiscale, il paziente dovrà <b>obbligatoriamente impostare la propria password personale riservata</b>.</p>
+                  </div>
+                </div>
+
                 <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
                   <span className="font-bold text-slate-700">Scarica file credenziali per la consegna:</span>
                   <button
@@ -1525,31 +1594,82 @@ export default function SegreteriaPazientiPage() {
                       </table>
                     </div>
 
-                    <div className="flex justify-end gap-2 pt-2 border-t border-slate-100">
-                      <button
-                        type="button"
-                        onClick={() => setModalCsvOpen(false)}
-                        className="px-4 py-2 rounded-xl text-slate-500 font-bold"
-                      >
-                        Annulla
-                      </button>
-                      <button
-                        onClick={handleImportCsv}
-                        disabled={importInCorso || anteprimaPazienti.filter((p) => p.valido).length === 0}
-                        className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20"
-                      >
+                    {/* Barra di Caricamento Avanzamento Reale (Batching) */}
+                    {importInCorso && (
+                      <div className="p-4 rounded-xl bg-slate-900 text-white space-y-3 animate-in fade-in duration-200 shadow-md">
+                        <div className="flex items-center justify-between text-xs">
+                          <div className="flex items-center gap-2">
+                            <Loader2 className="h-4 w-4 animate-spin text-amber-400 shrink-0" />
+                            <span className="font-bold text-white">Importazione e Generazione Account...</span>
+                            <span className="text-slate-400 font-medium">
+                              ({importProcessedCount} di {importTotalCount} pazienti)
+                            </span>
+                          </div>
+                          <span className="px-2.5 py-0.5 rounded-md bg-amber-500/10 text-amber-400 font-mono font-bold text-xs border border-amber-500/20">
+                            {importProgress}%
+                          </span>
+                        </div>
+
+                        {/* Progress Track */}
+                        <div className="w-full bg-slate-950 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-800 shadow-inner">
+                          <div
+                            className="bg-gradient-to-r from-amber-500 via-orange-400 to-amber-300 h-full rounded-full transition-all duration-300 ease-out shadow-sm shadow-amber-500/40"
+                            style={{ width: `${Math.max(importProgress, 3)}%` }}
+                          />
+                        </div>
+
+                        <div className="flex items-center justify-between text-[11px] text-slate-400">
+                          <span className="font-medium text-slate-300 flex items-center gap-1.5 truncate">
+                            <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-ping shrink-0" />
+                            {importStatusText || 'Elaborazione record e crittografia password...'}
+                          </span>
+                          <span className="font-mono text-slate-400 shrink-0 ml-2">
+                            Blocco {importCurrentBatch} di {importTotalBatches}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex items-center justify-between gap-3 pt-2 border-t border-slate-100">
+                      <div className="text-[11px] text-slate-500">
                         {importInCorso ? (
-                          <>
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                            <span>Importazione...</span>
-                          </>
+                          <span className="text-amber-700 flex items-center gap-1.5 font-semibold">
+                            <AlertTriangle className="h-3.5 w-3.5 shrink-0 text-amber-600" />
+                            Non chiudere questa finestra durante l'elaborazione del dataset
+                          </span>
                         ) : (
-                          <>
-                            <Upload className="h-4 w-4" />
-                            <span>Importa e Genera Credenziali</span>
-                          </>
+                          <span>{anteprimaPazienti.filter((p) => p.valido).length} pazienti pronti</span>
                         )}
-                      </button>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          disabled={importInCorso}
+                          onClick={() => setModalCsvOpen(false)}
+                          className="px-4 py-2 rounded-xl text-slate-500 font-bold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                        >
+                          Annulla
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleImportCsv}
+                          disabled={importInCorso || anteprimaPazienti.filter((p) => p.valido).length === 0}
+                          className="px-5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 disabled:bg-slate-300 text-white font-bold flex items-center gap-1.5 shadow-md shadow-amber-500/20 disabled:cursor-not-allowed transition-all"
+                        >
+                          {importInCorso ? (
+                            <>
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              <span>Elaborazione ({importProgress}%)...</span>
+                            </>
+                          ) : (
+                            <>
+                              <Upload className="h-4 w-4" />
+                              <span>Importa e Genera Credenziali</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}

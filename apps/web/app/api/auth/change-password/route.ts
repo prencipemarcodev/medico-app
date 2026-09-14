@@ -26,7 +26,7 @@ export async function POST(request: Request) {
     if (session.ruolo === 'paziente') {
       await db
         .update(pazienti)
-        .set({ passwordHash: newHash, primoAccesso: false, updatedAt: new Date() })
+        .set({ passwordHash: newHash, primoAccesso: false, passwordIniziale: null, updatedAt: new Date() })
         .where(eq(pazienti.id, session.id))
 
       session.primoAccesso = false

@@ -44,6 +44,15 @@ export async function GET(request: Request) {
       )
     }
 
+    const statoAccesso = searchParams.get('stato') // 'in_attesa' | 'completato'
+    const limitParam = Math.min(parseInt(searchParams.get('limit') || '500', 10), 1000)
+
+    if (statoAccesso === 'in_attesa') {
+      conditions.push(eq(pazienti.primoAccesso, true))
+    } else if (statoAccesso === 'completato') {
+      conditions.push(eq(pazienti.primoAccesso, false))
+    }
+
     const list = await db
       .select({
         id: pazienti.id,
@@ -53,6 +62,7 @@ export async function GET(request: Request) {
         dataNascita: pazienti.dataNascita,
         email: pazienti.email,
         telefono: pazienti.telefono,
+        passwordIniziale: pazienti.passwordIniziale,
         primoAccesso: pazienti.primoAccesso,
         studioId: pazienti.studioId,
         nomeStudio: studi.nome,
@@ -66,7 +76,7 @@ export async function GET(request: Request) {
       .leftJoin(studi, eq(pazienti.studioId, studi.id))
       .where(and(...conditions))
       .orderBy(desc(pazienti.createdAt))
-      .limit(50)
+      .limit(limitParam)
 
     return NextResponse.json({ success: true, pazienti: list })
   } catch (err: any) {

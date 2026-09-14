@@ -146,6 +146,7 @@ export async function POST(request: Request) {
         email: cleanEmail,
         telefono: telefono?.trim() || null,
         passwordHash,
+        passwordIniziale: !isCustomPassword ? passwordInChiaro : null,
         primoAccesso: !isCustomPassword, // Se generata, richiede primo accesso
         pushConsenso: false,
         attivo: true,

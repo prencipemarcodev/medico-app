@@ -180,6 +180,7 @@ export async function POST(request: Request) {
           email,
           telefono,
           passwordHash,
+          passwordIniziale: passwordTemporanea,
           primoAccesso: true,
           attivo: true,
         })

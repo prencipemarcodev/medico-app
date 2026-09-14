@@ -40,6 +40,7 @@ import {
   Copy,
   ExternalLink,
   Eye,
+  EyeOff,
   ChevronLeft,
   ChevronRight,
   Filter,
@@ -110,9 +111,27 @@ export interface AuditLogItem {
   createdAt: string
 }
 
+export interface PazienteItem {
+  id: string
+  nome: string
+  cognome: string
+  codiceFiscale: string
+  dataNascita: string | null
+  email: string | null
+  telefono: string | null
+  passwordIniziale: string | null
+  primoAccesso: boolean
+  studioId: string | null
+  nomeStudio: string | null
+  medicoId: string | null
+  nomeMedico: string | null
+  cognomeMedico: string | null
+  createdAt: string
+}
+
 export default function AdminPage() {
   const toast = useToast()
-  const [tabAttiva, setTabAttiva] = useState<'studi' | 'medici' | 'staff' | 'audit'>('studi')
+  const [tabAttiva, setTabAttiva] = useState<'studi' | 'medici' | 'staff' | 'pazienti' | 'audit'>('studi')
 
   // Dati
   const [studiList, setStudiList] = useState<Studio[]>([])
@@ -146,6 +165,19 @@ export default function AdminPage() {
   const [selectedAuditLog, setSelectedAuditLog] = useState<AuditLogItem | null>(null)
   const [jsonCopiato, setJsonCopiato] = useState(false)
   const [modalEmergencyOpen, setModalEmergencyOpen] = useState(false)
+
+  // Pazienti & Credenziali 1° Accesso (Stile Tabella Log / ERP)
+  const [pazientiList, setPazientiList] = useState<PazienteItem[]>([])
+  const [pazientiQuery, setPazientiQuery] = useState('')
+  const [pazientiFiltroMedico, setPazientiFiltroMedico] = useState<string>('tutti')
+  const [pazientiFiltroStato, setPazientiFiltroStato] = useState<'tutti' | 'in_attesa' | 'completato'>('tutti')
+  const [pazientiPagina, setPazientiPagina] = useState(1)
+  const [pazientiRighePerPagina, setPazientiRighePerPagina] = useState(25)
+  const [loadingPazienti, setLoadingPazienti] = useState(false)
+  const [passwordVisibili, setPasswordVisibili] = useState<Record<string, boolean>>({})
+  const [pazienteDaReimpostare, setPazienteDaReimpostare] = useState<PazienteItem | null>(null)
+  const [reimpostandoPassword, setReimpostandoPassword] = useState(false)
+  const [pazienteDettaglio, setPazienteDettaglio] = useState<PazienteItem | null>(null)
 
   // Modali Creazione
   const [modalStudioOpen, setModalStudioOpen] = useState(false)
@@ -409,14 +441,182 @@ export default function AdminPage() {
     setTimeout(() => setJsonCopiato(false), 2000)
   }
 
+  // Caricamento Pazienti dal Database
+  const caricaPazienti = async (query = pazientiQuery, medico = pazientiFiltroMedico, stato = pazientiFiltroStato) => {
+    setLoadingPazienti(true)
+    try {
+      const params = new URLSearchParams()
+      if (query.trim()) params.set('q', query.trim())
+      if (medico !== 'tutti') params.set('medicoId', medico)
+      if (stato !== 'tutti') params.set('stato', stato)
+      params.set('limit', '1000')
+
+      const res = await fetch(`/api/pazienti/search?${params.toString()}`)
+      const data = await res.json()
+      if (data.success) {
+        setPazientiList(data.pazienti || [])
+        setPazientiPagina(1)
+      }
+    } catch (err) {
+      console.error('Errore caricamento pazienti:', err)
+      toast.error('Errore', 'Impossibile caricare i pazienti dal database')
+    } finally {
+      setLoadingPazienti(false)
+    }
+  }
+
+  // Filtro client-side Pazienti
+  const pazientiFiltrati = pazientiList.filter((p) => {
+    if (pazientiFiltroMedico !== 'tutti' && p.medicoId !== pazientiFiltroMedico) {
+      return false
+    }
+    if (pazientiFiltroStato === 'in_attesa' && !p.primoAccesso) {
+      return false
+    }
+    if (pazientiFiltroStato === 'completato' && p.primoAccesso) {
+      return false
+    }
+    if (pazientiQuery.trim()) {
+      const q = pazientiQuery.toLowerCase().trim()
+      const matchNome = p.nome.toLowerCase().includes(q)
+      const matchCognome = p.cognome.toLowerCase().includes(q)
+      const matchFullName = `${p.cognome} ${p.nome}`.toLowerCase().includes(q) || `${p.nome} ${p.cognome}`.toLowerCase().includes(q)
+      const matchCf = p.codiceFiscale.toLowerCase().includes(q)
+      const matchEmail = p.email ? p.email.toLowerCase().includes(q) : false
+      const matchTel = p.telefono ? p.telefono.toLowerCase().includes(q) : false
+      const matchMedico = p.cognomeMedico ? `${p.nomeMedico} ${p.cognomeMedico}`.toLowerCase().includes(q) : false
+      const matchStudio = p.nomeStudio ? p.nomeStudio.toLowerCase().includes(q) : false
+
+      return matchNome || matchCognome || matchFullName || matchCf || matchEmail || matchTel || matchMedico || matchStudio
+    }
+    return true
+  })
+
+  const totalePaginePazienti = Math.max(1, Math.ceil(pazientiFiltrati.length / pazientiRighePerPagina))
+  const indiceInizioPazienti = (pazientiPagina - 1) * pazientiRighePerPagina
+  const pazientiPaginati = pazientiFiltrati.slice(indiceInizioPazienti, indiceInizioPazienti + pazientiRighePerPagina)
+
+  const toggleVisibilitaPassword = (id: string) => {
+    setPasswordVisibili((prev) => ({ ...prev, [id]: !prev[id] }))
+  }
+
+  const copiaValore = (val: string, label: string) => {
+    navigator.clipboard.writeText(val)
+    toast.success(`${label} copiato`, val)
+  }
+
+  const copiaCredenzialiPaziente = (p: PazienteItem) => {
+    const pwd = p.passwordIniziale || (p.primoAccesso ? 'Da comunicare (In attesa 1° accesso)' : '[Password personale riservata]')
+    const portaleUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const testo = `Credenziali di Accesso Portale Medico
+Paziente: ${p.cognome} ${p.nome}
+Codice Fiscale (Username): ${p.codiceFiscale}
+Password provvisoria: ${pwd}
+Studio: ${p.nomeStudio || 'Studio Medico'}
+Medico Curante: ${p.cognomeMedico ? `Dott. ${p.nomeMedico} ${p.cognomeMedico}` : 'Assegnato'}
+Link Accesso: ${portaleUrl}/login
+
+Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di impostare una password personale e privata.`
+
+    navigator.clipboard.writeText(testo)
+    toast.success('Ricevuta Credenziali Copiata!', `Testo pronto per l'invio via SMS o Email a ${p.nome} ${p.cognome}`)
+  }
+
+  const handleResetPasswordPaziente = async (p: PazienteItem) => {
+    setReimpostandoPassword(true)
+    try {
+      const res = await fetch(`/api/pazienti/${p.id}/reset-password`, {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore generazione nuova password')
+
+      toast.success('Nuova Password Generata!', `Password provvisoria: ${data.passwordTemporanea}`)
+      setPazientiList((prev) =>
+        prev.map((item) =>
+          item.id === p.id
+            ? {
+                ...item,
+                passwordIniziale: data.passwordTemporanea,
+                primoAccesso: true,
+              }
+            : item
+        )
+      )
+      setPasswordVisibili((prev) => ({ ...prev, [p.id]: true }))
+      setPazienteDaReimpostare(null)
+    } catch (err: any) {
+      toast.error('Errore Reset', err.message || 'Impossibile reimpostare la password')
+    } finally {
+      setReimpostandoPassword(false)
+    }
+  }
+
+  const esportaPazientiCsv = () => {
+    if (pazientiFiltrati.length === 0) {
+      toast.warning('Nessun paziente', 'Nessun paziente da esportare con i filtri correnti.')
+      return
+    }
+
+    const headers = [
+      'Cognome',
+      'Nome',
+      'Codice_Fiscale',
+      'Data_Nascita',
+      'Email',
+      'Telefono',
+      'Studio_Medico',
+      'Medico_Curante',
+      'Password_Provvisoria',
+      'Stato_Account',
+      'Data_Registrazione',
+    ]
+
+    const csvContent = [
+      headers.join(';'),
+      ...pazientiFiltrati.map((p) =>
+        [
+          p.cognome,
+          p.nome,
+          p.codiceFiscale,
+          p.dataNascita || '',
+          p.email || '',
+          p.telefono || '',
+          p.nomeStudio || '',
+          p.cognomeMedico ? `Dott. ${p.nomeMedico} ${p.cognomeMedico}` : '',
+          p.passwordIniziale || (p.primoAccesso ? 'DA_COMUNICARE' : 'PERSONALE_IMPOSTATA'),
+          p.primoAccesso ? 'IN_ATTESA_PRIMO_ACCESSO' : 'ATTIVO',
+          p.createdAt ? new Date(p.createdAt).toLocaleDateString('it-IT') : '',
+        ]
+          .map((v) => `"${String(v).replace(/"/g, '""')}"`)
+          .join(';')
+      ),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `pazienti_credenziali_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+
+    toast.success('Esportazione completata', `Scaricati ${pazientiFiltrati.length} pazienti.`)
+  }
+
   useEffect(() => {
     caricaDati()
     caricaAuditLogs()
+    caricaPazienti()
   }, [])
 
   useEffect(() => {
     if (tabAttiva === 'audit') {
       caricaAuditLogs()
+    } else if (tabAttiva === 'pazienti') {
+      caricaPazienti()
     }
   }, [tabAttiva])
 
@@ -1012,8 +1212,9 @@ export default function AdminPage() {
       <div className="flex flex-wrap items-center gap-2 bg-slate-950 p-2 rounded-2xl border border-slate-800 shadow-sm w-full sm:w-fit">
         {[
           { id: 'studi', label: 'Studi Medici', icon: Building2 },
-          { id: 'medici', label: 'Medici & Assistiti (CSV)', icon: Stethoscope },
+          { id: 'medici', label: 'Medici Curanti', icon: Stethoscope },
           { id: 'staff', label: 'Segreteria Multi-Medico', icon: UserCheck },
+          { id: 'pazienti', label: 'Pazienti & Credenziali', icon: Users },
           { id: 'audit', label: 'Sicurezza & Audit Log DB', icon: FileSpreadsheet },
         ].map((tab) => {
           const Icon = tab.icon
@@ -1419,7 +1620,455 @@ export default function AdminPage() {
         </div>
       )}
 
-      {/* TAB 4: AUDIT LOG & SICUREZZA DB */}
+      {/* TAB 4: PAZIENTI & CREDENZIALI 1° ACCESSO (STILE LOG / ERP COMPATTO) */}
+      {tabAttiva === 'pazienti' && (
+        <div className="w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm flex flex-col">
+          {/* Header Bar */}
+          <div className="p-4 sm:p-5 border-b border-slate-800 flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-slate-950">
+            <div>
+              <div className="flex items-center gap-2.5">
+                <Users className="h-5 w-5 text-indigo-400 flex-shrink-0" />
+                <h2 className="text-base sm:text-lg font-bold text-white tracking-tight">
+                  Registro Anagrafica Pazienti & Credenziali 1° Accesso
+                </h2>
+                <span className="px-2 py-0.5 rounded bg-indigo-950/70 border border-indigo-800/80 text-[10px] font-mono font-semibold text-indigo-300">
+                  GDPR Art. 9
+                </span>
+              </div>
+              <p className="text-xs text-slate-400 mt-1">
+                Visualizzazione trasparente per gli operatori: ricerca rapida per nome o CF, consultazione credenziali temporanee per il paziente e reset password.
+              </p>
+            </div>
+
+            <div className="flex items-center flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => caricaPazienti()}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                title="Ricarica elenco pazienti dal database"
+              >
+                <RefreshCw className={`h-3.5 w-3.5 ${loadingPazienti ? 'animate-spin' : ''}`} />
+                <span>Aggiorna</span>
+              </button>
+              <button
+                type="button"
+                onClick={esportaPazientiCsv}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                title="Esporta in formato CSV i pazienti attualmente filtrati con relative credenziali"
+              >
+                <FileDown className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Esporta CSV</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (mediciList.length > 0) {
+                    setMedicoTargetCsv(mediciList[0] || null)
+                    setAnteprimaPazienti([])
+                    setImportCompletato(false)
+                    setCredenzialiGenerate([])
+                    setImportProgress(0)
+                    setModalCsvOpen(true)
+                  } else {
+                    toast.warning('Nessun medico', 'Crea prima un medico curante a cui assegnare i pazienti da importare.')
+                  }
+                }}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-xs font-bold text-white shadow-sm transition-colors"
+                title="Carica un nuovo dataset CSV di assistiti (es. 500 pazienti)"
+              >
+                <Upload className="h-3.5 w-3.5 text-white" />
+                <span>Importa CSV Pazienti</span>
+              </button>
+            </div>
+          </div>
+
+          {/* Sticky Filter Toolbar */}
+          <div className="p-3 sm:p-4 bg-slate-900/60 border-b border-slate-800 flex flex-col gap-3">
+            {/* Top Row: Search input and count */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 justify-between">
+              <div className="relative flex-1 max-w-xl">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-500 pointer-events-none" />
+                <input
+                  type="text"
+                  value={pazientiQuery}
+                  onChange={(e) => {
+                    setPazientiQuery(e.target.value)
+                    setPazientiPagina(1)
+                  }}
+                  placeholder="Cerca per cognome, nome, codice fiscale (CF), email o telefono..."
+                  className="w-full pl-9 pr-8 py-2 rounded-lg bg-slate-950 border border-slate-800 text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
+                />
+                {pazientiQuery && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPazientiQuery('')
+                      setPazientiPagina(1)
+                    }}
+                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300 text-xs"
+                    title="Cancella filtro di ricerca"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+
+              <div className="flex items-center gap-2 self-end sm:self-auto text-xs text-slate-400">
+                <span className="font-semibold text-slate-200 tabular-nums font-mono">
+                  {pazientiFiltrati.length}
+                </span>
+                <span>{pazientiFiltrati.length === 1 ? 'paziente trovato' : 'pazienti trovati'}</span>
+                {pazientiFiltrati.length !== pazientiList.length && (
+                  <span className="text-slate-500 text-[11px]">(su {pazientiList.length} totali)</span>
+                )}
+              </div>
+            </div>
+
+            {/* Bottom Row: Quick filters by Doctor & Account/Password Status */}
+            <div className="flex flex-wrap items-center gap-2 pt-0.5">
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
+                <Filter className="h-3.5 w-3.5 text-slate-500" />
+                <span>Stato Credenziali:</span>
+              </div>
+              {[
+                { id: 'tutti', label: 'Tutti' },
+                { id: 'in_attesa', label: 'In attesa 1° accesso (Pwd Provvisoria)' },
+                { id: 'completato', label: 'Attivi (Password Personale)' },
+              ].map((st) => (
+                <button
+                  key={st.id}
+                  type="button"
+                  onClick={() => {
+                    setPazientiFiltroStato(st.id as any)
+                    setPazientiPagina(1)
+                  }}
+                  className={`px-2.5 py-1 rounded-md text-xs font-semibold transition-colors ${
+                    pazientiFiltroStato === st.id
+                      ? 'bg-indigo-600 text-white'
+                      : 'bg-slate-950 text-slate-400 border border-slate-800 hover:bg-slate-800 hover:text-white'
+                  }`}
+                >
+                  {st.label}
+                </button>
+              ))}
+
+              <div className="h-4 w-px bg-slate-800 mx-1 hidden sm:block" />
+
+              <div className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold mr-1">
+                <Stethoscope className="h-3.5 w-3.5 text-slate-500" />
+                <span>Medico:</span>
+              </div>
+              <select
+                value={pazientiFiltroMedico}
+                onChange={(e) => {
+                  setPazientiFiltroMedico(e.target.value)
+                  setPazientiPagina(1)
+                }}
+                className="px-2.5 py-1 rounded-md bg-slate-950 border border-slate-800 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-indigo-500 cursor-pointer max-w-[220px] truncate"
+              >
+                <option value="tutti">Tutti i medici curanti</option>
+                {mediciList.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    Dott. {m.nome} {m.cognome}
+                  </option>
+                ))}
+              </select>
+
+              {/* Righe per pagina */}
+              <div className="ml-auto flex items-center gap-1.5 text-xs text-slate-400">
+                <span>Mostra:</span>
+                <select
+                  value={pazientiRighePerPagina}
+                  onChange={(e) => {
+                    setPazientiRighePerPagina(Number(e.target.value))
+                    setPazientiPagina(1)
+                  }}
+                  className="px-2 py-0.5 rounded bg-slate-950 border border-slate-800 text-xs text-slate-300 focus:outline-none cursor-pointer"
+                >
+                  <option value={15}>15</option>
+                  <option value={25}>25</option>
+                  <option value={50}>50</option>
+                  <option value={100}>100</option>
+                </select>
+              </div>
+            </div>
+          </div>
+
+          {/* Table Container */}
+          <div className="overflow-x-auto w-full">
+            <table className="w-full text-left text-xs border-collapse">
+              <thead>
+                <tr className="sticky top-0 bg-slate-900/95 border-b border-slate-800 text-slate-400 font-semibold text-[11px] backdrop-blur z-10">
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Paziente (Cognome & Nome)</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Codice Fiscale (Username)</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Contatti</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Medico Curante & Studio</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Password 1° Accesso</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Stato Account</th>
+                  <th className="py-2.5 px-3.5 whitespace-nowrap">Data Registrazione</th>
+                  <th className="py-2.5 px-3.5 text-right whitespace-nowrap">Azioni & Consegna</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-800/60 font-normal">
+                {loadingPazienti ? (
+                  <TableRowsSkeleton rows={8} cols={8} />
+                ) : pazientiPaginati.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="py-12 text-center text-slate-500">
+                      <div className="flex flex-col items-center justify-center gap-1.5">
+                        <Users className="h-6 w-6 text-slate-600 mb-1" />
+                        <p className="text-sm font-semibold text-slate-400">Nessun paziente trovato</p>
+                        <p className="text-xs text-slate-600">
+                          {pazientiQuery
+                            ? 'Nessun risultato corrispondente ai criteri di ricerca.'
+                            : 'Non ci sono ancora pazienti registrati. Importa un CSV o crea assistiti.'}
+                        </p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  pazientiPaginati.map((paz, idx) => {
+                    const isVisible = passwordVisibili[paz.id]
+                    return (
+                      <tr
+                        key={paz.id}
+                        className={`hover:bg-indigo-950/20 transition-colors ${
+                          idx % 2 === 1 ? 'bg-slate-900/30' : 'bg-transparent'
+                        }`}
+                      >
+                        {/* Paziente */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <div className="font-bold text-white text-xs">
+                            {paz.cognome} {paz.nome}
+                          </div>
+                          <div className="text-[11px] text-slate-400 font-mono">
+                            Nato/a il: {paz.dataNascita || '—'}
+                          </div>
+                        </td>
+
+                        {/* Codice Fiscale */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
+                            <span className="font-mono text-xs font-bold text-indigo-300 bg-indigo-950/70 border border-indigo-800/80 px-2 py-0.5 rounded">
+                              {paz.codiceFiscale}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => copiaValore(paz.codiceFiscale, 'Codice Fiscale')}
+                              className="p-1 text-slate-400 hover:text-white rounded hover:bg-slate-800 transition-colors"
+                              title="Copia Codice Fiscale"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+
+                        {/* Contatti */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <div className="space-y-0.5 text-xs">
+                            {paz.email ? (
+                              <div className="flex items-center gap-1.5 text-slate-300 text-[11px] max-w-[180px] truncate">
+                                <Mail className="h-3 w-3 text-slate-500 shrink-0" />
+                                <span className="truncate">{paz.email}</span>
+                              </div>
+                            ) : (
+                              <span className="text-slate-600 text-[11px] italic">Email assente</span>
+                            )}
+                            {paz.telefono && (
+                              <div className="flex items-center gap-1.5 text-slate-400 text-[11px]">
+                                <PhoneCall className="h-3 w-3 text-slate-500 shrink-0" />
+                                <span>{paz.telefono}</span>
+                              </div>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Medico & Studio */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          <div className="space-y-0.5">
+                            <div className="text-xs font-semibold text-blue-300">
+                              {paz.cognomeMedico
+                                ? `Dott. ${paz.nomeMedico} ${paz.cognomeMedico}`
+                                : 'Non assegnato'}
+                            </div>
+                            <div className="text-[10px] text-slate-400 truncate max-w-[160px]">
+                              {paz.nomeStudio || 'Studio Medico'}
+                            </div>
+                          </div>
+                        </td>
+
+                        {/* Password 1° Accesso / Credenziali */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          {paz.primoAccesso ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono font-black text-xs px-2 py-0.5 rounded bg-amber-950/80 text-amber-300 border border-amber-800/80 shadow-inner">
+                                  {isVisible
+                                    ? paz.passwordIniziale || 'Non registrata'
+                                    : '••••••'}
+                                </span>
+                                <button
+                                  type="button"
+                                  onClick={() => toggleVisibilitaPassword(paz.id)}
+                                  className="p-1 rounded text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+                                  title={
+                                    isVisible
+                                      ? 'Nascondi password'
+                                      : 'Mostra password temporanea in chiaro'
+                                  }
+                                >
+                                  {isVisible ? (
+                                    <EyeOff className="h-3.5 w-3.5 text-amber-400" />
+                                  ) : (
+                                    <Eye className="h-3.5 w-3.5" />
+                                  )}
+                                </button>
+                                {paz.passwordIniziale && (
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      copiaValore(
+                                        paz.passwordIniziale!,
+                                        'Password provvisoria'
+                                      )
+                                    }
+                                    className="p-1 rounded text-slate-400 hover:text-amber-300 hover:bg-slate-800 transition-colors"
+                                    title="Copia solo password temporanea"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                              <span className="text-[10px] text-amber-400 font-semibold flex items-center gap-1">
+                                <Key className="h-2.5 w-2.5 text-amber-400" />
+                                Provvisoria da comunicare
+                              </span>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col gap-0.5">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded bg-emerald-950/70 border border-emerald-800/80 text-[10px] font-bold text-emerald-400 w-fit">
+                                <ShieldCheck className="h-3 w-3" />
+                                Password Personale
+                              </span>
+                              <span className="text-[10px] text-slate-500">
+                                Impostata dal paziente (riservata)
+                              </span>
+                            </div>
+                          )}
+                        </td>
+
+                        {/* Stato Account */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap">
+                          {paz.primoAccesso ? (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
+                              1° Accesso in attesa
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 inline-flex items-center gap-1.5">
+                              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                              Attivo
+                            </span>
+                          )}
+                        </td>
+
+                        {/* Data Registrazione */}
+                        <td className="py-2.5 px-3.5 whitespace-nowrap text-slate-400 font-mono text-[11px]">
+                          {paz.createdAt
+                            ? new Date(paz.createdAt).toLocaleDateString('it-IT', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                              })
+                            : '—'}
+                        </td>
+
+                        {/* Azioni */}
+                        <td className="py-2.5 px-3.5 text-right whitespace-nowrap">
+                          <div className="inline-flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => copiaCredenzialiPaziente(paz)}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-indigo-950/70 border border-indigo-800/80 text-indigo-300 hover:text-white hover:bg-indigo-900/80 text-[11px] font-bold transition-all shadow-xs"
+                              title="Copia messaggio completo con credenziali per SMS/Email"
+                            >
+                              <Copy className="h-3 w-3" />
+                              <span>Copia Credenziali</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setPazienteDaReimpostare(paz)}
+                              className="p-1.5 rounded-lg text-amber-400 hover:text-amber-300 hover:bg-amber-950/60 border border-amber-900/60 transition-all"
+                              title="Rigenera nuova password temporanea di 6 caratteri"
+                            >
+                              <RefreshCw className="h-3.5 w-3.5" />
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => setPazienteDettaglio(paz)}
+                              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 border border-slate-800 transition-all"
+                              title="Visualizza scheda paziente e ricevuta"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer Bar & Pagination */}
+          <div className="p-3 sm:p-4 border-t border-slate-800 bg-slate-950 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-400">
+            <div className="flex items-center gap-2">
+              <span>
+                Visualizzati{' '}
+                <strong className="text-white font-mono">
+                  {pazientiFiltrati.length === 0 ? 0 : indiceInizioPazienti + 1}
+                </strong>
+                -
+                <strong className="text-white font-mono">
+                  {Math.min(indiceInizioPazienti + pazientiRighePerPagina, pazientiFiltrati.length)}
+                </strong>{' '}
+                di <strong className="text-white font-mono">{pazientiFiltrati.length}</strong> pazienti
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                disabled={pazientiPagina <= 1}
+                onClick={() => setPazientiPagina((p) => Math.max(1, p - 1))}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+                <span>Precedente</span>
+              </button>
+
+              <span className="px-2 text-xs font-mono text-slate-300">
+                {pazientiPagina} / {totalePaginePazienti}
+              </span>
+
+              <button
+                type="button"
+                disabled={pazientiPagina >= totalePaginePazienti}
+                onClick={() => setPazientiPagina((p) => Math.min(totalePaginePazienti, p + 1))}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-800 text-xs font-semibold text-slate-300 hover:text-white hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              >
+                <span>Successivo</span>
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 5: AUDIT LOG & SICUREZZA DB */}
       {tabAttiva === 'audit' && (
         <div className="w-full bg-slate-950 rounded-xl border border-slate-800 overflow-hidden shadow-sm flex flex-col">
           {/* Header Bar */}
@@ -2598,13 +3247,25 @@ export default function AdminPage() {
                   </table>
                 </div>
 
-                <div className="flex justify-end pt-3 border-t border-slate-800">
+                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-3 border-t border-slate-800">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setModalCsvOpen(false)
+                      setTabAttiva('pazienti')
+                      caricaPazienti()
+                    }}
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md shadow-emerald-600/20 transition-all"
+                  >
+                    <Users className="h-4 w-4" />
+                    <span>Visualizza in Tabella Pazienti & Credenziali</span>
+                  </button>
                   <button
                     type="button"
                     onClick={() => setModalCsvOpen(false)}
-                    className="px-5 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold"
+                    className="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-slate-300 hover:text-white font-bold text-xs transition-colors"
                   >
-                    Chiudi e Torna alla Dashboard
+                    Chiudi Finestra
                   </button>
                 </div>
               </div>
@@ -3192,6 +3853,164 @@ export default function AdminPage() {
               >
                 <Key className="h-4 w-4" />
                 <span>{generato ? 'Codice Registrato in Audit!' : 'Genera Recovery Code'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: DETTAGLI PAZIENTE & SCHEDA CREDENZIALI */}
+      {pazienteDettaglio && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-150 text-white">
+            <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2.5">
+                <Users className="h-5 w-5 text-indigo-400" />
+                <h3 className="text-base font-black text-white">
+                  Scheda Assistito & Credenziali
+                </h3>
+              </div>
+              <button
+                onClick={() => setPazienteDettaglio(null)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs">
+              <div className="p-4 rounded-2xl bg-slate-900 border border-slate-800 space-y-2">
+                <div className="flex items-center justify-between">
+                  <h4 className="text-base font-extrabold text-white">
+                    {pazienteDettaglio.cognome} {pazienteDettaglio.nome}
+                  </h4>
+                  {pazienteDettaglio.primoAccesso ? (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                      In attesa 1° accesso
+                    </span>
+                  ) : (
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                      Attivo
+                    </span>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-slate-400 pt-1">
+                  <div>Data Nascita: <span className="text-slate-200 font-mono">{pazienteDettaglio.dataNascita || '—'}</span></div>
+                  <div>Studio: <span className="text-slate-200">{pazienteDettaglio.nomeStudio || 'Studio Medico'}</span></div>
+                  <div>Medico: <span className="text-blue-400 font-semibold">{pazienteDettaglio.cognomeMedico ? `Dott. ${pazienteDettaglio.nomeMedico} ${pazienteDettaglio.cognomeMedico}` : '—'}</span></div>
+                  <div>Telefono: <span className="text-slate-200 font-mono">{pazienteDettaglio.telefono || '—'}</span></div>
+                  <div className="col-span-2">Email: <span className="text-slate-200">{pazienteDettaglio.email || 'Nessuna email registrata'}</span></div>
+                </div>
+              </div>
+
+              {/* Box Tagliando Credenziali */}
+              <div className="p-4 rounded-2xl bg-indigo-950/40 border border-indigo-800/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-indigo-300 uppercase tracking-wider text-[10px] flex items-center gap-1.5">
+                    <Key className="h-3.5 w-3.5 text-indigo-400" />
+                    Tagliando Credenziali Portale Paziente
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => copiaCredenzialiPaziente(pazienteDettaglio)}
+                    className="inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300 hover:text-white px-2 py-1 rounded bg-indigo-900/60 hover:bg-indigo-800/60 border border-indigo-700/60 transition-colors"
+                  >
+                    <Copy className="h-3 w-3" />
+                    <span>Copia Tutto</span>
+                  </button>
+                </div>
+
+                <div className="space-y-2 font-mono text-xs bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-400 font-sans">Username (Codice Fiscale):</span>
+                    <span className="text-white font-bold">{pazienteDettaglio.codiceFiscale}</span>
+                  </div>
+                  <div className="flex items-center justify-between pt-1 border-t border-slate-800">
+                    <span className="text-slate-400 font-sans">Password Provvisoria:</span>
+                    <span className="text-amber-300 font-bold bg-amber-950/80 px-2 py-0.5 rounded border border-amber-800/60">
+                      {pazienteDettaglio.passwordIniziale || (pazienteDettaglio.primoAccesso ? 'Da comunicare' : '[Password Personale Riservata]')}
+                    </span>
+                  </div>
+                </div>
+
+                <p className="text-[11px] text-slate-400 italic">
+                  * Al primo accesso, il paziente dovrà inserire queste credenziali e impostare obbligatoriamente una nuova password riservata.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex justify-between items-center pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                onClick={() => {
+                  setPazienteDaReimpostare(pazienteDettaglio)
+                  setPazienteDettaglio(null)
+                }}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-300 border border-amber-600/40 text-xs font-bold transition-all"
+              >
+                <RefreshCw className="h-3.5 w-3.5" />
+                <span>Reimposta Password Temporanea</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setPazienteDettaglio(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white transition-colors"
+              >
+                Chiudi
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODALE: CONFERMA RIGENERAZIONE PASSWORD TEMPORANEA */}
+      {pazienteDaReimpostare && (
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-slate-950 border border-slate-800 rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl text-white animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-amber-950/80 border border-amber-800/80 text-amber-400 flex items-center justify-center shrink-0">
+                <Key className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-white">Rigenera Password Temporanea</h3>
+                <p className="text-xs text-slate-400">
+                  {pazienteDaReimpostare.cognome} {pazienteDaReimpostare.nome} ({pazienteDaReimpostare.codiceFiscale})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-300 leading-relaxed">
+              Verrà creata una nuova password temporanea di 6 caratteri alfanumerici e l'account tornerà nello stato di <strong>"In attesa 1° accesso"</strong>.
+              Potrai comunicare immediatamente la nuova password al paziente telefonicamente o tramite messaggio.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-800">
+              <button
+                type="button"
+                disabled={reimpostandoPassword}
+                onClick={() => setPazienteDaReimpostare(null)}
+                className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 border border-slate-700 text-xs font-semibold text-slate-300 hover:text-white disabled:opacity-40 transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                disabled={reimpostandoPassword}
+                onClick={() => handleResetPasswordPaziente(pazienteDaReimpostare)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold text-xs shadow-md shadow-amber-600/20 disabled:opacity-50 transition-all"
+              >
+                {reimpostandoPassword ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generazione...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Conferma & Genera</span>
+                  </>
+                )}
               </button>
             </div>
           </div>

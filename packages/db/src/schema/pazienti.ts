@@ -24,6 +24,7 @@ export const pazienti = pgTable('pazienti', {
   email:          text('email').unique(),                    // GDPR-SENSITIVE (Facoltativo per CSV)
   telefono:       text('telefono'),                          // GDPR-SENSITIVE
   passwordHash:   text('password_hash').notNull(),
+  passwordIniziale: text('password_iniziale'), // Password temporanea visibile agli operatori fino al 1° accesso
   primoAccesso:   boolean('primo_accesso').notNull().default(true),
   pushConsenso:   boolean('push_consenso').notNull().default(false),
   reminderConfig: jsonb('reminder_config').notNull().default([]),

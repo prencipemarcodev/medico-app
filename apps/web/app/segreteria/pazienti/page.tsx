@@ -41,6 +41,9 @@ import {
   Check,
   RefreshCw,
   AlertTriangle,
+  Eye,
+  EyeOff,
+  Key,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -60,6 +63,7 @@ interface PazienteItem {
   nomeMedico: string | null
   cognomeMedico: string | null
   primoAccesso: boolean
+  passwordIniziale?: string | null
 }
 
 interface MedicoOpzione {
@@ -142,6 +146,11 @@ export default function SegreteriaPazientiPage() {
   const [importCurrentBatch, setImportCurrentBatch] = useState(0)
   const [importTotalBatches, setImportTotalBatches] = useState(0)
   const [importStatusText, setImportStatusText] = useState('')
+
+  // Gestione Credenziali & Reset Password Paziente
+  const [passwordVisibile, setPasswordVisibile] = useState(false)
+  const [reimpostandoPassword, setReimpostandoPassword] = useState(false)
+  const [modalConfermaResetOpen, setModalConfermaResetOpen] = useState(false)
 
   // 3. MODALE QR & LINK
   const [modalQrOpen, setModalQrOpen] = useState(false)
@@ -708,6 +717,52 @@ export default function SegreteriaPazientiPage() {
     document.body.removeChild(link)
   }
 
+  const copiaCredenzialiPaziente = (p: PazienteItem) => {
+    const pwd = p.passwordIniziale || (p.primoAccesso ? 'Da comunicare (In attesa 1° accesso)' : '[Password personale riservata impostata]')
+    const portaleUrl = typeof window !== 'undefined' ? window.location.origin : ''
+    const testo = `Credenziali di Accesso Portale Medico
+Paziente: ${p.cognome} ${p.nome}
+Codice Fiscale (Username): ${p.codiceFiscale}
+Password provvisoria: ${pwd}
+Studio: ${p.nomeStudio || nomeStudio || 'Studio Medico'}
+Medico Curante: ${p.cognomeMedico ? `Dott. ${p.nomeMedico} ${p.cognomeMedico}` : 'Assegnato'}
+Link Accesso: ${portaleUrl}/login
+
+Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di impostare una password personale e privata.`
+
+    navigator.clipboard.writeText(testo)
+    toast.success('Ricevuta Copiata!', `Testo pronto per l'invio via SMS o Email a ${p.nome} ${p.cognome}`)
+  }
+
+  const handleResetPasswordPaziente = async () => {
+    if (!selezionato) return
+    setReimpostandoPassword(true)
+    try {
+      const res = await fetch(`/api/pazienti/${selezionato.id}/reset-password`, {
+        method: 'POST',
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error || 'Errore generazione nuova password')
+
+      toast.success('Nuova Password Generata!', `Password temporanea: ${data.passwordTemporanea}`)
+      const aggiornato = {
+        ...selezionato,
+        passwordIniziale: data.passwordTemporanea,
+        primoAccesso: true,
+      }
+      setSelezionato(aggiornato)
+      setPazienti((prev) =>
+        prev.map((p) => (p.id === selezionato.id ? aggiornato : p))
+      )
+      setPasswordVisibile(true)
+      setModalConfermaResetOpen(false)
+    } catch (err: any) {
+      toast.error('Errore Reset', err.message || 'Impossibile reimpostare la password')
+    } finally {
+      setReimpostandoPassword(false)
+    }
+  }
+
   const registrationUrl =
     typeof window !== 'undefined' && codiceStudio
       ? `${window.location.origin}/registrazione-paziente?codiceStudio=${encodeURIComponent(codiceStudio)}`
@@ -968,23 +1023,101 @@ export default function SegreteriaPazientiPage() {
                 </div>
               </div>
 
-              {/* Info Account */}
-              <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-slate-800">Account Paziente Portale Sanitario</p>
-                  <p className="text-[11px] text-slate-500 mt-0.5">
-                    Username di accesso: <code className="font-mono font-bold text-indigo-700">{selezionato.codiceFiscale}</code>
-                  </p>
+              {/* Box Credenziali di Accesso Portale & Consegna al Paziente */}
+              <div className="p-4 rounded-2xl bg-indigo-50/60 border border-indigo-200/80 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Key className="h-4 w-4 text-indigo-600" />
+                    <span className="font-bold text-xs text-indigo-900 uppercase tracking-wider">
+                      Credenziali Portale Paziente & Primo Accesso
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => copiaCredenzialiPaziente(selezionato)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs shadow-xs transition-colors"
+                  >
+                    <Copy className="h-3.5 w-3.5" />
+                    <span>Copia Ricevuta Completa</span>
+                  </button>
                 </div>
-                {selezionato.primoAccesso ? (
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
-                    Password iniziale di 6 caratteri
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
+                  <div className="p-3 bg-white rounded-xl border border-indigo-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-400 block">Username (Codice Fiscale)</span>
+                      <span className="font-mono font-bold text-indigo-900 text-xs">{selezionato.codiceFiscale}</span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        navigator.clipboard.writeText(selezionato.codiceFiscale)
+                        toast.success('CF Copiato', selezionato.codiceFiscale)
+                      }}
+                      className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                      title="Copia Codice Fiscale"
+                    >
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+
+                  <div className="p-3 bg-white rounded-xl border border-indigo-100 flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-semibold text-slate-400 block">Password 1° Accesso</span>
+                      {selezionato.primoAccesso ? (
+                        <span className="font-mono font-black text-amber-800 text-xs bg-amber-50 px-2 py-0.5 rounded border border-amber-200 inline-block">
+                          {passwordVisibile ? selezionato.passwordIniziale || 'Non salvata' : '••••••'}
+                        </span>
+                      ) : (
+                        <span className="font-semibold text-emerald-700 text-xs flex items-center gap-1">
+                          <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                          Personale impostata
+                        </span>
+                      )}
+                    </div>
+                    {selezionato.primoAccesso && (
+                      <div className="flex items-center gap-1">
+                        <button
+                          type="button"
+                          onClick={() => setPasswordVisibile(!passwordVisibile)}
+                          className="p-1 text-slate-400 hover:text-indigo-600 rounded transition-colors"
+                          title={passwordVisibile ? "Nascondi password" : "Mostra password in chiaro"}
+                        >
+                          {passwordVisibile ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                        </button>
+                        {selezionato.passwordIniziale && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              navigator.clipboard.writeText(selezionato.passwordIniziale!)
+                              toast.success('Password Copiata', selezionato.passwordIniziale!)
+                            }}
+                            className="p-1 text-slate-400 hover:text-amber-600 rounded transition-colors"
+                            title="Copia password temporanea"
+                          >
+                            <Copy className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between pt-1 text-[11px]">
+                  <span className="text-slate-500 italic">
+                    {selezionato.primoAccesso
+                      ? 'L\'assistito deve effettuare il primo accesso e cambiare la password.'
+                      : 'L\'assistito ha già completato il primo accesso e impostato la sua password.'}
                   </span>
-                ) : (
-                  <span className="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
-                    Password personalizzata
-                  </span>
-                )}
+                  <button
+                    type="button"
+                    onClick={() => setModalConfermaResetOpen(true)}
+                    className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 font-bold hover:underline"
+                  >
+                    <RefreshCw className="h-3 w-3" />
+                    <span>Rigenera Password Provvisoria</span>
+                  </button>
+                </div>
               </div>
 
               {/* Sezione Cartella Clinica & Appunti Sanitari Condivisi col Paziente */}
@@ -2071,6 +2204,58 @@ export default function SegreteriaPazientiPage() {
           onConfirm={eseguiEliminazioneDocPaziente}
           onClose={() => !eliminandoDoc && setDocToDelete(null)}
         />
+      )}
+
+      {/* MODALE CONFERMA RESET PASSWORD PAZIENTE */}
+      {modalConfermaResetOpen && selezionato && (
+        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-200">
+                <Key className="h-5 w-5" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Rigenera Password Temporanea</h3>
+                <p className="text-xs text-slate-500 font-medium">
+                  {selezionato.cognome} {selezionato.nome} ({selezionato.codiceFiscale})
+                </p>
+              </div>
+            </div>
+
+            <p className="text-xs text-slate-600 leading-relaxed">
+              Verrà generata una nuova password provvisoria di 6 caratteri alfanumerici e l'account tornerà nello stato di <strong>"In attesa 1° accesso"</strong>. Potrai comunicarla all'assistito a voce o tramite messaggio.
+            </p>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-100">
+              <button
+                type="button"
+                disabled={reimpostandoPassword}
+                onClick={() => setModalConfermaResetOpen(false)}
+                className="px-4 py-2 rounded-xl text-slate-500 hover:bg-slate-100 font-bold text-xs disabled:opacity-40 transition-colors"
+              >
+                Annulla
+              </button>
+              <button
+                type="button"
+                disabled={reimpostandoPassword}
+                onClick={handleResetPasswordPaziente}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white font-bold text-xs shadow-md shadow-amber-500/20 disabled:opacity-50 transition-all"
+              >
+                {reimpostandoPassword ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Generazione...</span>
+                  </>
+                ) : (
+                  <>
+                    <RefreshCw className="h-4 w-4" />
+                    <span>Conferma & Genera</span>
+                  </>
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   )

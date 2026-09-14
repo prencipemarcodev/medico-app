@@ -95,13 +95,13 @@ export default function SegreteriaRichiestePage() {
         {/* Quick Search */}
         <div className="relative w-full md:w-80">
           <Search className="absolute left-3.5 top-3 h-4 w-4 text-slate-400" />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Cerca per paziente, CF o farmaco..."
-            className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50/50"
-          />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Cerca per paziente, CF o farmaco..."
+              className="w-full pl-10 pr-4 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-900 bg-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white shadow-xs"
+            />
         </div>
       </div>
 

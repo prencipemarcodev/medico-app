@@ -213,7 +213,7 @@ export default function SegreteriaPage() {
                 placeholder="Nome e Cognome Paziente"
                 value={nomeTel}
                 onChange={(e) => setNomeTel(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white shadow-xs"
                 required
               />
               <input
@@ -221,7 +221,7 @@ export default function SegreteriaPage() {
                 placeholder="Motivo (es. Febbre alta)"
                 value={motivoTel}
                 onChange={(e) => setMotivoTel(e.target.value)}
-                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white shadow-xs"
               />
               <button
                 type="submit"

@@ -81,7 +81,7 @@ export default function SegreteriaBroadcastPage() {
               type="date"
               value={dataTarget}
               onChange={(e) => setDataTarget(e.target.value)}
-              className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-800 outline-none focus:ring-2 focus:ring-amber-500"
+              className="w-full px-4 py-3 rounded-2xl border border-slate-200 text-sm font-bold text-slate-900 bg-white outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white shadow-xs"
             />
             <p className="text-[11px] text-slate-400 mt-1">
               Verranno raggiunti i 7 pazienti prenotati oggi con notifiche push e badge in app.
@@ -127,7 +127,7 @@ export default function SegreteriaBroadcastPage() {
                 setTesto(e.target.value)
                 if (erroreTesto) setErroreTesto(null)
               }}
-              className={`w-full p-4 rounded-2xl border text-sm font-medium text-slate-800 outline-none focus:ring-2 focus:ring-amber-500 resize-none transition-all ${
+              className={`w-full p-4 rounded-2xl border text-sm font-medium text-slate-900 bg-white placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white resize-none transition-all shadow-xs ${
                 erroreTesto ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
               }`}
               placeholder="Scrivi qui il messaggio..."

@@ -67,7 +67,7 @@ export default function SegreteriaLayout({ children }: { children: React.ReactNo
   ]
 
   return (
-    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-slate-50 font-sans">
+    <div className="flex h-[100dvh] min-h-[100dvh] overflow-hidden bg-slate-50 font-sans" style={{ colorScheme: 'light' }}>
       {/* Overlay mobile */}
       {mobileMenuAperto && (
         <div

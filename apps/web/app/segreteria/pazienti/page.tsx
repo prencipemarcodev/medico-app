@@ -44,6 +44,11 @@ import {
   Eye,
   EyeOff,
   Key,
+  Table,
+  LayoutGrid,
+  ChevronLeft,
+  ChevronRight,
+  Filter,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
@@ -90,6 +95,14 @@ export default function SegreteriaPazientiPage() {
   const [pazienti, setPazienti] = useState<PazienteItem[]>([])
   const [loading, setLoading] = useState(false)
   const [selezionato, setSelezionato] = useState<PazienteItem | null>(null)
+
+  // Vista: Schede Dossier vs Tabella Credenziali & Password
+  const [vistaModalita, setVistaModalita] = useState<'schede' | 'tabella'>('schede')
+  const [tabellaPasswordVisibili, setTabellaPasswordVisibili] = useState<Record<string, boolean>>({})
+  const [tabellaFiltroStato, setTabellaFiltroStato] = useState<'tutti' | 'in_attesa' | 'completato'>('tutti')
+  const [tabellaFiltroMedico, setTabellaFiltroMedico] = useState<string>('tutti')
+  const [tabellaPagina, setTabellaPagina] = useState(1)
+  const tabellaRighePerPagina = 25
 
   // Conferma eliminazione documento non bloccante
   const [docToDelete, setDocToDelete] = useState<{ id: string; titolo: string } | null>(null)
@@ -768,6 +781,19 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
       ? `${window.location.origin}/registrazione-paziente?codiceStudio=${encodeURIComponent(codiceStudio)}`
       : ''
 
+  const pazientiTabellaFiltrati = pazienti.filter((p) => {
+    if (tabellaFiltroStato === 'in_attesa' && !p.primoAccesso) return false
+    if (tabellaFiltroStato === 'completato' && p.primoAccesso) return false
+    if (tabellaFiltroMedico !== 'tutti' && p.medicoId !== tabellaFiltroMedico) return false
+    return true
+  })
+
+  const totalePagineTabella = Math.max(1, Math.ceil(pazientiTabellaFiltrati.length / tabellaRighePerPagina))
+  const pazientiTabellaPaginati = pazientiTabellaFiltrati.slice(
+    (tabellaPagina - 1) * tabellaRighePerPagina,
+    tabellaPagina * tabellaRighePerPagina
+  )
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto font-sans">
       {/* Top Banner & Quick Actions */}
@@ -785,8 +811,8 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </p>
         </div>
 
-        {/* Search Bar & Action Buttons */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        {/* Search Bar, Vista Toggle & Action Buttons */}
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 flex-wrap">
           <div className="relative w-full sm:w-64">
             <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
               {loading ? <Loader2 className="h-4 w-4 animate-spin text-amber-600" /> : <Search className="h-4 w-4" />}
@@ -794,10 +820,44 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             <input
               type="text"
               value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Cerca CF, cognome..."
-              className="w-full pl-9 pr-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 bg-slate-50/50"
+              onChange={(e) => {
+                setQuery(e.target.value)
+                setTabellaPagina(1)
+              }}
+              placeholder="Cerca CF, cognome, nome..."
+              className="w-full pl-9 pr-3 py-2.5 rounded-2xl border border-slate-200 text-xs font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white shadow-xs"
             />
+          </div>
+
+          {/* Toggle Vista: Schede vs Tabella Credenziali */}
+          <div className="flex items-center p-1 bg-slate-100 rounded-2xl border border-slate-200">
+            <button
+              type="button"
+              onClick={() => setVistaModalita('schede')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                vistaModalita === 'schede'
+                  ? 'bg-white text-slate-900 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <LayoutGrid className="h-3.5 w-3.5" />
+              <span>Dossier & Schede</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setVistaModalita('tabella')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                vistaModalita === 'tabella'
+                  ? 'bg-white text-indigo-950 shadow-xs'
+                  : 'text-slate-500 hover:text-slate-900'
+              }`}
+            >
+              <Table className="h-3.5 w-3.5 text-indigo-600" />
+              <span>Tabella Credenziali</span>
+              <span className="px-1.5 py-0.2 rounded-full text-[10px] bg-amber-100 text-amber-800 font-extrabold">
+                {pazienti.filter((p) => p.primoAccesso).length}
+              </span>
+            </button>
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
@@ -861,8 +921,9 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
         </div>
       )}
 
-      {/* Grid: Left List, Right Detail */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {/* Vista Switch: Schede Dossier vs Tabella Credenziali */}
+      {vistaModalita === 'schede' ? (
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Left Column: Risultati Ricerca */}
         <div className="lg:col-span-5 bg-white rounded-3xl border border-slate-200/80 shadow-sm p-5 space-y-3">
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -1288,10 +1349,307 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           )}
         </div>
       </div>
+    ) : (
+        /* Tabella Credenziali & Password per Segreteria */
+        <div className="bg-white rounded-3xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col space-y-0 animate-in fade-in-50 duration-150">
+          {/* Header Barra Tabella & Filtri */}
+          <div className="p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50/50">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="p-1.5 rounded-xl bg-indigo-50 text-indigo-700">
+                  <Key className="h-4 w-4" />
+                </span>
+                <h3 className="font-extrabold text-slate-900 text-base">
+                  Registro Credenziali & Password 1° Accesso
+                </h3>
+              </div>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Visualizza, comunica e rigenera le password provvisorie per il primo accesso degli assistiti allo sportello.
+              </p>
+            </div>
+
+            {/* Filtri per Stato Credenziali e per Medico */}
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-1 bg-white p-1 rounded-xl border border-slate-200 shadow-2xs">
+                {[
+                  { id: 'tutti', label: 'Tutti' },
+                  { id: 'in_attesa', label: 'In attesa 1° accesso' },
+                  { id: 'completato', label: 'Password Personale' },
+                ].map((st) => (
+                  <button
+                    key={st.id}
+                    type="button"
+                    onClick={() => {
+                      setTabellaFiltroStato(st.id as any)
+                      setTabellaPagina(1)
+                    }}
+                    className={`px-2.5 py-1 rounded-lg text-xs font-bold transition-all ${
+                      tabellaFiltroStato === st.id
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900'
+                    }`}
+                  >
+                    {st.label}
+                  </button>
+                ))}
+              </div>
+
+              {mediciStudio.length > 0 && (
+                <select
+                  value={tabellaFiltroMedico}
+                  onChange={(e) => {
+                    setTabellaFiltroMedico(e.target.value)
+                    setTabellaPagina(1)
+                  }}
+                  className="px-3 py-1.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="tutti">Tutti i Medici</option>
+                  {mediciStudio.map((m) => (
+                    <option key={m.id} value={m.id}>
+                      Dott. {m.cognome} {m.nome}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </div>
+
+          {/* Tabella Dati ERP */}
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-xs text-slate-700">
+              <thead className="bg-slate-50/80 text-slate-500 font-bold uppercase tracking-wider text-[11px] border-b border-slate-100">
+                <tr>
+                  <th className="px-5 py-3.5">Assistito</th>
+                  <th className="px-4 py-3.5">Codice Fiscale</th>
+                  <th className="px-4 py-3.5">Medico Curante</th>
+                  <th className="px-4 py-3.5">Recapiti</th>
+                  <th className="px-4 py-3.5">Stato Credenziali</th>
+                  <th className="px-4 py-3.5">Password 1° Accesso</th>
+                  <th className="px-5 py-3.5 text-right">Azioni Rapide</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {loading ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-400">
+                      <Loader2 className="h-6 w-6 animate-spin text-amber-600 mx-auto mb-2" />
+                      <span>Caricamento anagrafica assistiti...</span>
+                    </td>
+                  </tr>
+                ) : pazientiTabellaPaginati.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="p-8 text-center text-slate-400 space-y-1">
+                      <p className="font-bold text-slate-600">Nessun assistito corrisponde ai criteri selezionati</p>
+                      <p className="text-[11px]">Prova a modificare la ricerca o i filtri di stato.</p>
+                    </td>
+                  </tr>
+                ) : (
+                  pazientiTabellaPaginati.map((paz) => {
+                    const isVisibile = !!tabellaPasswordVisibili[paz.id]
+                    return (
+                      <tr key={paz.id} className="hover:bg-slate-50/70 transition-colors group">
+                        <td className="px-5 py-3.5 whitespace-nowrap">
+                          <div className="font-bold text-slate-900 text-xs">
+                            {paz.cognome} {paz.nome}
+                          </div>
+                          <div className="text-[10px] text-slate-400 font-medium">
+                            Nato/a il {paz.dataNascita || '—'}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3.5 whitespace-nowrap font-mono">
+                          <div className="inline-flex items-center gap-1.5 bg-slate-100/80 px-2 py-0.5 rounded text-indigo-950 font-bold text-xs border border-slate-200">
+                            <span>{paz.codiceFiscale}</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                navigator.clipboard.writeText(paz.codiceFiscale)
+                                toast.success('CF Copiato', paz.codiceFiscale)
+                              }}
+                              className="text-slate-400 hover:text-indigo-600 p-0.5 rounded transition-colors"
+                              title="Copia CF"
+                            >
+                              <Copy className="h-3 w-3" />
+                            </button>
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <span className="font-semibold text-slate-800 text-xs">
+                            {paz.cognomeMedico ? `Dott. ${paz.cognomeMedico}` : 'Non assegnato'}
+                          </span>
+                        </td>
+
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          <div className="space-y-0.5 text-[11px]">
+                            {paz.telefono && (
+                              <div className="flex items-center gap-1 text-slate-700 font-medium">
+                                <PhoneCall className="h-3 w-3 text-slate-400 shrink-0" />
+                                <span>{paz.telefono}</span>
+                              </div>
+                            )}
+                            {paz.email && (
+                              <div className="flex items-center gap-1 text-slate-500 truncate max-w-[140px]">
+                                <Mail className="h-3 w-3 text-slate-400 shrink-0" />
+                                <span>{paz.email}</span>
+                              </div>
+                            )}
+                            {!paz.telefono && !paz.email && (
+                              <span className="text-slate-400 italic">Nessun recapito</span>
+                            )}
+                          </div>
+                        </td>
+
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {paz.primoAccesso ? (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                              <Key className="h-3 w-3 text-amber-600" />
+                              In attesa 1° accesso
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                              <ShieldCheck className="h-3 w-3 text-emerald-600" />
+                              Password personale attiva
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-4 py-3.5 whitespace-nowrap">
+                          {paz.primoAccesso ? (
+                            <div className="inline-flex items-center gap-1.5">
+                              <span className="font-mono font-black text-amber-900 bg-amber-50 border border-amber-200/90 px-2 py-0.5 rounded text-xs">
+                                {isVisibile ? paz.passwordIniziale || 'Non salvata' : '••••••'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setTabellaPasswordVisibili((prev) => ({
+                                    ...prev,
+                                    [paz.id]: !prev[paz.id],
+                                  }))
+                                }
+                                className="p-1 text-slate-400 hover:text-slate-700 rounded transition-colors"
+                                title={isVisibile ? 'Nascondi password' : 'Mostra password temporanea in chiaro'}
+                              >
+                                {isVisibile ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                              </button>
+                              {paz.passwordIniziale && (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    navigator.clipboard.writeText(paz.passwordIniziale!)
+                                    toast.success('Password Copiata', paz.passwordIniziale!)
+                                  }}
+                                  className="p-1 text-slate-400 hover:text-amber-600 rounded transition-colors"
+                                  title="Copia password temporanea"
+                                >
+                                  <Copy className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-[11px] text-slate-400 italic">
+                              Riservata (impostata dall'utente)
+                            </span>
+                          )}
+                        </td>
+
+                        <td className="px-5 py-3.5 whitespace-nowrap text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const pwd =
+                                  paz.passwordIniziale ||
+                                  (paz.primoAccesso
+                                    ? 'Da comunicare (In attesa 1° accesso)'
+                                    : '[Password personale impostata]')
+                                const testo = `PROMEMORIA ACCESSO - STUDIO MEDICO\nPaziente: ${paz.cognome} ${paz.nome}\nUsername (CF): ${paz.codiceFiscale}\nPassword provvisoria: ${pwd}\nPortale Studio: ${registrationUrl || window.location.origin}`
+                                navigator.clipboard.writeText(testo)
+                                toast.success('Ricevuta Copiata', `Credenziali di ${paz.cognome} ${paz.nome}`)
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-[11px] font-bold text-slate-700 transition-colors shadow-2xs"
+                              title="Copia promemoria completo con CF e password provvisoria"
+                            >
+                              <Copy className="h-3 w-3 text-slate-400" />
+                              <span>Copia</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelezionato(paz)
+                                setModalConfermaResetOpen(true)
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl border border-amber-200 bg-amber-50 hover:bg-amber-100 text-[11px] font-bold text-amber-800 transition-colors shadow-2xs"
+                              title="Genera una nuova password provvisoria a 6 caratteri"
+                            >
+                              <RefreshCw className="h-3 w-3 text-amber-600" />
+                              <span>Rigenera</span>
+                            </button>
+
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelezionato(paz)
+                                setVistaModalita('schede')
+                              }}
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 hover:bg-black text-[11px] font-bold text-white transition-colors shadow-2xs"
+                              title="Visualizza la cartella clinica e i documenti dell'assistito"
+                            >
+                              <span>Dossier</span>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Footer Paginazione */}
+          <div className="p-4 border-t border-slate-100 flex items-center justify-between bg-slate-50/50 text-xs text-slate-500">
+            <div>
+              Mostrati <strong className="text-slate-800">{pazientiTabellaPaginati.length}</strong> di{' '}
+              <strong className="text-slate-800">{pazientiTabellaFiltrati.length}</strong> assistiti filtrati (
+              {pazienti.length} totali)
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="font-semibold text-slate-600">
+                Pagina {tabellaPagina} di {totalePagineTabella}
+              </span>
+              <div className="flex items-center gap-1">
+                <button
+                  type="button"
+                  disabled={tabellaPagina <= 1}
+                  onClick={() => setTabellaPagina((p) => Math.max(1, p - 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronLeft className="h-4 w-4 text-slate-700" />
+                </button>
+                <button
+                  type="button"
+                  disabled={tabellaPagina >= totalePagineTabella}
+                  onClick={() => setTabellaPagina((p) => Math.min(totalePagineTabella, p + 1))}
+                  className="p-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-30 disabled:pointer-events-none transition-colors"
+                >
+                  <ChevronRight className="h-4 w-4 text-slate-700" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 1. MODALE: REGISTRA NUOVO PAZIENTE AL BANCO */}
       {modalNuovoOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -1379,7 +1737,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       }
                     }}
                     required
-                    className={`w-full px-3 py-2.5 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 bg-white ${
+                    className={`w-full px-3 py-2.5 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 ${
                       nuovoFieldErrors.medico
                         ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
                         : 'border-slate-200'
@@ -1412,7 +1770,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                           setNuovoFieldErrors((prev) => ({ ...prev, nome: '' }))
                         }
                       }}
-                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 ${
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 placeholder:text-slate-400 focus:bg-white ${
                         nuovoFieldErrors.nome
                           ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
                           : 'border-slate-200'
@@ -1437,7 +1795,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                           setNuovoFieldErrors((prev) => ({ ...prev, cognome: '' }))
                         }
                       }}
-                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 ${
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 placeholder:text-slate-400 focus:bg-white ${
                         nuovoFieldErrors.cognome
                           ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
                           : 'border-slate-200'
@@ -1471,7 +1829,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                           setNuovoFieldErrors((prev) => ({ ...prev, cf: '' }))
                         }
                       }}
-                      className={`w-full px-3 py-2 rounded-xl border font-mono font-bold uppercase focus:ring-2 focus:ring-amber-500 ${
+                      className={`w-full px-3 py-2 rounded-xl border font-mono font-bold uppercase focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 placeholder:text-slate-400 focus:bg-white ${
                         nuovoFieldErrors.cf
                           ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
                           : 'border-slate-200'
@@ -1495,7 +1853,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                           setNuovoFieldErrors((prev) => ({ ...prev, dataNascita: '' }))
                         }
                       }}
-                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 ${
+                      className={`w-full px-3 py-2 rounded-xl border font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 focus:bg-white ${
                         nuovoFieldErrors.dataNascita
                           ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20'
                           : 'border-slate-200'
@@ -1517,7 +1875,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       placeholder="340 1234567"
                       value={nuovoTelefono}
                       onChange={(e) => setNuovoTelefono(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 placeholder:text-slate-400 focus:bg-white"
                     />
                   </div>
                   <div>
@@ -1527,7 +1885,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                       placeholder="paziente@email.it"
                       value={nuovaEmail}
                       onChange={(e) => setNuovaEmail(e.target.value)}
-                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 placeholder:text-slate-400 focus:bg-white"
                     />
                   </div>
                 </div>
@@ -1541,7 +1899,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                     placeholder="Lascia vuoto per generare password provvisoria a 6 caratteri"
                     value={nuovaPassword}
                     onChange={(e) => setNuovaPassword(e.target.value)}
-                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold focus:ring-2 focus:ring-amber-500 bg-white text-slate-900 placeholder:text-slate-400 focus:bg-white"
                   />
                 </div>
 
@@ -1570,7 +1928,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* 2. MODALE: IMPORTA CSV */}
       {modalCsvOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-2xl w-full space-y-5 shadow-2xl border border-slate-200 max-h-[90vh] overflow-y-auto">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -1814,7 +2175,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* 3. MODALE: QR & LINK REGISTRAZIONE STUDIO */}
       {modalQrOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-5 shadow-2xl border border-slate-200 text-center">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -1871,7 +2235,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: REGISTRA RICHIESTA FARMACO/CERTIFICATO */}
       {modalRichiestaOpen && selezionato && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1891,7 +2258,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 <select
                   value={tipoRichiesta}
                   onChange={(e) => setTipoRichiesta(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="medicinale">💊 Prescrizione Farmaco / Ricetta Continuativa</option>
                   <option value="certificato">📋 Certificato Medico (Sportivo / Buona Salute)</option>
@@ -1909,7 +2276,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. Cardioaspirina 100mg, 1 scatola"
                   value={farmacoNome}
                   onChange={(e) => setFarmacoNome(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
@@ -1935,7 +2302,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE: MODIFICA CONTATTI */}
       {modalContattiOpen && selezionato && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
@@ -1957,7 +2327,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. +39 340 1234567"
                   value={editTelefono}
                   onChange={(e) => setEditTelefono(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 
@@ -1970,7 +2340,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. paziente@email.it"
                   value={editEmail}
                   onChange={(e) => setEditEmail(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
                 />
               </div>
 
@@ -1996,7 +2366,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* 4. MODALE ASSOCIA PAZIENTE REGISTRATO TRAMITE CODICE FISCALE */}
       {modalAssociaCfOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full space-y-4 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-black text-slate-900 flex items-center gap-2">
@@ -2033,7 +2406,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. RSSMRA80A01H501U"
                   value={associaCfInput}
                   onChange={(e) => setAssociaCfInput(e.target.value.toUpperCase())}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 uppercase font-mono font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-slate-50/50 text-sm"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 uppercase font-mono font-bold text-slate-900 bg-white placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-sm"
                 />
               </div>
 
@@ -2088,7 +2461,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* 5. MODALE AGGIUNGI DOCUMENTO / APPUNTO CLINICO */}
       {modalDocPazienteOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 max-w-lg w-full space-y-4 shadow-2xl border border-slate-200">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-sm font-black text-slate-900 flex items-center gap-2">
@@ -2118,7 +2494,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Es. Esami urine, Referto specialistico, Nota segreteria..."
                   value={docTitolo}
                   onChange={(e) => setDocTitolo(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -2149,7 +2525,7 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                   placeholder="Note, annotazioni o comunicazioni dello studio per il paziente..."
                   value={docNote}
                   onChange={(e) => setDocNote(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 font-semibold text-slate-900 bg-white placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
 
@@ -2208,7 +2584,10 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
 
       {/* MODALE CONFERMA RESET PASSWORD PAZIENTE */}
       {modalConfermaResetOpen && selezionato && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4"
+          style={{ colorScheme: 'light' }}
+        >
           <div className="bg-white rounded-3xl p-6 max-w-md w-full space-y-4 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center gap-3">
               <div className="h-10 w-10 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center shrink-0 border border-amber-200">

@@ -8,17 +8,25 @@
   }
 
   html {
-    background-color: #090d16;
-    color-scheme: dark;
     -webkit-tap-highlight-color: transparent;
   }
 
   body {
-    background-color: #090d16;
     min-height: 100vh;
     min-height: 100dvh;
     margin: 0;
     padding: 0;
+  }
+
+  /* Assicura che gli input abbiano sempre sfondo bianco, testo scuro e color-scheme coerente */
+  input, select, textarea {
+    color-scheme: light;
+    background-color: #ffffff;
+    color: #0f172a;
+  }
+  input::placeholder, textarea::placeholder {
+    color: #94a3b8;
+    opacity: 1;
   }
 }
 

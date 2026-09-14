@@ -48,7 +48,8 @@ export function useToast() {
   return context
 }
 
-export function ToastProvider({ children }: { children: React.ReactNode }) {
+// children: any per piena compatibilità tra i tipi React 18 (@types/react) e Next.js 15 (React 19 types che includono bigint)
+export function ToastProvider({ children }: { children: any }) {
   const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const dismiss = useCallback((id: string) => {

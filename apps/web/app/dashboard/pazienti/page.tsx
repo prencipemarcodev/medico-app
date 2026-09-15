@@ -43,7 +43,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
-import { PatientListSkeleton, DocumentCardSkeleton, Skeleton } from '@/components/ui/skeleton'
+import { PatientListSkeleton, DocumentCardSkeleton, Skeleton, LoadingBeam } from '@/components/ui/skeleton'
 
 interface PazienteItem {
   id: string
@@ -733,9 +733,12 @@ export default function MedicoPazientiPage() {
 
           <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
             {loading ? (
-              <PatientListSkeleton count={5} />
+              <div className="space-y-2">
+                <LoadingBeam />
+                <PatientListSkeleton count={5} />
+              </div>
             ) : pazienti.length === 0 ? (
-              <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2">
+              <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200 space-y-2 animate-fade-in-up">
                 <Users className="h-8 w-8 text-slate-300 mx-auto" />
                 <p className="text-xs font-bold text-slate-600">Nessun assistito trovato</p>
                 <p className="text-[11px] text-slate-400">
@@ -745,16 +748,17 @@ export default function MedicoPazientiPage() {
                 </p>
               </div>
             ) : (
-              pazienti.map((paz) => {
+              pazienti.map((paz, idx) => {
                 const isSelected = selezionato?.id === paz.id
                 return (
                   <button
                     key={paz.id}
                     type="button"
                     onClick={() => setSelezionato(paz)}
-                    className={`w-full p-4 rounded-2xl border text-left transition-all ${
+                    style={{ animationDelay: `${idx * 35}ms` }}
+                    className={`w-full p-4 rounded-2xl border text-left transition-all animate-fade-in-up ${
                       isSelected
-                        ? 'bg-blue-50/60 border-blue-500 ring-2 ring-blue-500/20 shadow-xs'
+                        ? 'bg-sky-50/70 border-sky-500 ring-2 ring-sky-500/20 shadow-xs'
                         : 'bg-white border-slate-200/80 hover:bg-slate-50 hover:border-slate-300'
                     }`}
                   >
@@ -790,7 +794,7 @@ export default function MedicoPazientiPage() {
               {/* Header Scheda */}
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-5">
                 <div className="flex items-center gap-3.5">
-                  <div className="h-14 w-14 rounded-2xl bg-blue-100 text-blue-800 font-extrabold text-xl flex items-center justify-center border border-blue-200">
+                  <div className="h-14 w-14 rounded-2xl bg-sky-100 text-sky-800 font-extrabold text-xl flex items-center justify-center border border-sky-200">
                     {selezionato.nome[0]}
                     {selezionato.cognome[0]}
                   </div>
@@ -828,7 +832,7 @@ export default function MedicoPazientiPage() {
 
                 <div className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200/80 text-xs">
                   <span className="text-slate-400 block font-medium">Medico Curante</span>
-                  <span className="font-bold text-blue-700 mt-0.5 block">
+                  <span className="font-bold text-sky-700 mt-0.5 block">
                     Dott. {selezionato.nomeMedico} {selezionato.cognomeMedico}
                   </span>
                 </div>
@@ -857,7 +861,7 @@ export default function MedicoPazientiPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <button
                     onClick={handleChiamaVisita}
-                    className="p-4 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-md shadow-blue-600/20 transition-all flex items-center justify-center gap-2"
+                    className="p-4 rounded-2xl bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-xs shadow-md shadow-sky-600/20 transition-all flex items-center justify-center gap-2 active:scale-95"
                   >
                     <Stethoscope className="h-4 w-4" />
                     <span>Chiama in Ambulatorio / Avvia Visita</span>

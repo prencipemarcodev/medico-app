@@ -67,64 +67,32 @@ export async function GET(request: Request) {
       .where(and(...condizioni))
       .orderBy(asc(slotAgenda.oraInizio))
 
-    // Se non ci sono slot nel DB per questa data e abbiamo un medico/studio, generiamo gli slot standard
-    if (slots.length === 0 && medicoId) {
-      const [medico] = await db
-        .select({ id: medici.id, studioId: medici.studioId })
-        .from(medici)
-        .where(eq(medici.id, medicoId))
-        .limit(1)
+    const now = new Date()
+    const mappedSlots = slots.map((s) => {
+      // Parsa data e ora inizio dello slot nel tempo locale
+      const dateParts = s.data.split('-').map(Number)
+      const timeParts = s.oraInizio.split(':').map(Number)
+      const year = dateParts[0] ?? 2026
+      const month = dateParts[1] ?? 1
+      const day = dateParts[2] ?? 1
+      const hour = timeParts[0] ?? 0
+      const minute = timeParts[1] ?? 0
+      const slotStart = new Date(year, month - 1, day, hour, minute, 0)
+      const isPast = slotStart <= now
 
-      if (medico) {
-        const orariDefault = [
-          { start: '09:00', end: '09:20', durata: 20 },
-          { start: '09:20', end: '09:40', durata: 20 },
-          { start: '09:40', end: '10:00', durata: 20 },
-          { start: '10:20', end: '10:40', durata: 20 },
-          { start: '10:40', end: '11:00', durata: 20 },
-          { start: '11:00', end: '11:30', durata: 30 },
-          { start: '15:00', end: '15:30', durata: 30 },
-          { start: '15:30', end: '16:00', durata: 30 },
-          { start: '16:00', end: '16:30', durata: 30 },
-          { start: '16:30', end: '17:00', durata: 30 },
-        ]
-
-        const newSlotsValues = orariDefault.map((o) => ({
-          medicoId: medico.id,
-          studioId: medico.studioId,
-          data: dataParam!,
-          oraInizio: o.start,
-          oraFine: o.end,
-          durataMin: o.durata,
-          stato: 'libero' as const,
-        }))
-
-        await db.insert(slotAgenda).values(newSlotsValues).onConflictDoNothing()
-
-        slots = await db
-          .select({
-            id: slotAgenda.id,
-            medicoId: slotAgenda.medicoId,
-            studioId: slotAgenda.studioId,
-            data: slotAgenda.data,
-            oraInizio: slotAgenda.oraInizio,
-            oraFine: slotAgenda.oraFine,
-            durataMin: slotAgenda.durataMin,
-            stato: slotAgenda.stato,
-            lockedUntil: slotAgenda.lockedUntil,
-            lockedBy: slotAgenda.lockedBy,
-          })
-          .from(slotAgenda)
-          .where(and(...condizioni))
-          .orderBy(asc(slotAgenda.oraInizio))
+      return {
+        ...s,
+        isPast,
+        // Se lo slot è nel passato e risultava ancora libero, viene marcato come chiuso
+        stato: isPast && s.stato === 'libero' ? ('chiuso' as const) : s.stato,
       }
-    }
+    })
 
     return NextResponse.json({
       data: dataParam,
       medicoId,
       currentUserId: session?.id || null,
-      slots,
+      slots: mappedSlots,
     })
   } catch (error: any) {
     console.error('Errore nel recupero degli slot:', error)

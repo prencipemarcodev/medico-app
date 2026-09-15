@@ -43,6 +43,7 @@ interface Slot {
   stato?: 'libero' | 'bloccato' | 'prenotato' | 'chiuso'
   lockedBy?: string | null
   lockedUntil?: string | null
+  isPast?: boolean
 }
 
 interface GiornoCalendario {
@@ -58,9 +59,10 @@ interface GiornoCalendario {
 }
 
 /**
- * Genera l'elenco dei giorni per i prossimi 30 giorni a partire dalla data odierna
+ * Genera l'elenco dei giorni per i prossimi 30 giorni a partire dalla data odierna.
+ * Gli slot orari non vengono inseriti staticamente, ma caricati esclusivamente dal database reale.
  */
-function generaCalendario30Giorni(baseDate: Date = new Date('2026-09-12T08:00:00')): GiornoCalendario[] {
+function generaCalendario30Giorni(baseDate: Date = new Date()): GiornoCalendario[] {
   const giorni: GiornoCalendario[] = []
   const nomiGiorni = ['Dom', 'Lun', 'Mar', 'Mer', 'Gio', 'Ven', 'Sab']
   const nomiMesi = [
@@ -86,31 +88,6 @@ function generaCalendario30Giorni(baseDate: Date = new Date('2026-09-12T08:00:00
     const dataStr = `${yyyy}-${mm}-${dd}`
 
     const isDomenica = dayOfWeek === 0
-    const isSabato = dayOfWeek === 6
-
-    const slots: Slot[] = []
-
-    if (!isDomenica) {
-      // Orari mattina studio
-      slots.push(
-        { id: `slot-${dataStr}-1`, ora: '09:00 - 09:20', durata: '20 min', fascia: 'mattina' },
-        { id: `slot-${dataStr}-2`, ora: '09:20 - 09:40', durata: '20 min', fascia: 'mattina' },
-        { id: `slot-${dataStr}-3`, ora: '09:40 - 10:00', durata: '20 min', fascia: 'mattina' },
-        { id: `slot-${dataStr}-4`, ora: '10:20 - 10:40', durata: '20 min', fascia: 'mattina' },
-        { id: `slot-${dataStr}-5`, ora: '10:40 - 11:00', durata: '20 min', fascia: 'mattina' },
-        { id: `slot-${dataStr}-6`, ora: '11:00 - 11:30', durata: '30 min', fascia: 'mattina' }
-      )
-
-      // Orari pomeriggio (escluso il sabato)
-      if (!isSabato) {
-        slots.push(
-          { id: `slot-${dataStr}-7`, ora: '15:00 - 15:30', durata: '30 min', fascia: 'pomeriggio' },
-          { id: `slot-${dataStr}-8`, ora: '15:30 - 16:00', durata: '30 min', fascia: 'pomeriggio' },
-          { id: `slot-${dataStr}-9`, ora: '16:00 - 16:30', durata: '30 min', fascia: 'pomeriggio' },
-          { id: `slot-${dataStr}-10`, ora: '16:30 - 17:00', durata: '30 min', fascia: 'pomeriggio' }
-        )
-      }
-    }
 
     giorni.push({
       data: dataStr,
@@ -121,7 +98,7 @@ function generaCalendario30Giorni(baseDate: Date = new Date('2026-09-12T08:00:00
       nomeCompleto: `${nomiGiorniCompleti[dayOfWeek]} ${d.getDate()} ${nomiMesiCompleti[d.getMonth()]} ${yyyy}`,
       isOggi: i === 0,
       isChiuso: isDomenica,
-      slots,
+      slots: [],
     })
   }
 
@@ -137,7 +114,13 @@ export default function PrenotaVisitaPage() {
   )
 
   const toast = useToast()
-  const [dataSelezionata, setDataSelezionata] = useState<string>('2026-09-12')
+  const [dataSelezionata, setDataSelezionata] = useState<string>(() => {
+    const d = new Date()
+    const yyyy = d.getFullYear()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${yyyy}-${mm}-${dd}`
+  })
   const [slotSelezionato, setSlotSelezionato] = useState<string | null>(null)
   const [lockToken, setLockToken] = useState<string | null>(null)
   const [lockLoading, setLockLoading] = useState<string | null>(null)
@@ -181,7 +164,7 @@ export default function PrenotaVisitaPage() {
       if (data.currentUserId) {
         setCurrentUserId(data.currentUserId)
       }
-      if (Array.isArray(data.slots) && data.slots.length > 0) {
+      if (Array.isArray(data.slots)) {
         setCalendarioGiorni((prev) =>
           prev.map((g) => {
             if (g.data !== dataTarget) return g
@@ -193,8 +176,13 @@ export default function PrenotaVisitaPage() {
               stato: s.stato,
               lockedBy: s.lockedBy,
               lockedUntil: s.lockedUntil,
+              isPast: Boolean(s.isPast),
             }))
-            return { ...g, slots: mappedSlots }
+            return {
+              ...g,
+              isChiuso: mappedSlots.length === 0,
+              slots: mappedSlots,
+            }
           })
         )
       }
@@ -207,10 +195,9 @@ export default function PrenotaVisitaPage() {
   useEffect(() => {
     const reale = generaCalendario30Giorni(new Date())
     setCalendarioGiorni(reale)
-    const primoConSlot = reale.find((g) => !g.isChiuso && g.slots.length > 0)
-    if (primoConSlot) {
-      setDataSelezionata(primoConSlot.data)
-      caricaSlotData(primoConSlot.data)
+    if (reale[0]?.data) {
+      setDataSelezionata(reale[0].data)
+      caricaSlotData(reale[0].data)
     }
   }, [caricaSlotData])
 
@@ -372,10 +359,14 @@ export default function PrenotaVisitaPage() {
   const handleSelectSlot = async (slot: Slot) => {
     if (slotSelezionato === slot.id) return
 
+    if (slot.isPast || slot.stato === 'chiuso') {
+      setLockError('Questo orario è già trascorso o lo studio è chiuso in questa fascia.')
+      return
+    }
+
     const isOccupato =
       (slot.stato === 'bloccato' && (!currentUserId || slot.lockedBy !== currentUserId)) ||
-      slot.stato === 'prenotato' ||
-      slot.stato === 'chiuso'
+      slot.stato === 'prenotato'
 
     if (isOccupato) {
       setLockError('Questo orario è già stato prenotato o bloccato da un altro paziente.')
@@ -579,13 +570,13 @@ export default function PrenotaVisitaPage() {
             : 'max-h-0 opacity-0 -translate-y-4 pointer-events-none'
         }`}
       >
-        <div className="p-5 rounded-3xl bg-blue-600 text-white shadow-xl shadow-blue-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-blue-400/30">
+        <div className="p-5 rounded-3xl bg-sky-600 text-white shadow-xl shadow-sky-500/20 flex flex-col sm:flex-row sm:items-center justify-between gap-4 border border-sky-400/30">
           <div className="flex items-center gap-3">
             <div className="h-10 w-10 rounded-2xl bg-white/20 backdrop-blur-xs flex items-center justify-center font-bold">
               <Lock className="h-5 w-5 text-white" />
             </div>
             <div>
-              <p className="text-xs font-bold text-blue-100 uppercase tracking-wider">
+              <p className="text-xs font-bold text-sky-100 uppercase tracking-wider">
                 Slot Bloccato per Te (ADR-002)
               </p>
               <p className="text-sm font-extrabold text-white">
@@ -595,8 +586,8 @@ export default function PrenotaVisitaPage() {
           </div>
 
           <div className="flex items-center gap-3 bg-white/10 px-4 py-2.5 rounded-2xl border border-white/20">
-            <Clock className="h-4 w-4 text-blue-200 animate-pulse" />
-            <span className="text-xs text-blue-100 font-semibold">Tempo rimasto per confermare:</span>
+            <Clock className="h-4 w-4 text-sky-200 animate-pulse" />
+            <span className="text-xs text-sky-100 font-semibold">Tempo rimasto per confermare:</span>
             <span className="font-mono text-lg font-black text-white">{formatTimer(secondiRimanenti)}</span>
           </div>
         </div>
@@ -608,7 +599,7 @@ export default function PrenotaVisitaPage() {
       <div className="bg-white p-6 rounded-3xl border border-slate-200/80 shadow-sm space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3.5">
           <div className="flex items-center gap-2.5">
-            <div className="h-9 w-9 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 flex items-center justify-center">
+            <div className="h-9 w-9 rounded-xl bg-sky-50 text-sky-600 border border-sky-100 flex items-center justify-center">
               <Calendar className="h-4 w-4" />
             </div>
             <div>
@@ -616,7 +607,7 @@ export default function PrenotaVisitaPage() {
                 <span className="text-xs font-extrabold uppercase tracking-wider text-slate-900">
                   Seleziona Giornata
                 </span>
-                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-blue-100 text-blue-800">
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 text-sky-800">
                   Disponibilità a 1 Mese
                 </span>
               </div>
@@ -629,7 +620,7 @@ export default function PrenotaVisitaPage() {
           <div className="flex items-center gap-2 self-end sm:self-auto">
             {/* Gesture Hint */}
             <span className="text-[11px] font-semibold text-slate-500 hidden md:inline-flex items-center gap-1.5 bg-slate-50 px-3 py-1.5 rounded-xl border border-slate-200">
-              <MoveHorizontal className="h-3.5 w-3.5 text-blue-600" />
+              <MoveHorizontal className="h-3.5 w-3.5 text-sky-600" />
               Swipe orizzontale o trascina
             </span>
 
@@ -672,8 +663,10 @@ export default function PrenotaVisitaPage() {
         >
           {calendarioGiorni.map((g) => {
             const isAttivo = g.data === dataSelezionata
-            const haSlots = g.slots.length > 0
-            const isChiuso = g.isChiuso
+            const liberiSlots = g.slots.filter((s) => s.stato === 'libero' && !s.isPast)
+            const haSlots = liberiSlots.length > 0
+            const isDomenica = g.giornoSettimana === 'Dom'
+            const isChiuso = g.isChiuso && isDomenica
 
             return (
               <button
@@ -712,10 +705,12 @@ export default function PrenotaVisitaPage() {
                       ? 'bg-white/20 text-white'
                       : haSlots
                       ? 'bg-emerald-100 text-emerald-800'
-                      : 'bg-slate-200 text-slate-600'
+                      : g.slots.length > 0
+                      ? 'bg-slate-200 text-slate-600'
+                      : 'bg-sky-50 text-sky-700'
                   }`}
                 >
-                  {isChiuso ? 'Chiuso' : haSlots ? `${g.slots.length} liberi` : 'Completo'}
+                  {isChiuso ? 'Chiuso' : haSlots ? `${liberiSlots.length} liberi` : g.slots.length > 0 ? 'Completo' : 'Disponibile'}
                 </span>
               </button>
             )
@@ -727,7 +722,7 @@ export default function PrenotaVisitaPage() {
             <button
               type="button"
               onClick={handleSbloccaManualmente}
-              className="text-xs font-bold text-blue-600 hover:text-blue-800 underline underline-offset-4"
+              className="text-xs font-bold text-sky-600 hover:text-sky-800 underline underline-offset-4"
             >
               Deseleziona slot bloccato e torna alla vista orizzontale
             </button>
@@ -755,29 +750,29 @@ export default function PrenotaVisitaPage() {
             {!giornoCorrente.isChiuso && (
               <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-200 self-start sm:self-auto">
                 <Sparkles className="h-3.5 w-3.5 text-emerald-600" />
-                <span>{giornoCorrente.slots.length} orari liberi</span>
+                <span>{giornoCorrente.slots.filter((s) => s.stato === 'libero' && !s.isPast).length} orari liberi</span>
               </div>
             )}
           </div>
 
-          {/* Se lo studio è chiuso in quel giorno (es. Domenica) */}
+          {/* Se lo studio è chiuso in quel giorno (es. Domenica o nessun orario configurato) */}
           {giornoCorrente.isChiuso || giornoCorrente.slots.length === 0 ? (
             <div className="p-8 text-center bg-slate-50/70 rounded-3xl border border-slate-200 space-y-3">
               <div className="h-12 w-12 rounded-2xl bg-amber-100 text-amber-800 flex items-center justify-center mx-auto">
                 <Clock className="h-6 w-6" />
               </div>
-              <h3 className="font-extrabold text-slate-900 text-base">Studio Chiuso per Riposo Settimanale</h3>
+              <h3 className="font-extrabold text-slate-900 text-base">Studio Chiuso o Nessuna Visita Programmata</h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto">
-                Il Dott. Mario Verdi non effettua visite in questa giornata. Puoi selezionare una delle date feriali dal calendario a scorrimento in alto.
+                Il medico curante non effettua visite in questa giornata. Puoi selezionare un'altra data dal calendario a scorrimento in alto.
               </p>
               <div className="pt-2">
                 <button
                   type="button"
                   onClick={() => {
-                    const prossimoAperto = calendarioGiorni.find((g) => !g.isChiuso && g.slots.length > 0)
+                    const prossimoAperto = calendarioGiorni.find((g) => !g.isChiuso && g.slots.some((s) => s.stato === 'libero' && !s.isPast))
                     if (prossimoAperto) handleRichiestaCambioData(prossimoAperto.data)
                   }}
-                  className="px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-sm transition-all"
+                  className="px-4 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold shadow-sm transition-all"
                 >
                   Vai alla Prima Data Disponibile
                 </button>
@@ -787,6 +782,7 @@ export default function PrenotaVisitaPage() {
             /* Griglia Orari Orizzontale a piena larghezza */
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {giornoCorrente.slots.map((slot) => {
+                const isPast = Boolean(slot.isPast || slot.stato === 'chiuso')
                 const isSelected = slotSelezionato === slot.id
                 const isLoadingThis = lockLoading === slot.id
                 const isPrenotato = slot.stato === 'prenotato'
@@ -794,7 +790,7 @@ export default function PrenotaVisitaPage() {
                   slot.stato === 'bloccato' &&
                   (!currentUserId || slot.lockedBy !== currentUserId) &&
                   !isSelected
-                const isDisabilitato = isPrenotato || isBloccatoDaAltri || isLoadingThis
+                const isDisabilitato = isPast || isPrenotato || isBloccatoDaAltri || isLoadingThis
 
                 return (
                   <button
@@ -804,28 +800,34 @@ export default function PrenotaVisitaPage() {
                     onClick={() => handleSelectSlot(slot)}
                     className={`group p-5 rounded-2xl border text-left transition-all shadow-xs flex flex-col justify-between h-32 ${
                       isSelected
-                        ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-500/20'
+                        ? 'bg-sky-50 border-sky-600 ring-2 ring-sky-500/20'
+                        : isPast
+                        ? 'bg-slate-100/80 border-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                         : isPrenotato
                         ? 'bg-slate-100/80 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'
                         : isBloccatoDaAltri
                         ? 'bg-amber-50/70 border-amber-200 text-slate-500 opacity-75 cursor-not-allowed'
-                        : 'border-slate-200/90 bg-slate-50/50 hover:bg-blue-50 hover:border-blue-500 hover:ring-2 hover:ring-blue-500/20'
+                        : 'border-slate-200/90 bg-slate-50/50 hover:bg-sky-50 hover:border-sky-500 hover:ring-2 hover:ring-sky-500/20'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div
                         className={`h-9 w-9 rounded-xl border flex items-center justify-center transition-colors ${
                           isSelected
-                            ? 'bg-blue-600 text-white border-blue-600'
+                            ? 'bg-sky-600 text-white border-sky-600'
+                            : isPast
+                            ? 'bg-slate-200 text-slate-400 border-slate-300'
                             : isPrenotato
                             ? 'bg-slate-200 text-slate-400 border-slate-300'
                             : isBloccatoDaAltri
                             ? 'bg-amber-100 text-amber-700 border-amber-300'
-                            : 'bg-white border-slate-200 group-hover:border-blue-300 group-hover:bg-blue-100/50 text-slate-600 group-hover:text-blue-600'
+                            : 'bg-white border-slate-200 group-hover:border-sky-300 group-hover:bg-sky-100/50 text-slate-600 group-hover:text-sky-600'
                         }`}
                       >
                         {isLoadingThis ? (
-                          <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                          <Loader2 className="h-4 w-4 animate-spin text-sky-600" />
+                        ) : isPast ? (
+                          <Clock className="h-4 w-4 text-slate-400" />
                         ) : isPrenotato ? (
                           <CheckCircle2 className="h-4 w-4 text-slate-400" />
                         ) : isBloccatoDaAltri ? (
@@ -836,19 +838,25 @@ export default function PrenotaVisitaPage() {
                       </div>
                       <span
                         className={`text-[11px] font-extrabold px-2.5 py-1 rounded-full transition-colors ${
-                          isSelected
-                            ? 'bg-blue-600 text-white'
+                          isLoadingThis
+                            ? 'bg-slate-200 text-slate-600'
+                            : isSelected
+                            ? 'bg-sky-600 text-white'
+                            : isPast
+                            ? 'bg-slate-200 text-slate-500'
                             : isPrenotato
                             ? 'bg-slate-200 text-slate-600'
                             : isBloccatoDaAltri
                             ? 'bg-amber-100 text-amber-800 border border-amber-200'
-                            : 'bg-emerald-100 text-emerald-800 group-hover:bg-blue-600 group-hover:text-white'
+                            : 'bg-emerald-100 text-emerald-800 group-hover:bg-sky-600 group-hover:text-white'
                         }`}
                       >
                         {isLoadingThis
                           ? 'Blocco in corso...'
                           : isSelected
                           ? 'Selezionato'
+                          : isPast
+                          ? 'Trascorsa'
                           : isPrenotato
                           ? 'Prenotato'
                           : isBloccatoDaAltri
@@ -861,20 +869,20 @@ export default function PrenotaVisitaPage() {
                       <div
                         className={`font-black text-base transition-colors ${
                           isSelected
-                            ? 'text-blue-900'
-                            : isPrenotato
+                            ? 'text-sky-900'
+                            : isPast || isPrenotato
                             ? 'text-slate-400 line-through'
                             : isBloccatoDaAltri
                             ? 'text-slate-500'
-                            : 'text-slate-900 group-hover:text-blue-900'
+                            : 'text-slate-900 group-hover:text-sky-900'
                         }`}
                       >
                         {slot.ora}
                       </div>
                       <div className="text-xs text-slate-400 font-medium flex items-center justify-between mt-0.5">
-                        <span>Durata: {slot.durata}</span>
+                        <span>{isPast ? 'Orario trascorso' : `Durata: ${slot.durata}`}</span>
                         {!isDisabilitato && (
-                          <span className="text-blue-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
+                          <span className="text-sky-600 font-bold opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-0.5">
                             Blocca slot <ChevronRight className="h-3.5 w-3.5" />
                           </span>
                         )}
@@ -926,6 +934,7 @@ export default function PrenotaVisitaPage() {
 
             <div className="space-y-2.5">
               {giornoCorrente.slots.map((slot) => {
+                const isPast = Boolean(slot.isPast || slot.stato === 'chiuso')
                 const isSelected = slotSelezionato === slot.id
                 const isLoadingThis = lockLoading === slot.id
                 const isPrenotato = slot.stato === 'prenotato'
@@ -933,7 +942,7 @@ export default function PrenotaVisitaPage() {
                   slot.stato === 'bloccato' &&
                   (!currentUserId || slot.lockedBy !== currentUserId) &&
                   !isSelected
-                const isDisabilitato = isPrenotato || isBloccatoDaAltri || isLoadingThis
+                const isDisabilitato = isPast || isPrenotato || isBloccatoDaAltri || isLoadingThis
 
                 return (
                   <button
@@ -943,7 +952,9 @@ export default function PrenotaVisitaPage() {
                     onClick={() => handleSelectSlot(slot)}
                     className={`w-full p-4 rounded-2xl border text-left transition-all flex items-center justify-between ${
                       isSelected
-                        ? 'bg-blue-50 border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                        ? 'bg-sky-50 border-sky-600 ring-2 ring-sky-500/20 shadow-xs'
+                        : isPast
+                        ? 'bg-slate-100/70 border-slate-200 text-slate-400 opacity-50 cursor-not-allowed'
                         : isPrenotato
                         ? 'bg-slate-100/70 border-slate-200 text-slate-400 opacity-60 cursor-not-allowed'
                         : isBloccatoDaAltri
@@ -953,17 +964,19 @@ export default function PrenotaVisitaPage() {
                   >
                     <div className="flex items-center gap-3">
                       {isLoadingThis ? (
-                        <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                        <Loader2 className="h-4 w-4 animate-spin text-sky-600" />
+                      ) : isPast ? (
+                        <Clock className="h-4 w-4 text-slate-400" />
                       ) : isPrenotato ? (
                         <CheckCircle2 className="h-4 w-4 text-slate-400" />
                       ) : isBloccatoDaAltri ? (
                         <Lock className="h-4 w-4 text-amber-600" />
                       ) : (
-                        <Clock className={`h-4 w-4 ${isSelected ? 'text-blue-600' : 'text-slate-400'}`} />
+                        <Clock className={`h-4 w-4 ${isSelected ? 'text-sky-600' : 'text-slate-400'}`} />
                       )}
                       <span
                         className={`font-extrabold text-sm ${
-                          isPrenotato ? 'text-slate-400 line-through' : 'text-slate-900'
+                          isPast || isPrenotato ? 'text-slate-400 line-through' : 'text-slate-900'
                         }`}
                       >
                         {slot.ora}
@@ -971,9 +984,11 @@ export default function PrenotaVisitaPage() {
                       <span className="text-xs text-slate-400">({slot.durata})</span>
                     </div>
                     {isSelected ? (
-                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-600 text-white shadow-xs">
+                      <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-sky-600 text-white shadow-xs">
                         Selezionato
                       </span>
+                    ) : isPast ? (
+                      <span className="text-xs font-bold text-slate-400">Trascorsa</span>
                     ) : isPrenotato ? (
                       <span className="text-xs font-bold text-slate-400">Prenotato</span>
                     ) : isBloccatoDaAltri ? (
@@ -1044,7 +1059,7 @@ export default function PrenotaVisitaPage() {
                   <select
                     value={motivoCategoria}
                     onChange={(e) => setMotivoCategoria(e.target.value)}
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-sky-500"
                   >
                     <option value="controllo_routine">Visita di Controllo / Pressione</option>
                     <option value="esami_sangue">Visione Esami del Sangue / Diagnostica</option>
@@ -1065,7 +1080,7 @@ export default function PrenotaVisitaPage() {
                     value={motivoNote}
                     onChange={(e) => setMotivoNote(e.target.value)}
                     placeholder="Es. Controllo valori colesterolo dopo 3 mesi di terapia..."
-                    className="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                    className="w-full p-3 rounded-xl border border-slate-200 text-xs font-medium text-slate-800 outline-none focus:ring-2 focus:ring-sky-500 resize-none"
                   />
                 </div>
 
@@ -1077,8 +1092,8 @@ export default function PrenotaVisitaPage() {
                       confermato
                         ? 'bg-emerald-600'
                         : submitting
-                        ? 'bg-blue-500 opacity-80 cursor-wait'
-                        : 'bg-blue-600 hover:bg-blue-700 shadow-blue-600/20'
+                        ? 'bg-sky-500 opacity-80 cursor-wait'
+                        : 'bg-sky-600 hover:bg-sky-700 shadow-sky-600/20'
                     }`}
                   >
                     {submitting ? (

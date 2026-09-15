@@ -100,6 +100,14 @@ export function ToastProvider({ children }: { children: any }) {
 
 function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => void }) {
   const [progress, setProgress] = useState(100)
+  const [isExiting, setIsExiting] = useState(false)
+
+  const handleDismiss = () => {
+    setIsExiting(true)
+    setTimeout(() => {
+      onDismiss()
+    }, 220)
+  }
 
   useEffect(() => {
     const duration = toast.duration || 3500
@@ -110,6 +118,7 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
       setProgress((prev) => {
         if (prev <= 0) {
           clearInterval(timer)
+          handleDismiss()
           return 0
         }
         return prev - step
@@ -119,48 +128,68 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
     return () => clearInterval(timer)
   }, [toast.duration])
 
-  const icons = {
-    success: <CheckCircle2 className="h-5 w-5 text-emerald-400 flex-shrink-0" />,
-    error: <AlertCircle className="h-5 w-5 text-rose-400 flex-shrink-0" />,
-    warning: <AlertTriangle className="h-5 w-5 text-amber-400 flex-shrink-0" />,
-    info: <Info className="h-5 w-5 text-indigo-400 flex-shrink-0" />,
+  const iconBadges = {
+    success: (
+      <div className="h-9 w-9 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-600 flex items-center justify-center flex-shrink-0 shadow-xs">
+        <CheckCircle2 className="h-5 w-5" />
+      </div>
+    ),
+    error: (
+      <div className="h-9 w-9 rounded-xl bg-rose-50 border border-rose-200 text-rose-600 flex items-center justify-center flex-shrink-0 shadow-xs">
+        <AlertCircle className="h-5 w-5" />
+      </div>
+    ),
+    warning: (
+      <div className="h-9 w-9 rounded-xl bg-amber-50 border border-amber-200 text-amber-600 flex items-center justify-center flex-shrink-0 shadow-xs">
+        <AlertTriangle className="h-5 w-5" />
+      </div>
+    ),
+    info: (
+      <div className="h-9 w-9 rounded-xl bg-sky-50 border border-sky-200 text-sky-600 flex items-center justify-center flex-shrink-0 shadow-xs">
+        <Info className="h-5 w-5" />
+      </div>
+    ),
   }
 
-  const borderBg = {
-    success: 'bg-slate-950/95 border-emerald-500/50 shadow-emerald-950/40 text-emerald-300',
-    error: 'bg-slate-950/95 border-rose-500/50 shadow-rose-950/40 text-rose-300',
-    warning: 'bg-slate-950/95 border-amber-500/50 shadow-amber-950/40 text-amber-300',
-    info: 'bg-slate-950/95 border-indigo-500/50 shadow-indigo-950/40 text-indigo-300',
+  const borderAccent = {
+    success: 'border-emerald-500/30 ring-1 ring-emerald-500/10 shadow-emerald-500/5',
+    error: 'border-rose-500/30 ring-1 ring-rose-500/10 shadow-rose-500/5',
+    warning: 'border-amber-500/30 ring-1 ring-amber-500/10 shadow-amber-500/5',
+    info: 'border-sky-500/30 ring-1 ring-sky-500/10 shadow-sky-500/5',
   }
 
   const progressBarColor = {
     success: 'bg-emerald-500',
     error: 'bg-rose-500',
     warning: 'bg-amber-500',
-    info: 'bg-indigo-500',
+    info: 'bg-sky-500',
   }
 
   return (
     <div
       role="alert"
-      className={`pointer-events-auto relative overflow-hidden rounded-xl border p-3.5 sm:p-4 shadow-xl backdrop-blur-md transition-all duration-300 animate-in slide-in-from-top-4 sm:slide-in-from-right-4 ${borderBg[toast.type]}`}
+      className={`pointer-events-auto relative overflow-hidden rounded-2xl border bg-white/95 backdrop-blur-xl p-4 shadow-2xl transition-all duration-300 ${
+        isExiting
+          ? 'opacity-0 translate-x-8 scale-95 duration-200'
+          : 'animate-fade-in-up sm:animate-slide-in-right opacity-100 translate-x-0'
+      } ${borderAccent[toast.type]}`}
     >
       <div className="flex items-start gap-3">
-        {icons[toast.type]}
-        <div className="flex-1 min-w-0 pr-2">
-          <p className="text-xs sm:text-sm font-bold text-white leading-snug break-words">
+        {iconBadges[toast.type]}
+        <div className="flex-1 min-w-0 pr-1">
+          <p className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug break-words">
             {toast.title}
           </p>
           {toast.description && (
-            <p className="text-xs text-slate-300 mt-1 leading-relaxed break-words">
+            <p className="text-xs text-slate-500 mt-1 leading-relaxed break-words font-medium">
               {toast.description}
             </p>
           )}
         </div>
         <button
           type="button"
-          onClick={onDismiss}
-          className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-slate-800 transition-colors"
+          onClick={handleDismiss}
+          className="text-slate-400 hover:text-slate-700 p-1.5 rounded-xl hover:bg-slate-100 transition-colors flex-shrink-0"
           title="Chiudi notifica"
         >
           <X className="h-4 w-4" />
@@ -168,9 +197,9 @@ function ToastCard({ toast, onDismiss }: { toast: ToastItem; onDismiss: () => vo
       </div>
 
       {/* Progress timer bar */}
-      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-slate-800">
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-slate-100">
         <div
-          className={`h-full transition-all linear ${progressBarColor[toast.type]}`}
+          className={`h-full transition-all linear duration-100 ${progressBarColor[toast.type]}`}
           style={{ width: `${progress}%` }}
         />
       </div>

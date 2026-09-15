@@ -105,10 +105,7 @@ export async function POST(request: Request) {
         config: {
           citta: citta.trim(),
           indirizzoCompleto: indirizzo?.trim() || '',
-          durataVisitaStandardMinuti: Number(durataVisita),
-          lockupMinutes: Number(lockupMinutes),
-          anticipoMaxPrenotazioneGiorni: Number(anticipoMax),
-          onboardingCompleted: true,
+          onboardingCompleted: false, // Sarà il medico a completare l'onboarding e definire gli orari di studio
         },
         attivo: true,
       })
@@ -131,7 +128,7 @@ export async function POST(request: Request) {
 
     let medicoCreato: any = null
 
-    // 1. Creazione contestuale di un nuovo medico
+    // 1. Creazione contestuale di un nuovo medico (senza slot: verranno generati dal medico in onboarding)
     if (opzioneMedico === 'nuovo' && nomeMedico && cognomeMedico && emailMedico) {
       const [medico] = await db
         .insert(medici)
@@ -148,52 +145,6 @@ export async function POST(request: Request) {
 
       if (medico) {
         medicoCreato = medico
-        // Genera 30 giorni di slot per il nuovo medico
-        const oggi = new Date()
-        const slotValues: Array<{
-          studioId: string
-          medicoId: string
-          data: string
-          oraInizio: string
-          oraFine: string
-          durataMin: number
-          stato: 'libero'
-        }> = []
-
-        const orariMattina = [
-          { start: '09:00', end: '09:20' },
-          { start: '09:20', end: '09:40' },
-          { start: '09:40', end: '10:00' },
-          { start: '10:00', end: '10:20' },
-          { start: '10:20', end: '10:40' },
-          { start: '10:40', end: '11:00' },
-          { start: '11:00', end: '11:20' },
-          { start: '11:20', end: '11:40' },
-          { start: '11:40', end: '12:00' },
-        ]
-
-        for (let i = 0; i < 30; i++) {
-          const d = new Date(oggi)
-          d.setDate(oggi.getDate() + i)
-          if (d.getDay() === 0) continue
-
-          const dataStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
-          for (const o of orariMattina) {
-            slotValues.push({
-              studioId: nuovo.id,
-              medicoId: medico.id,
-              data: dataStr,
-              oraInizio: o.start,
-              oraFine: o.end,
-              durataMin: Number(durataVisita) || 20,
-              stato: 'libero',
-            })
-          }
-        }
-
-        if (slotValues.length > 0) {
-          await db.insert(slotAgenda).values(slotValues)
-        }
 
         await recordAuditLog({
           attoreId: auth.session.id,
@@ -206,7 +157,6 @@ export async function POST(request: Request) {
             nome: `${medico.nome} ${medico.cognome}`,
             email: medico.email,
             studioId: nuovo.id,
-            slotsGenerati: slotValues.length,
           },
           ip,
         })

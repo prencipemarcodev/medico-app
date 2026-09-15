@@ -8,7 +8,7 @@ import {
   or,
   sql,
 } from '@medico/db'
-import { amministratori, medici, staff, pazienti } from '@medico/db/schema'
+import { amministratori, medici, staff, pazienti, studi } from '@medico/db/schema'
 
 export async function POST(request: Request) {
   const ip =
@@ -113,10 +113,25 @@ export async function POST(request: Request) {
             ip,
           })
 
+          // Verifica se lo studio ha completato l'onboarding degli orari e delle impostazioni
+          let redirectUrl = '/dashboard'
+          if (medico.studioId) {
+            const [studio] = await db
+              .select({ config: studi.config })
+              .from(studi)
+              .where(eq(studi.id, medico.studioId))
+              .limit(1)
+
+            const studioConfig = (studio?.config as any) || {}
+            if (!studioConfig.onboardingCompleted) {
+              redirectUrl = '/dashboard/onboarding'
+            }
+          }
+
           const response = NextResponse.json({
             success: true,
             user: userPayload,
-            redirectUrl: '/dashboard',
+            redirectUrl,
           })
 
           response.cookies.set('auth_session', token, {

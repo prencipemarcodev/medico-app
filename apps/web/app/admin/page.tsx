@@ -22,6 +22,7 @@ import {
   CheckCircle2,
   Lock,
   Plus,
+  Clock,
   Upload,
   Download,
   Search,
@@ -54,7 +55,7 @@ import {
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
-import { Skeleton, CardSkeleton, TableRowsSkeleton } from '@/components/ui/skeleton'
+import { Skeleton, CardSkeleton, TableRowsSkeleton, LoadingBeam } from '@/components/ui/skeleton'
 
 interface Studio {
   id: string
@@ -1300,9 +1301,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </div>
 
           {loading ? (
-            <CardSkeleton count={3} />
+            <div className="space-y-4">
+              <LoadingBeam />
+              <CardSkeleton count={3} />
+            </div>
           ) : studiList.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300 space-y-3 shadow-xs">
+            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-300 space-y-3 shadow-xs animate-fade-in-up">
               <Building2 className="h-10 w-10 text-slate-400 mx-auto" />
               <p className="text-sm font-bold text-slate-800">Nessuno studio medico registrato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -1311,10 +1315,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {studiList.map((studio) => (
+              {studiList.map((studio, idx) => (
                 <div
                   key={studio.id}
-                  className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4 hover:border-slate-300 transition-all flex flex-col justify-between"
+                  style={{ animationDelay: `${idx * 60}ms` }}
+                  className="bg-white rounded-3xl p-6 border border-slate-200/90 shadow-xs space-y-4 hover:border-sky-200 transition-all flex flex-col justify-between animate-fade-in-up card-hover-glow"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
@@ -1456,9 +1461,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </div>
 
           {loading ? (
-            <CardSkeleton count={3} />
+            <div className="space-y-4">
+              <LoadingBeam />
+              <CardSkeleton count={3} />
+            </div>
           ) : mediciList.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 space-y-3 shadow-xs">
+            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 space-y-3 shadow-xs animate-fade-in-up">
               <Stethoscope className="h-10 w-10 text-slate-400 mx-auto" />
               <p className="text-sm font-bold text-slate-800">Nessun medico registrato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -1467,10 +1475,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {mediciList.map((medico) => (
+              {mediciList.map((medico, idx) => (
                 <div
                   key={medico.id}
-                  className="bg-white rounded-3xl p-6 border border-slate-200/90 space-y-4 hover:border-sky-300 transition-all shadow-xs flex flex-col justify-between"
+                  style={{ animationDelay: `${idx * 60}ms` }}
+                  className="bg-white rounded-3xl p-6 border border-slate-200/90 space-y-4 hover:border-sky-300 transition-all shadow-xs flex flex-col justify-between animate-fade-in-up card-hover-glow"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
@@ -1579,9 +1588,12 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
           </div>
 
           {loading ? (
-            <CardSkeleton count={3} />
+            <div className="space-y-4">
+              <LoadingBeam />
+              <CardSkeleton count={3} />
+            </div>
           ) : staffList.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 space-y-3 shadow-xs">
+            <div className="p-12 text-center bg-white rounded-3xl border border-dashed border-slate-200 space-y-3 shadow-xs animate-fade-in-up">
               <UserCheck className="h-10 w-10 text-slate-400 mx-auto" />
               <p className="text-sm font-bold text-slate-800">Nessun account di segreteria creato</p>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
@@ -1590,10 +1602,11 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {staffList.map((st) => (
+              {staffList.map((st, idx) => (
                 <div
                   key={st.id}
-                  className="bg-white rounded-3xl p-6 border border-slate-200/90 space-y-4 hover:border-sky-300 transition-all shadow-xs flex flex-col justify-between"
+                  style={{ animationDelay: `${idx * 60}ms` }}
+                  className="bg-white rounded-3xl p-6 border border-slate-200/90 space-y-4 hover:border-sky-300 transition-all shadow-xs flex flex-col justify-between animate-fade-in-up card-hover-glow"
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between">
@@ -2571,45 +2584,13 @@ Nota di sicurezza: Al primo accesso Le verrà richiesto obbligatoriamente di imp
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Durata Visita (min)
-                  </label>
-                  <input
-                    type="number"
-                    min="5"
-                    max="120"
-                    value={formStudio.durataVisita}
-                    onChange={(e) => setFormStudio({ ...formStudio, durataVisita: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Lockup (min)
-                  </label>
-                  <input
-                    type="number"
-                    min="0"
-                    max="120"
-                    value={formStudio.lockupMinutes}
-                    onChange={(e) => setFormStudio({ ...formStudio, lockupMinutes: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 uppercase tracking-wider mb-1">
-                    Anticipo Max (gg)
-                  </label>
-                  <input
-                    type="number"
-                    min="1"
-                    max="180"
-                    value={formStudio.anticipoMax}
-                    onChange={(e) => setFormStudio({ ...formStudio, anticipoMax: Number(e.target.value) })}
-                    className="w-full px-3.5 py-2 rounded-xl bg-slate-50 border border-slate-200 text-slate-900 placeholder-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-sky-500/20 focus:border-sky-500"
-                  />
+              <div className="p-3.5 rounded-2xl bg-sky-50/60 border border-sky-200 text-xs text-slate-600 flex items-start gap-2.5">
+                <Clock className="h-4 w-4 text-sky-600 shrink-0 mt-0.5" />
+                <div className="space-y-0.5">
+                  <p className="font-bold text-sky-900">Configurazione Orari & Slot delegata al Medico</p>
+                  <p className="text-[11px] text-slate-500 leading-snug">
+                    Il medico responsabile imposterà al suo primo accesso gli orari settimanali di apertura e la durata delle visite attraverso la procedura di onboarding guidata.
+                  </p>
                 </div>
               </div>
 

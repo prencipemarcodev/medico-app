@@ -45,7 +45,7 @@ import {
 import { useState, useEffect } from 'react'
 import { useToast } from '@/components/ui/toast'
 import { ConfirmModal } from '@/components/ui/confirm-modal'
-import { Skeleton, DocumentCardSkeleton } from '@/components/ui/skeleton'
+import { Skeleton, DocumentCardSkeleton, LoadingBeam } from '@/components/ui/skeleton'
 
 interface DocumentoItem {
   id: string
@@ -439,7 +439,8 @@ export default function PazientePage() {
 
   if (loadingUser) {
     return (
-      <div className="space-y-8 font-sans">
+      <div className="space-y-8 font-sans animate-fade-in-up">
+        <LoadingBeam />
         <div className="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
           <div className="flex items-center gap-4">
             <Skeleton className="h-14 w-14 rounded-2xl" />

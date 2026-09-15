@@ -8,7 +8,7 @@
  * @version     0.2.0
  */
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Stethoscope,
@@ -24,8 +24,44 @@ import {
   UserCheck,
   AlertCircle,
   Loader2,
+  Copy,
+  Calendar,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/toast'
+
+interface FasciaOrario {
+  attiva: boolean
+  inizio: string
+  fine: string
+}
+
+interface GiornoConfig {
+  aperto: boolean
+  mattina: FasciaOrario
+  pomeriggio: FasciaOrario
+}
+
+type SettimanaConfig = Record<string, GiornoConfig>
+
+const GIORNI_SETTIMANA: Array<{ key: string; label: string; short: string }> = [
+  { key: 'lun', label: 'Lunedì', short: 'Lun' },
+  { key: 'mar', label: 'Martedì', short: 'Mar' },
+  { key: 'mer', label: 'Mercoledì', short: 'Mer' },
+  { key: 'gio', label: 'Giovedì', short: 'Gio' },
+  { key: 'ven', label: 'Venerdì', short: 'Ven' },
+  { key: 'sab', label: 'Sabato', short: 'Sab' },
+  { key: 'dom', label: 'Domenica', short: 'Dom' },
+]
+
+const DEFAULT_ORARI: SettimanaConfig = {
+  lun: { aperto: true, mattina: { attiva: true, inizio: '09:00', fine: '12:30' }, pomeriggio: { attiva: true, inizio: '15:30', fine: '19:00' } },
+  mar: { aperto: true, mattina: { attiva: true, inizio: '09:00', fine: '12:30' }, pomeriggio: { attiva: true, inizio: '15:30', fine: '19:00' } },
+  mer: { aperto: true, mattina: { attiva: true, inizio: '09:00', fine: '12:30' }, pomeriggio: { attiva: true, inizio: '15:30', fine: '19:00' } },
+  gio: { aperto: true, mattina: { attiva: true, inizio: '09:00', fine: '12:30' }, pomeriggio: { attiva: true, inizio: '15:30', fine: '19:00' } },
+  ven: { aperto: true, mattina: { attiva: true, inizio: '09:00', fine: '12:30' }, pomeriggio: { attiva: true, inizio: '15:30', fine: '19:00' } },
+  sab: { aperto: false, mattina: { attiva: false, inizio: '09:00', fine: '12:00' }, pomeriggio: { attiva: false, inizio: '15:00', fine: '18:00' } },
+  dom: { aperto: false, mattina: { attiva: false, inizio: '09:00', fine: '12:00' }, pomeriggio: { attiva: false, inizio: '15:00', fine: '18:00' } },
+}
 
 export default function OnboardingPage() {
   const router = useRouter()
@@ -41,6 +77,8 @@ export default function OnboardingPage() {
   const [emailDottore, setEmailDottore] = useState('')
   const [telefono, setTelefono] = useState('')
 
+  // Orari settimanali e visita
+  const [orariSettimanali, setOrariSettimanali] = useState<SettimanaConfig>(DEFAULT_ORARI)
   const [durataVisita, setDurataVisita] = useState<10 | 20 | 30>(20)
   const [lockupMinutes, setLockupMinutes] = useState<5 | 10 | 15>(10)
   const [anticipoMax, setAnticipoMax] = useState(30)
@@ -51,9 +89,61 @@ export default function OnboardingPage() {
   const [delegaAccettazione, setDelegaAccettazione] = useState(true)
 
   const [caricamento, setCaricamento] = useState(false)
+  const [caricamentoIniziale, setCaricamentoIniziale] = useState(true)
   const [salvato, setSalvato] = useState(false)
   const [errore, setErrore] = useState<string | null>(null)
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
+
+  // Recupera i dati esistenti dello studio e del medico
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const res = await fetch('/api/onboarding')
+        if (res.ok) {
+          const data = await res.json()
+          if (data.studio) {
+            setNomeStudio(data.studio.nome || '')
+            setIndirizzo(data.studio.indirizzo || data.studio.config?.indirizzoCompleto || '')
+            setTelefono(data.studio.telefono || '')
+            if (data.studio.config?.citta) setCitta(data.studio.config.citta)
+            if (data.studio.config?.orariSettimanali) {
+              setOrariSettimanali((prev) => ({ ...prev, ...data.studio.config.orariSettimanali }))
+            }
+            if (data.studio.config?.durataVisitaStandardMinuti) {
+              setDurataVisita(data.studio.config.durataVisitaStandardMinuti)
+            }
+            if (data.studio.config?.lockupMinutes) {
+              setLockupMinutes(data.studio.config.lockupMinutes)
+            }
+          }
+          if (data.medico) {
+            setNomeDottore(data.medico.nome || '')
+            setCognomeDottore(data.medico.cognome || '')
+            setEmailDottore(data.medico.email || '')
+            if (data.medico.telefono && !telefono) setTelefono(data.medico.telefono)
+          }
+        }
+      } catch (err) {
+        console.warn('Impossibile pre-caricare dati onboarding:', err)
+      } finally {
+        setCaricamentoIniziale(false)
+      }
+    }
+    loadData()
+  }, [])
+
+  const copiaOrarioLunediAFeriali = () => {
+    const lunedi = orariSettimanali['lun']
+    if (!lunedi) return
+    setOrariSettimanali((prev) => ({
+      ...prev,
+      mar: JSON.parse(JSON.stringify(lunedi)),
+      mer: JSON.parse(JSON.stringify(lunedi)),
+      gio: JSON.parse(JSON.stringify(lunedi)),
+      ven: JSON.parse(JSON.stringify(lunedi)),
+    }))
+    toast.success('Orari applicati', 'Gli orari di Lunedì sono stati copiati su Martedì, Mercoledì, Giovedì e Venerdì.')
+  }
 
   const validateStep1 = () => {
     const errs: Record<string, string> = {}
@@ -89,6 +179,7 @@ export default function OnboardingPage() {
           nomeDottore,
           cognomeDottore,
           emailDottore,
+          orariSettimanali,
           durataVisita,
           lockupMinutes,
           anticipoMax,
@@ -105,6 +196,7 @@ export default function OnboardingPage() {
       }
 
       setSalvato(true)
+      toast.success('Configurazione salvata!', `${data.slotsGenerati ?? 0} slot reali generati con successo.`)
       setTimeout(() => {
         router.push('/dashboard')
       }, 1500)
@@ -119,7 +211,7 @@ export default function OnboardingPage() {
     <div className="max-w-3xl mx-auto py-6 space-y-8 font-sans">
       {/* Top Banner */}
       <div className="text-center space-y-2">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-sky-50 text-sky-700 border border-sky-200">
           <Sparkles className="h-3.5 w-3.5" />
           Configurazione Iniziale Studio Medico
         </div>
@@ -148,7 +240,7 @@ export default function OnboardingPage() {
                   isDone
                     ? 'bg-emerald-600 text-white shadow-xs'
                     : isCurrent
-                    ? 'bg-blue-600 text-white shadow-md shadow-blue-500/20'
+                    ? 'bg-sky-600 text-white shadow-md shadow-sky-500/20'
                     : 'bg-slate-100 text-slate-400'
                 }`}
               >
@@ -193,7 +285,7 @@ export default function OnboardingPage() {
                     setNomeStudio(e.target.value)
                     if (fieldErrors.nomeStudio) setFieldErrors((p) => ({ ...p, nomeStudio: '' }))
                   }}
-                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none transition-all ${
                     fieldErrors.nomeStudio ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
                   }`}
                   placeholder="es. Studio Medico Dott. Rossi"
@@ -214,7 +306,7 @@ export default function OnboardingPage() {
                   type="text"
                   value={citta}
                   onChange={(e) => setCitta(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
                   placeholder="es. Milano"
                 />
               </div>
@@ -227,7 +319,7 @@ export default function OnboardingPage() {
                   type="text"
                   value={telefono}
                   onChange={(e) => setTelefono(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
                   placeholder="es. +39 02 1234567"
                 />
               </div>
@@ -240,7 +332,7 @@ export default function OnboardingPage() {
                   type="text"
                   value={indirizzo}
                   onChange={(e) => setIndirizzo(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
                   placeholder="es. Via Roma 123, 20121 Milano (MI)"
                 />
               </div>
@@ -256,7 +348,7 @@ export default function OnboardingPage() {
                     setNomeDottore(e.target.value)
                     if (fieldErrors.nomeDottore) setFieldErrors((p) => ({ ...p, nomeDottore: '' }))
                   }}
-                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none transition-all ${
                     fieldErrors.nomeDottore ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
                   }`}
                   placeholder="es. Mario"
@@ -280,7 +372,7 @@ export default function OnboardingPage() {
                     setCognomeDottore(e.target.value)
                     if (fieldErrors.cognomeDottore) setFieldErrors((p) => ({ ...p, cognomeDottore: '' }))
                   }}
-                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none transition-all ${
+                  className={`w-full px-4 py-3 rounded-xl border text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none transition-all ${
                     fieldErrors.cognomeDottore ? 'border-rose-500 ring-2 ring-rose-500/20 bg-rose-50/20' : 'border-slate-200'
                   }`}
                   placeholder="es. Rossi"
@@ -301,7 +393,7 @@ export default function OnboardingPage() {
                   type="email"
                   value={emailDottore}
                   onChange={(e) => setEmailDottore(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
                   placeholder="es. mario.rossi@studio.it (se vuoto: generata automaticamente)"
                 />
               </div>
@@ -310,10 +402,215 @@ export default function OnboardingPage() {
         )}
 
         {step === 2 && (
-          <div className="space-y-5">
-            <div className="border-b border-slate-100 pb-4">
-              <h2 className="text-lg font-bold text-slate-900">2. Orari di Visita e Durata Slot</h2>
-              <p className="text-xs text-slate-500">Definisci come viene organizzata la tua agenda giornaliera</p>
+          <div className="space-y-6">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-lg font-bold text-slate-900">2. Orari di Visita e Durata Slot</h2>
+                <p className="text-xs text-slate-500">
+                  Imposta i giorni e gli orari di apertura dello studio: gli slot reali verranno calcolati automaticamente.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={copiaOrarioLunediAFeriali}
+                className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl border border-sky-200 bg-sky-50 hover:bg-sky-100 text-sky-700 text-xs font-bold transition-colors self-start sm:self-auto"
+              >
+                <Copy className="h-3.5 w-3.5" />
+                Copia Lunedì su Mar-Ven
+              </button>
+            </div>
+
+            {/* Griglia Settimanale 7 Giorni */}
+            <div className="space-y-3">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-500">
+                Orari Settimanali Dettagliati
+              </label>
+
+              {GIORNI_SETTIMANA.map((g) => {
+                const configGiorno = orariSettimanali[g.key] || {
+                  aperto: false,
+                  mattina: { attiva: false, inizio: '09:00', fine: '12:30' },
+                  pomeriggio: { attiva: false, inizio: '15:30', fine: '19:00' },
+                }
+
+                return (
+                  <div
+                    key={g.key}
+                    className={`p-4 rounded-2xl border transition-all ${
+                      configGiorno.aperto
+                        ? 'bg-white border-slate-200 shadow-xs'
+                        : 'bg-slate-50/70 border-slate-200/60 opacity-75'
+                    }`}
+                  >
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className={`px-2.5 py-1 rounded-lg text-xs font-black ${
+                            configGiorno.aperto
+                              ? 'bg-sky-100 text-sky-800'
+                              : 'bg-slate-200 text-slate-500'
+                          }`}
+                        >
+                          {g.label}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-500">
+                          {configGiorno.aperto ? 'Studio aperto' : 'Studio chiuso (Riposo)'}
+                        </span>
+                      </div>
+
+                      {/* Toggle Aperto / Chiuso */}
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setOrariSettimanali((prev) => ({
+                            ...prev,
+                            [g.key]: {
+                              ...configGiorno,
+                              aperto: !configGiorno.aperto,
+                              mattina: configGiorno.mattina || { attiva: true, inizio: '09:00', fine: '12:30' },
+                              pomeriggio: configGiorno.pomeriggio || { attiva: true, inizio: '15:30', fine: '19:00' },
+                            },
+                          }))
+                        }
+                        className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
+                          configGiorno.aperto ? 'bg-sky-600' : 'bg-slate-200'
+                        }`}
+                      >
+                        <span
+                          className={`inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out ${
+                            configGiorno.aperto ? 'translate-x-5' : 'translate-x-0'
+                          }`}
+                        />
+                      </button>
+                    </div>
+
+                    {configGiorno.aperto && (
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                        {/* Fascia Mattina */}
+                        <div className="p-3 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-2">
+                          <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={configGiorno.mattina?.attiva ?? true}
+                              onChange={(e) =>
+                                setOrariSettimanali((prev) => ({
+                                  ...prev,
+                                  [g.key]: {
+                                    ...configGiorno,
+                                    mattina: {
+                                      ...configGiorno.mattina,
+                                      attiva: e.target.checked,
+                                      inizio: configGiorno.mattina?.inizio || '09:00',
+                                      fine: configGiorno.mattina?.fine || '12:30',
+                                    },
+                                  },
+                                }))
+                              }
+                              className="h-4 w-4 rounded text-sky-600 focus:ring-sky-500"
+                            />
+                            <span>Fascia Mattina</span>
+                          </label>
+
+                          {configGiorno.mattina?.attiva && (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={configGiorno.mattina?.inizio || '09:00'}
+                                onChange={(e) =>
+                                  setOrariSettimanali((prev) => ({
+                                    ...prev,
+                                    [g.key]: {
+                                      ...configGiorno,
+                                      mattina: { ...configGiorno.mattina, attiva: true, inizio: e.target.value, fine: configGiorno.mattina?.fine || '12:30' },
+                                    },
+                                  }))
+                                }
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 outline-none"
+                              />
+                              <span className="text-xs text-slate-400 font-bold">-</span>
+                              <input
+                                type="time"
+                                value={configGiorno.mattina?.fine || '12:30'}
+                                onChange={(e) =>
+                                  setOrariSettimanali((prev) => ({
+                                    ...prev,
+                                    [g.key]: {
+                                      ...configGiorno,
+                                      mattina: { ...configGiorno.mattina, attiva: true, fine: e.target.value, inizio: configGiorno.mattina?.inizio || '09:00' },
+                                    },
+                                  }))
+                                }
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 outline-none"
+                              />
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Fascia Pomeriggio */}
+                        <div className="p-3 rounded-xl bg-slate-50/90 border border-slate-200/80 space-y-2">
+                          <label className="flex items-center gap-2 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={configGiorno.pomeriggio?.attiva ?? true}
+                              onChange={(e) =>
+                                setOrariSettimanali((prev) => ({
+                                  ...prev,
+                                  [g.key]: {
+                                    ...configGiorno,
+                                    pomeriggio: {
+                                      ...configGiorno.pomeriggio,
+                                      attiva: e.target.checked,
+                                      inizio: configGiorno.pomeriggio?.inizio || '15:30',
+                                      fine: configGiorno.pomeriggio?.fine || '19:00',
+                                    },
+                                  },
+                                }))
+                              }
+                              className="h-4 w-4 rounded text-sky-600 focus:ring-sky-500"
+                            />
+                            <span>Fascia Pomeriggio</span>
+                          </label>
+
+                          {configGiorno.pomeriggio?.attiva && (
+                            <div className="flex items-center gap-2">
+                              <input
+                                type="time"
+                                value={configGiorno.pomeriggio?.inizio || '15:30'}
+                                onChange={(e) =>
+                                  setOrariSettimanali((prev) => ({
+                                    ...prev,
+                                    [g.key]: {
+                                      ...configGiorno,
+                                      pomeriggio: { ...configGiorno.pomeriggio, attiva: true, inizio: e.target.value, fine: configGiorno.pomeriggio?.fine || '19:00' },
+                                    },
+                                  }))
+                                }
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 outline-none"
+                              />
+                              <span className="text-xs text-slate-400 font-bold">-</span>
+                              <input
+                                type="time"
+                                value={configGiorno.pomeriggio?.fine || '19:00'}
+                                onChange={(e) =>
+                                  setOrariSettimanali((prev) => ({
+                                    ...prev,
+                                    [g.key]: {
+                                      ...configGiorno,
+                                      pomeriggio: { ...configGiorno.pomeriggio, attiva: true, fine: e.target.value, inizio: configGiorno.pomeriggio?.inizio || '15:30' },
+                                    },
+                                  }))
+                                }
+                                className="w-full px-2.5 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-sky-500 outline-none"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
             </div>
 
             <div>
@@ -332,7 +629,7 @@ export default function OnboardingPage() {
                     onClick={() => setDurataVisita(d.min)}
                     className={`p-4 rounded-2xl border text-left transition-all ${
                       durataVisita === d.min
-                        ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                        ? 'bg-sky-50/80 border-sky-600 ring-2 ring-sky-500/20 shadow-xs'
                         : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
@@ -355,7 +652,7 @@ export default function OnboardingPage() {
                   type="button"
                   onClick={() => setRiservaUrgenze(!riservaUrgenze)}
                   className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out ${
-                    riservaUrgenze ? 'bg-blue-600' : 'bg-slate-200'
+                    riservaUrgenze ? 'bg-sky-600' : 'bg-slate-200'
                   }`}
                 >
                   <span
@@ -392,7 +689,7 @@ export default function OnboardingPage() {
                     onClick={() => setLockupMinutes(l.min)}
                     className={`p-4 rounded-2xl border text-left transition-all ${
                       lockupMinutes === l.min
-                        ? 'bg-blue-50/80 border-blue-600 ring-2 ring-blue-500/20 shadow-xs'
+                        ? 'bg-sky-50/80 border-sky-600 ring-2 ring-sky-500/20 shadow-xs'
                         : 'bg-slate-50/70 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
@@ -411,7 +708,7 @@ export default function OnboardingPage() {
                 <select
                   value={anticipoMax}
                   onChange={(e) => setAnticipoMax(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
                 >
                   <option value={15}>15 giorni in avanti</option>
                   <option value={30}>30 giorni in avanti (1 mese - Consigliato)</option>
@@ -426,7 +723,7 @@ export default function OnboardingPage() {
                 <select
                   value={anticipoDisdetta}
                   onChange={(e) => setAnticipoDisdetta(Number(e.target.value))}
-                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-blue-500 outline-none"
+                  className="w-full px-4 py-3 rounded-xl border border-slate-200 text-sm font-semibold text-slate-900 focus:ring-2 focus:ring-sky-500 outline-none"
                 >
                   <option value={2}>Fino a 2 ore prima della visita</option>
                   <option value={12}>Fino a 12 ore prima</option>
@@ -447,7 +744,7 @@ export default function OnboardingPage() {
                   type="checkbox"
                   checked={delegaRicette}
                   onChange={(e) => setDelegaRicette(e.target.checked)}
-                  className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded text-sky-600 focus:ring-sky-500"
                 />
               </div>
 
@@ -460,7 +757,7 @@ export default function OnboardingPage() {
                   type="checkbox"
                   checked={delegaAccettazione}
                   onChange={(e) => setDelegaAccettazione(e.target.checked)}
-                  className="h-4 w-4 rounded text-blue-600 focus:ring-blue-500"
+                  className="h-4 w-4 rounded text-sky-600 focus:ring-sky-500"
                 />
               </div>
             </div>
@@ -492,7 +789,7 @@ export default function OnboardingPage() {
                 setErrore(null)
                 setStep(step + 1)
               }}
-              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-blue-500/20 transition-all"
+              className="px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold flex items-center gap-2 shadow-md shadow-sky-500/20 transition-all"
             >
               <span>Continua al Passo {step + 1}</span>
               <ArrowRight className="h-4 w-4" />

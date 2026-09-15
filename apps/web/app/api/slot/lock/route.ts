@@ -40,6 +40,25 @@ export async function POST(request: Request) {
         }
       }
 
+      // Verifica bloccante anti-passato: non è possibile bloccare o prenotare slot già trascorsi
+      const dateParts = slot.data.split('-').map(Number)
+      const timeParts = slot.oraInizio.split(':').map(Number)
+      const slotYear = dateParts[0] ?? 2026
+      const slotMonth = dateParts[1] ?? 1
+      const slotDay = dateParts[2] ?? 1
+      const slotHour = timeParts[0] ?? 0
+      const slotMin = timeParts[1] ?? 0
+      const slotStart = new Date(slotYear, slotMonth - 1, slotDay, slotHour, slotMin, 0)
+      if (slotStart <= now) {
+        return {
+          status: 400,
+          data: {
+            error: 'Non è possibile prenotare uno slot per una data o un orario già trascorso.',
+            code: 'SLOT_IN_PAST',
+          },
+        }
+      }
+
       if (slot.stato === 'chiuso') {
         return {
           status: 400,
